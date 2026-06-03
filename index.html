@@ -385,6 +385,37 @@ const SUPABASE_URL  = 'https://jtdpvydgbmtrbaapswys.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ── AUTO SESSION CHECK ON PAGE LOAD ──
+window.addEventListener('DOMContentLoaded', async function() {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session) {
+    // User already logged in — get profile and skip login screen
+    const { data: profile } = await _supabase
+      .from('profiles')
+      .select('full_name, role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile) {
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.display = 'none';
+      }
+      const rs = document.getElementById('roleSelector');
+      if (rs && profile.role) {
+        rs.disabled = false;
+        rs.value = profile.role;
+        rs.disabled = true;
+        if (window.changeRole) changeRole();
+      }
+      const email = session.user.email;
+      if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
+    }
+  }
+});
+
 async function handleLoginSubmit(e) {
   e.preventDefault();
 
