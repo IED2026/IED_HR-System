@@ -383,51 +383,13 @@ table tr.inactive-row td.no-strike{text-decoration:none;}
 // ── SUPABASE CONFIG ──
 const SUPABASE_URL  = 'https://jtdpvydgbmtrbaapswys.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4';
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-// ── SESSION RESTORE ON REFRESH ──
-// Only skip login if user already has an active Supabase session
-(async function(){
-  try {
-    const { data: { session } } = await _supabase.auth.getSession();
-    if (!session) return; // No session → show login page normally
-
-    // Has session → get profile
-    const { data: profile } = await _supabase
-      .from('profiles')
-      .select('full_name, role')
-      .eq('id', session.user.id)
-      .single();
-
-    if (!profile) return; // Profile missing → show login page
-
-    // Valid session → hide login overlay
-    const overlay = document.getElementById('loginOverlay');
-    if (overlay) {
-      overlay.style.transition = 'none';
-      overlay.style.opacity = '0';
-      overlay.style.pointerEvents = 'none';
-      overlay.style.display = 'none';
-    }
-
-    // Set role
-    const rs = document.getElementById('roleSelector');
-    if (rs && profile.role) {
-      rs.disabled = false;
-      rs.value = profile.role;
-      rs.disabled = true;
-      if (window.changeRole) changeRole();
-    }
-
-    // Set user info
-    const email = session.user.email;
-    if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
-
-  } catch(e) {
-    // Any error → just show login page normally
-    console.log('Session check failed, showing login.');
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   }
-})();
+});
 
 async function handleLoginSubmit(e) {
   e.preventDefault();
