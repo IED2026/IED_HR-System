@@ -3009,7 +3009,7 @@ function renderSalaryTable(){
       <td>${idx+1}</td>
       <td style="${cellStyle}font-weight:600">${e.name}${e.exitType?` <span style="font-size:10px;color:var(--red);">(${e.exitType})</span>`:''}</td>
       <td><span class="badge badge-${(e.project||'').toLowerCase()}">${e.project}</span></td>
-      <td><input type="number" class="form-control" style="width:100px;${locked||!active?'opacity:.5;':''}" value="${gross}" ${locked||!active?'disabled':''} onchange="updateSalRow(${e.id},${m},${y})" id="sal_${e.id}"></td>
+      <td><input type="number" class="form-control" style="width:110px;background:var(--navy3);color:var(--text);border:1px solid var(--border);${locked||!active?'opacity:.5;':''}" value="${gross}" ${locked||!active?'disabled':''} onchange="updateSalRow(${e.id},${m},${y})" id="sal_${e.id}"></td>
       <td>৳${bdt(s.basic)}</td>
       <td>৳${bdt(s.houseRent)}</td>
       <td>৳${bdt(s.medical)}</td>
