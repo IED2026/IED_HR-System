@@ -391,6 +391,35 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   }
 });
 
+// ── SESSION CHECK (sessionStorage based) ──
+(function(){
+  const s = sessionStorage.getItem('ied_user');
+  if (!s) return; // No session → show login page
+  try {
+    const user = JSON.parse(s);
+    const overlay = document.getElementById('loginOverlay');
+    if (overlay) {
+      overlay.style.transition = 'none';
+      overlay.style.opacity = '0';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.display = 'none';
+    }
+    // Restore role & user info after DOM ready
+    window.addEventListener('DOMContentLoaded', function(){
+      const rs = document.getElementById('roleSelector');
+      if (rs && user.role) {
+        rs.disabled = false;
+        rs.value = user.role;
+        rs.disabled = true;
+        if (window.changeRole) changeRole();
+      }
+      if (window.setUserInfo) setUserInfo(user.name, user.email, user.role);
+    });
+  } catch(e) {
+    sessionStorage.removeItem('ied_user');
+  }
+})();
+
 async function handleLoginSubmit(e) {
   e.preventDefault();
 
@@ -445,6 +474,12 @@ async function handleLoginSubmit(e) {
         rs.disabled = true;
         if (window.changeRole) changeRole();
       }
+      // Save session to sessionStorage
+      sessionStorage.setItem('ied_user', JSON.stringify({
+        name: profile.full_name || email,
+        email: email,
+        role: profile.role
+      }));
       // Set user info in sidebar & panel
       if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
       // Welcome toast
@@ -1887,6 +1922,8 @@ function closeUserPanel(e){
   if(e.target.id==='userPanel') document.getElementById('userPanel').style.display='none';
 }
 function doLogout(){
+  // Clear sessionStorage
+  sessionStorage.removeItem('ied_user');
   // Sign out from Supabase
   if(window._supabase) _supabase.auth.signOut();
   // Show login overlay again
