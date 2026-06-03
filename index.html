@@ -3000,7 +3000,7 @@ function renderSalaryTable(){
     const active=isEmpActiveInMonth(e,y,m);
     const empKey=`e${e.id}`;
     const savedGross=data[empKey]?.gross;
-    const gross=savedGross!=null?savedGross:(active?getEmpGrossForMonth(e,y,m):0);
+    const gross=savedGross!=null?savedGross:0; // Show 0 if not manually entered
     const s=calcSalary(gross);
     const eid=m===3?getEidBonus(e):0; // April = Eid
     if(active){totalGross+=s.gross;totalNet+=s.net;totalPF+=s.pf;totalAIT+=s.ait;activeCount++;}
