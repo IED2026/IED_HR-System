@@ -723,6 +723,8 @@ async function handleLoginSubmit(e) {
     <button class="btn btn-warning btn-sm" id="lockBtn" onclick="toggleLockMonth()"><i class="fa fa-lock"></i> Lock</button>
     <button class="btn btn-primary btn-sm" id="saveMonthBtn" onclick="saveMonth()"><i class="fa fa-floppy-disk"></i> Save Month</button>
     <button class="btn btn-secondary btn-sm" onclick="exportMonthlySalaryRegister()"><i class="fa fa-file-excel"></i> Export Register</button>
+    <button class="btn btn-secondary btn-sm" onclick="copyFromLastMonth()" title="Copy salary from previous month"><i class="fa fa-copy"></i> Copy Last Month</button>
+    <button class="btn btn-secondary btn-sm" onclick="fillFromProfile()" title="Fill from employee profile gross salary"><i class="fa fa-user-check"></i> Fill from Profile</button>
   </div>
   <div id="salStatusMsg" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
   <div id="salHistBadge" style="display:none;padding:6px 12px;background:rgba(212,175,55,.1);border-radius:8px;margin-bottom:8px;font-size:12px;color:var(--gold);border:1px solid rgba(212,175,55,.2);">
@@ -2979,6 +2981,68 @@ function toggleLockMonth(){
   updateLockUI(newLocked);
   saveState();
   toast(newLocked?'Month locked':'Month unlocked',newLocked?'warning':'success');
+}
+
+// ── COPY FROM LAST MONTH ──
+function copyFromLastMonth(){
+  const m=parseInt(document.getElementById('salMonth').value);
+  const y=parseInt(document.getElementById('salYear').value)||2026;
+  const key=`${y}_${m}`;
+  const locked=monthlySalary[key]?.locked||false;
+  if(locked){ toast('This month is locked!','error'); return; }
+
+  // Calculate previous month
+  let prevM=m-1, prevY=y;
+  if(prevM<0){ prevM=11; prevY--; }
+  const prevKey=`${prevY}_${prevM}`;
+  const prevData=monthlySalary[prevKey]?.data||{};
+
+  if(Object.keys(prevData).length===0){
+    toast('No data found in previous month!','warning');
+    return;
+  }
+
+  if(!monthlySalary[key]) monthlySalary[key]={data:{}};
+  if(!monthlySalary[key].data) monthlySalary[key].data={};
+
+  // Copy each employee's gross from previous month
+  let copied=0;
+  employees.forEach(e=>{
+    const empKey=`e${e.id}`;
+    if(prevData[empKey]?.gross != null){
+      monthlySalary[key].data[empKey] = {...(monthlySalary[key].data[empKey]||{}), gross: prevData[empKey].gross};
+      copied++;
+    }
+  });
+
+  renderSalaryTable();
+  toast(`Copied ${copied} employees from previous month!`,'success');
+}
+
+// ── FILL FROM PROFILE ──
+function fillFromProfile(){
+  const m=parseInt(document.getElementById('salMonth').value);
+  const y=parseInt(document.getElementById('salYear').value)||2026;
+  const key=`${y}_${m}`;
+  const locked=monthlySalary[key]?.locked||false;
+  if(locked){ toast('This month is locked!','error'); return; }
+
+  if(!monthlySalary[key]) monthlySalary[key]={data:{}};
+  if(!monthlySalary[key].data) monthlySalary[key].data={};
+
+  let filled=0;
+  employees.forEach(e=>{
+    if(!isEmpActiveInMonth(e,y,m)) return;
+    const empKey=`e${e.id}`;
+    const gross = e.gross||0;
+    if(gross>0){
+      monthlySalary[key].data[empKey] = {...(monthlySalary[key].data[empKey]||{}), gross};
+      filled++;
+    }
+  });
+
+  renderSalaryTable();
+  toast(`Filled ${filled} employees from profile!`,'success');
 }
 
 function renderSalaryTable(){
