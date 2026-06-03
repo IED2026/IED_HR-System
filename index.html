@@ -434,15 +434,13 @@ async function handleLoginSubmit(e) {
       // Set role selector in HR system
       const rs = document.getElementById('roleSelector');
       if (rs && profile.role) {
-        // Temporarily enable to set value, then disable again
         rs.disabled = false;
         rs.value = profile.role;
         rs.disabled = true;
         if (window.changeRole) changeRole();
       }
-      // Set name in sidebar
-      const sr = document.getElementById('sidebarRole');
-      if (sr) sr.textContent = profile.full_name || email;
+      // Set user info in sidebar & panel
+      if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
       // Welcome toast
       if (window.toast) toast('Welcome, ' + (profile.full_name || email) + '!', 'success');
     }, 520);
@@ -498,11 +496,44 @@ async function handleLoginSubmit(e) {
     <div class="nav-item" onclick="nav('reports')"><i class="fa-solid fa-file-excel"></i> Reports & Export</div>
   </div>
   <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);">
-    <div style="font-size:11px;color:var(--text3);">
-      <div id="sidebarRole" style="color:var(--gold);font-weight:600;margin-bottom:3px;">HR Manager</div>
-      <div id="sidebarTime"></div>
+    <div onclick="openUserPanel()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;transition:background .2s;" onmouseover="this.style.background='rgba(212,175,55,0.08)'" onmouseout="this.style.background='transparent'">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#0a1020;flex-shrink:0;" id="userAvatar">H</div>
+      <div>
+        <div id="sidebarName" style="color:var(--text);font-weight:600;font-size:12px;margin-bottom:1px;">HR Manager</div>
+        <div id="sidebarRole" style="color:var(--gold);font-weight:500;font-size:11px;">HR Manager</div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="margin-left:auto;font-size:10px;color:var(--text3);"></i>
+    </div>
+    <div id="sidebarTime" style="font-size:10px;color:var(--text3);margin-top:4px;padding-left:4px;"></div>
+  </div>
+
+<!-- ═══ USER PANEL POPUP ═══ -->
+<div id="userPanel" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);" onclick="closeUserPanel(event)">
+  <div style="position:absolute;bottom:80px;left:16px;width:260px;background:var(--navy2);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.6);overflow:hidden;animation:fadeUp .2s ease;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));padding:20px;border-bottom:1px solid var(--border);text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#0a1020;margin:0 auto 10px;" id="panelAvatar">H</div>
+      <div id="panelName" style="color:var(--text);font-weight:700;font-size:15px;margin-bottom:4px;">HR Manager</div>
+      <div id="panelEmail" style="color:var(--text3);font-size:12px;margin-bottom:6px;">hr@iecbd.org</div>
+      <div id="panelRoleBadge" style="display:inline-flex;align-items:center;gap:5px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);border-radius:999px;padding:3px 12px;">
+        <div style="width:6px;height:6px;background:var(--gold);border-radius:50%;"></div>
+        <span id="panelRoleText" style="font-size:11px;font-weight:600;color:var(--gold);letter-spacing:0.05em;">HR Manager</span>
+      </div>
+    </div>
+    <!-- Options -->
+    <div style="padding:8px;">
+      <div style="padding:10px 14px;border-radius:10px;color:var(--text2);font-size:13px;display:flex;align-items:center;gap:10px;cursor:default;opacity:0.5;">
+        <i class="fa-solid fa-clock" style="color:var(--gold);width:16px;"></i>
+        <span id="panelLoginTime">Logged in today</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:6px 0;"></div>
+      <div onclick="doLogout()" style="padding:10px 14px;border-radius:10px;color:#ff6b6b;font-size:13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .2s;font-weight:600;" onmouseover="this.style.background='rgba(255,107,107,0.1)'" onmouseout="this.style.background='transparent'">
+        <i class="fa-solid fa-right-from-bracket" style="width:16px;"></i>
+        Sign Out
+      </div>
     </div>
   </div>
+</div>
 </div>
 <!-- ═══════════════════ MAIN ═══════════════════ -->
 <div class="main">
@@ -1840,6 +1871,59 @@ function saveState(){
 }
 
 // ── ROLE ──
+// ── USER PANEL ──
+var _loggedInUser = {name:'', email:'', role:'', loginTime: new Date()};
+
+function openUserPanel(){
+  document.getElementById('userPanel').style.display='block';
+}
+function closeUserPanel(e){
+  if(e.target.id==='userPanel') document.getElementById('userPanel').style.display='none';
+}
+function doLogout(){
+  // Sign out from Supabase
+  if(window._supabase) _supabase.auth.signOut();
+  // Show login overlay again
+  const overlay = document.getElementById('loginOverlay');
+  if(overlay){
+    // Reset form
+    document.getElementById('loginEmail').value='';
+    document.getElementById('loginPassword').value='';
+    document.getElementById('loginError').style.display='none';
+    document.getElementById('loginBtnLabel').textContent='Sign In';
+    document.getElementById('loginSubmitBtn').disabled=false;
+    overlay.style.display='block';
+    setTimeout(()=>{ overlay.style.opacity='1'; overlay.style.pointerEvents='auto'; },10);
+  }
+  document.getElementById('userPanel').style.display='none';
+  toast('Logged out successfully','info');
+}
+function setUserInfo(name, email, role){
+  _loggedInUser = {name, email, role, loginTime: new Date()};
+  // Avatar initial
+  const initial = (name||email||'U')[0].toUpperCase();
+  const avatarEls = ['userAvatar','panelAvatar'];
+  avatarEls.forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=initial; });
+  // Name
+  const nameEl = document.getElementById('sidebarName');
+  if(nameEl) nameEl.textContent = name||email;
+  const panelNameEl = document.getElementById('panelName');
+  if(panelNameEl) panelNameEl.textContent = name||email;
+  // Email
+  const panelEmailEl = document.getElementById('panelEmail');
+  if(panelEmailEl) panelEmailEl.textContent = email;
+  // Login time
+  const timeEl = document.getElementById('panelLoginTime');
+  if(timeEl) timeEl.textContent = 'Logged in at '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  // Role label
+  const roleLabels = {hr:'HR Manager', dept_head:'Department Head', ceo:'CEO / Director', viewer:'IT (View Only)'};
+  const roleText = roleLabels[role]||role;
+  const srEl = document.getElementById('sidebarRole');
+  if(srEl) srEl.textContent = roleText;
+  const panelRoleEl = document.getElementById('panelRoleText');
+  if(panelRoleEl) panelRoleEl.textContent = roleText;
+}
+
 function changeRole(){
   currentRole=document.getElementById('roleSelector').value;
   const labels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'Viewer'};
