@@ -1855,15 +1855,19 @@ function getEmpGrossForMonth(emp,year,month){
   return gross;
 }
 function isEmpActiveInMonth(emp,year,month){
-  // Check if active flag + check exit date
-  if(!emp.active && !emp.exitDate) return false;
-  if(emp.exitDate){
-    const exit=new Date(emp.exitDate);
-    // Inactive from NEXT month after exit
-    const exitYM=(exit.getFullYear())*100+exit.getMonth();
-    const curYM=year*100+month;
-    if(curYM>exitYM) return false;
+  // If employee has exitType set → they are terminated/resigned
+  // Only mark inactive if exitType is explicitly set AND exitDate has passed
+  if(emp.exitType && emp.exitType !== ''){
+    if(emp.exitDate){
+      const exit=new Date(emp.exitDate);
+      const exitYM=(exit.getFullYear())*100+exit.getMonth();
+      const curYM=year*100+month;
+      if(curYM>exitYM) return false;
+    } else {
+      return false; // exitType set but no date → treat as inactive
+    }
   }
+  // Check join date — not active before joining
   if(emp.join){
     const join=new Date(emp.join);
     const joinYM=join.getFullYear()*100+join.getMonth();
