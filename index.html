@@ -725,6 +725,7 @@ async function handleLoginSubmit(e) {
     <button class="btn btn-secondary btn-sm" onclick="exportMonthlySalaryRegister()"><i class="fa fa-file-excel"></i> Export Register</button>
     <button class="btn btn-secondary btn-sm" onclick="copyFromLastMonth()" title="Copy salary from previous month"><i class="fa fa-copy"></i> Copy Last Month</button>
     <button class="btn btn-secondary btn-sm" onclick="fillFromProfile()" title="Fill from employee profile gross salary"><i class="fa fa-user-check"></i> Fill from Profile</button>
+    <button class="btn btn-danger btn-sm" onclick="confirmClearMonth()" title="Clear all salary data for this month"><i class="fa fa-trash"></i> Clear</button>
   </div>
   <div id="salStatusMsg" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
   <div id="salHistBadge" style="display:none;padding:6px 12px;background:rgba(212,175,55,.1);border-radius:8px;margin-bottom:8px;font-size:12px;color:var(--gold);border:1px solid rgba(212,175,55,.2);">
@@ -2952,7 +2953,8 @@ function loadMonth(){
   const m=parseInt(document.getElementById('salMonth').value);
   const y=parseInt(document.getElementById('salYear').value)||2026;
   const key=`${y}_${m}`;
-  const locked=monthlySalary[key]?.locked||false;
+  // Default is LOCKED — only unlocked if explicitly set to false
+  const locked = monthlySalary[key]?.locked === false ? false : true;
   updateLockUI(locked);
   renderSalaryTable();
 }
@@ -2960,14 +2962,15 @@ function loadMonth(){
 function updateLockUI(locked){
   const lb=document.getElementById('salLockBadge');
   const btn=document.getElementById('lockBtn');
+  const actionBtns=['saveMonthBtn'];
   if(locked){
     lb.textContent='🔒 Locked';lb.style.background='rgba(231,76,60,.15)';lb.style.color='#e74c3c';
-    btn.innerHTML='<i class="fa fa-unlock"></i> Unlock';btn.className='btn btn-danger btn-sm';
-    document.getElementById('saveMonthBtn').disabled=true;
+    btn.innerHTML='<i class="fa fa-unlock"></i> Unlock';btn.className='btn btn-success btn-sm';
+    actionBtns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=true; });
   } else {
     lb.textContent='🔓 Unlocked';lb.style.background='rgba(39,174,96,.15)';lb.style.color='#2ecc71';
     btn.innerHTML='<i class="fa fa-lock"></i> Lock';btn.className='btn btn-warning btn-sm';
-    document.getElementById('saveMonthBtn').disabled=false;
+    actionBtns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
   }
 }
 
@@ -2981,6 +2984,21 @@ function toggleLockMonth(){
   updateLockUI(newLocked);
   saveState();
   toast(newLocked?'Month locked':'Month unlocked',newLocked?'warning':'success');
+}
+
+// ── CLEAR MONTH ──
+function confirmClearMonth(){
+  const m=parseInt(document.getElementById('salMonth').value);
+  const y=parseInt(document.getElementById('salYear').value)||2026;
+  const key=`${y}_${m}`;
+  const locked=monthlySalary[key]?.locked === false ? false : true;
+  if(locked){ toast('Unlock this month first!','error'); return; }
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(confirm(`⚠️ Are you sure you want to clear ALL salary data for ${months[m]} ${y}?\n\nThis action cannot be undone!`)){
+    if(monthlySalary[key]) monthlySalary[key].data={};
+    renderSalaryTable();
+    toast(`${months[m]} ${y} salary data cleared!`,'warning');
+  }
 }
 
 // ── COPY FROM LAST MONTH ──
