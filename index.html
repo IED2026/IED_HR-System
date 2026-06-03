@@ -2979,11 +2979,13 @@ function toggleLockMonth(){
   const y=parseInt(document.getElementById('salYear').value)||2026;
   const key=`${y}_${m}`;
   if(!monthlySalary[key]) monthlySalary[key]={};
-  const newLocked=!monthlySalary[key].locked;
-  monthlySalary[key].locked=newLocked;
+  // Default is locked — only unlocked if explicitly false
+  const currentlyLocked = monthlySalary[key].locked === false ? false : true;
+  const newLocked = !currentlyLocked;
+  monthlySalary[key].locked = newLocked;
   updateLockUI(newLocked);
   saveState();
-  toast(newLocked?'Month locked':'Month unlocked',newLocked?'warning':'success');
+  toast(newLocked?'Month locked 🔒':'Month unlocked 🔓', newLocked?'warning':'success');
 }
 
 // ── CLEAR MONTH ──
@@ -3006,7 +3008,7 @@ function copyFromLastMonth(){
   const m=parseInt(document.getElementById('salMonth').value);
   const y=parseInt(document.getElementById('salYear').value)||2026;
   const key=`${y}_${m}`;
-  const locked=monthlySalary[key]?.locked||false;
+  const locked=monthlySalary[key]?.locked===false?false:true; // default locked
   if(locked){ toast('This month is locked!','error'); return; }
 
   // Calculate previous month
@@ -3042,7 +3044,7 @@ function fillFromProfile(){
   const m=parseInt(document.getElementById('salMonth').value);
   const y=parseInt(document.getElementById('salYear').value)||2026;
   const key=`${y}_${m}`;
-  const locked=monthlySalary[key]?.locked||false;
+  const locked=monthlySalary[key]?.locked===false?false:true; // default locked
   if(locked){ toast('This month is locked!','error'); return; }
 
   if(!monthlySalary[key]) monthlySalary[key]={data:{}};
@@ -3068,7 +3070,7 @@ function renderSalaryTable(){
   const y=parseInt(document.getElementById('salYear').value)||2026;
   const projF=document.getElementById('salProjFilter').value;
   const key=`${y}_${m}`;
-  const locked=monthlySalary[key]?.locked||false;
+  const locked=monthlySalary[key]?.locked===false?false:true; // default locked
   const data=monthlySalary[key]?.data||{};
 
   let filtered=employees.filter(e=>{
