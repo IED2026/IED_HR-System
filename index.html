@@ -434,7 +434,10 @@ async function handleLoginSubmit(e) {
       // Set role selector in HR system
       const rs = document.getElementById('roleSelector');
       if (rs && profile.role) {
+        // Temporarily enable to set value, then disable again
+        rs.disabled = false;
         rs.value = profile.role;
+        rs.disabled = true;
         if (window.changeRole) changeRole();
       }
       // Set name in sidebar
@@ -507,7 +510,7 @@ async function handleLoginSubmit(e) {
   <button class="btn btn-secondary btn-sm" onclick="toggleSidebar()" style="display:none" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
   <h2 id="pageTitle">Dashboard</h2>
   <div class="topbar-actions">
-    <select class="form-control" id="roleSelector" onchange="changeRole()" style="width:140px;font-size:12px;">
+    <select class="form-control" id="roleSelector" onchange="changeRole()" style="width:140px;font-size:12px;pointer-events:none;opacity:0.85;cursor:default;" disabled>
       <option value="hr">HR Manager</option>
       <option value="dept_head">Department Head</option>
       <option value="ceo">CEO / Director</option>
