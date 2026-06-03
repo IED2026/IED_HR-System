@@ -1292,25 +1292,11 @@ async function handleLoginSubmit(e) {
         <div class="form-group"><label>Branch</label><input class="form-control" id="empBranch" placeholder="Branch"></div>
         <div class="form-group"><label>Account Number</label><input class="form-control" id="empAccount" placeholder="Account Number"></div>
       </div>
-      <!-- Termination/Resignation Section -->
-      <div class="form-section">
-        <div class="form-section-title"><i class="fa fa-user-slash"></i> Exit Information (Termination/Resignation)</div>
-        <div class="form-grid">
-          <div class="form-group"><label>Exit Type</label>
-            <select class="form-control" id="empExitType" onchange="toggleExitFields()">
-              <option value="">None (Active)</option>
-              <option value="Terminated">Terminated</option>
-              <option value="Resigned">Resigned</option>
-              <option value="Retired">Retired</option>
-              <option value="Contract Ended">Contract Ended</option>
-            </select>
-          </div>
-          <div class="form-group"><label>Exit Date</label><input class="form-control" id="empExitDate" type="date"></div>
-          <div class="form-group"><label>Exit Reason / Notes</label><input class="form-control" id="empExitReason" placeholder="Reason for exit..."></div>
-          <div class="form-group"><label>Final Settlement (BDT)</label><input class="form-control" id="empExitSettlement" type="number" placeholder="0"></div>
-        </div>
-        <p style="font-size:11px;color:var(--orange);"><i class="fa fa-info-circle"></i> Record will remain for history. Salary inputs after exit date will be automatically disabled.</p>
-      </div>
+      <!-- Exit fields hidden (managed via Terminate modal) -->
+      <input type="hidden" id="empExitType">
+      <input type="hidden" id="empExitDate">
+      <input type="hidden" id="empExitReason">
+      <input type="hidden" id="empExitSettlement">
     </div>
     <!-- Personal Details Tab -->
     <div class="tab-content" id="emptab-personal">
