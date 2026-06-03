@@ -406,14 +406,19 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     }
     // Restore role & user info after DOM ready
     window.addEventListener('DOMContentLoaded', function(){
+      currentRole = user.role;
       const rs = document.getElementById('roleSelector');
       if (rs && user.role) {
         rs.disabled = false;
         rs.value = user.role;
         rs.disabled = true;
-        if (window.changeRole) changeRole();
       }
       if (window.setUserInfo) setUserInfo(user.name, user.email, user.role);
+      if(currentRole === 'viewer'){
+        showAdminOnly();
+      } else {
+        if(window.renderDashboard) renderDashboard();
+      }
     });
   } catch(e) {
     sessionStorage.removeItem('ied_user');
@@ -467,21 +472,28 @@ async function handleLoginSubmit(e) {
     setTimeout(function () {
       overlay.style.display = 'none';
       // Set role selector in HR system
-      const rs = document.getElementById('roleSelector');
-      if (rs && profile.role) {
-        rs.disabled = false;
-        rs.value = profile.role;
-        rs.disabled = true;
-        if (window.changeRole) changeRole();
-      }
       // Save session to sessionStorage
       sessionStorage.setItem('ied_user', JSON.stringify({
         name: profile.full_name || email,
         email: email,
         role: profile.role
       }));
+      // Set currentRole FIRST before anything else
+      currentRole = profile.role;
+      const rs = document.getElementById('roleSelector');
+      if (rs && profile.role) {
+        rs.disabled = false;
+        rs.value = profile.role;
+        rs.disabled = true;
+      }
       // Set user info in sidebar & panel
       if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
+      // Show correct page based on role
+      if(currentRole === 'viewer'){
+        showAdminOnly();
+      } else {
+        if(window.renderDashboard) renderDashboard();
+      }
       // Welcome toast
       if (window.toast) toast('Welcome, ' + (profile.full_name || email) + '!', 'success');
     }, 520);
@@ -596,6 +608,29 @@ async function handleLoginSubmit(e) {
 <!-- ═══════════════════ PAGES ═══════════════════ -->
 
 <!-- DASHBOARD -->
+<!-- ═══ ADMIN ONLY PAGE ═══ -->
+<div class="page" id="page-adminonly" style="align-items:center;justify-content:center;min-height:70vh;">
+  <div style="text-align:center;max-width:400px;padding:40px 20px;">
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+      <i class="fa-solid fa-lock" style="font-size:32px;color:var(--gold);"></i>
+    </div>
+    <div style="color:var(--text);font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-0.02em;">Admin Only</div>
+    <div style="color:var(--text3);font-size:14px;line-height:1.7;margin-bottom:28px;">
+      This page is restricted to <strong style="color:var(--text2);">Admin Panel</strong> users only.<br>
+      You do not have permission to access this section.
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:999px;padding:6px 16px;margin-bottom:24px;">
+      <div style="width:7px;height:7px;background:var(--gold);border-radius:50%;"></div>
+      <span id="adminOnlyRoleText" style="font-size:12px;font-weight:600;color:var(--gold);letter-spacing:0.05em;">Your role: IT (View Only)</span>
+    </div>
+    <div>
+      <button onclick="nav('dashboard')" style="padding:10px 24px;background:rgba(173,198,255,0.08);border:1px solid rgba(173,198,255,0.2);border-radius:8px;color:#adc6ff;font-size:13px;cursor:pointer;font-family:inherit;">
+        <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i>Go to Dashboard
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="page active" id="page-dashboard">
   <div class="kpi-grid" id="dashKpi"></div>
   <div class="chart-grid">
@@ -1943,6 +1978,7 @@ function doLogout(){
 }
 function setUserInfo(name, email, role){
   _loggedInUser = {name, email, role, loginTime: new Date()};
+
   // Avatar initial
   const initial = (name||email||'U')[0].toUpperCase();
   const avatarEls = ['userAvatar','panelAvatar'];
@@ -1969,16 +2005,28 @@ function setUserInfo(name, email, role){
 
 function changeRole(){
   currentRole=document.getElementById('roleSelector').value;
-  const labels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'Viewer'};
+  const labels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'IT (View Only)'};
   document.getElementById('sidebarRole').textContent=labels[currentRole]||currentRole;
-  toast('Role: '+labels[currentRole],'info');
 }
 function canEdit(){return currentRole!=='viewer';}
 function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 // ── NAVIGATION ──
 const PAGE_TITLES={dashboard:'Dashboard',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+function showAdminOnly(){
+  const roleLabels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'IT (View Only)'};
+  const roleEl=document.getElementById('adminOnlyRoleText');
+  if(roleEl) roleEl.textContent='Your role: '+(roleLabels[currentRole]||currentRole);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ap=document.getElementById('page-adminonly');
+  if(ap) ap.classList.add('active');
+  if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent='Access Restricted';
+}
+
 function nav(page){
+  if(currentRole==='viewer'){ showAdminOnly(); return; }
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pg=document.getElementById('page-'+page);
