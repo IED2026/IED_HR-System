@@ -1890,30 +1890,54 @@ let _editEmpCareerHistory=[], _editEmpAchievements=[], _editEmpId=null;
 let _charts={};
 
 // ── LOAD / SAVE ──
-function loadState(){
+// ── MIGRATION HELPER ──
+function migrateEmployees(emps){
+  emps.forEach(e=>{
+    if(!e.careerHistory) e.careerHistory=[];
+    if(e.join && !e.careerHistory.find(ev=>ev.type==='join')){
+      e.careerHistory.unshift({type:'join',date:e.join,desig:e.desig||'—',newGross:e.originalGross||e.gross,remark:'Initial joining (auto-generated)',approver:'HR'});
+    }
+    if(!e.achievements) e.achievements=[];
+    if(!e.kpiData) e.kpiData={};
+    if(!e.attendanceData) e.attendanceData={};
+    if(!e.leaveRecords) e.leaveRecords=[];
+    if(!e.showcases) e.showcases=[];
+    if(!e.documents) e.documents=[];
+    if(!e.specialNotes) e.specialNotes=[];
+  });
+  return emps;
+}
+
+// ── LOAD STATE (Supabase first, localStorage fallback) ──
+async function loadState(){
+  try{
+    // Try Supabase first
+    const { data, error } = await _supabase
+      .from('app_data')
+      .select('key, value')
+      .in('key', ['employees','projects','monthlySalary','manningSched2']);
+
+    if(!error && data && data.length > 0){
+      const map = {};
+      data.forEach(row => { map[row.key] = row.value; });
+      employees = map['employees'] ? migrateEmployees(map['employees']) : migrateEmployees(JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)));
+      projects = map['projects'] || JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
+      monthlySalary = map['monthlySalary'] || {};
+      manningSched2 = map['manningSched2'] || {};
+      // Also sync to localStorage as backup
+      localStorage.setItem('ied_emp_v7', JSON.stringify(employees));
+      localStorage.setItem('ied_proj_v7', JSON.stringify(projects));
+      localStorage.setItem('ied_monthly_v7', JSON.stringify(monthlySalary));
+      localStorage.setItem('ied_manning_v7', JSON.stringify(manningSched2));
+      return;
+    }
+  } catch(err){
+    console.warn('Supabase load failed, using localStorage:', err);
+  }
+  // Fallback to localStorage
   try{
     const se=localStorage.getItem('ied_emp_v7');
-    employees=se?JSON.parse(se):JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
-    // Migration: ensure every employee has a careerHistory with at least a join event
-    employees.forEach(e=>{
-      if(!e.careerHistory) e.careerHistory=[];
-      // If no join event exists yet, auto-create one from join date
-      if(e.join && !e.careerHistory.find(ev=>ev.type==='join')){
-        e.careerHistory.unshift({
-          type:'join', date:e.join, desig:e.desig||'—',
-          newGross:e.originalGross||e.gross,
-          remark:'Initial joining (auto-generated)',
-          approver:'HR'
-        });
-      }
-      if(!e.achievements) e.achievements=[];
-      if(!e.kpiData) e.kpiData={};
-      if(!e.attendanceData) e.attendanceData={};
-      if(!e.leaveRecords) e.leaveRecords=[];
-      if(!e.showcases) e.showcases=[];
-      if(!e.documents) e.documents=[];
-      if(!e.specialNotes) e.specialNotes=[];
-    });
+    employees=se?migrateEmployees(JSON.parse(se)):migrateEmployees(JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)));
     const sp=localStorage.getItem('ied_proj_v7');
     projects=sp?JSON.parse(sp):JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
     const ms=localStorage.getItem('ied_monthly_v7');
@@ -1921,29 +1945,45 @@ function loadState(){
     const mn=localStorage.getItem('ied_manning_v7');
     manningSched2=mn?JSON.parse(mn):{};
   }catch(e){
-    employees=JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
-    employees.forEach(e=>{
-      if(!e.careerHistory) e.careerHistory=[];
-      if(e.join && !e.careerHistory.find(ev=>ev.type==='join')){
-        e.careerHistory.unshift({type:'join',date:e.join,desig:e.desig||'—',newGross:e.originalGross||e.gross,remark:'Initial joining',approver:'HR'});
-      }
-      if(!e.achievements) e.achievements=[];
-      if(!e.kpiData) e.kpiData={};
-      if(!e.attendanceData) e.attendanceData={};
-      if(!e.leaveRecords) e.leaveRecords=[];
-    });
+    employees=migrateEmployees(JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)));
     projects=JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
     monthlySalary={};manningSched2={};
   }
 }
-function saveState(){
+
+// ── SAVE STATE (Supabase + localStorage) ──
+async function saveState(){
+  // Always save to localStorage immediately
   try{
     localStorage.setItem('ied_emp_v7',JSON.stringify(employees));
     localStorage.setItem('ied_proj_v7',JSON.stringify(projects));
     localStorage.setItem('ied_monthly_v7',JSON.stringify(monthlySalary));
     localStorage.setItem('ied_manning_v7',JSON.stringify(manningSched2));
-    toast('Data saved successfully','success');
-  }catch(e){toast('Save failed: '+e.message,'error');}
+  }catch(e){}
+
+  // Save to Supabase
+  try{
+    const saves = [
+      { key:'employees',     value: employees },
+      { key:'projects',      value: projects },
+      { key:'monthlySalary', value: monthlySalary },
+      { key:'manningSched2', value: manningSched2 }
+    ];
+    const { error } = await _supabase
+      .from('app_data')
+      .upsert(saves.map(s=>({
+        key: s.key,
+        value: s.value,
+        updated_at: new Date().toISOString(),
+        updated_by: _loggedInUser.email || 'unknown'
+      })), { onConflict: 'key' });
+
+    if(error) throw error;
+    toast('Data saved ✓','success');
+  }catch(err){
+    console.error('Supabase save failed:', err);
+    toast('Saved locally (sync failed)','warning');
+  }
 }
 
 // ── ROLE ──
@@ -3966,8 +4006,11 @@ function updateClock(){
 setInterval(updateClock,1000);updateClock();
 
 // ══════════════ INIT ══════════════
-document.addEventListener('DOMContentLoaded',()=>{
-  loadState();
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const main = document.querySelector('.main');
+  if(main) main.style.opacity='0.6';
+  await loadState();
+  if(main) main.style.opacity='1';
   renderDashboard();
   document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
 });
