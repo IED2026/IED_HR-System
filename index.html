@@ -389,7 +389,7 @@ table tr.inactive-row td.no-strike{text-decoration:none;}
 const SUPABASE_URL  = 'https://jtdpvydgbmtrbaapswys.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4';
 let _supabase;
-window.addEventListener('load', function(){
+window.addEventListener('load', async function(){
   _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth: {
       persistSession: false,
@@ -397,11 +397,9 @@ window.addEventListener('load', function(){
       detectSessionInUrl: false
     }
   });
-});
 
-
-// ── SESSION CHECK ON REFRESH ──
-(function(){
+  // ── SESSION CHECK ON REFRESH ──
+(async function(){
   try {
     const s = sessionStorage.getItem('ied_session');
     if (!s) return;
@@ -439,13 +437,17 @@ window.addEventListener('load', function(){
         showAdminOnly();
       } else {
         const lastPage = user.page || 'dashboard';
-        setTimeout(function(){ if(window.nav) nav(lastPage); }, 400);
+        setTimeout(async function(){ if(window.nav) nav(lastPage); }, 400);
       }
     });
   } catch(e) {
     sessionStorage.removeItem('ied_session');
   }
 })();
+
+
+});
+
 
 async function handleLoginSubmit(e) {
   e.preventDefault();
