@@ -2048,12 +2048,15 @@ async function saveState(){
     ];
     const { error } = await _supabase
       .from('app_data')
-      .upsert(saves.map(s=>({
-        key: s.key,
-        value: s.value,
-        updated_at: new Date().toISOString(),
-        updated_by: _loggedInUser.email || 'unknown'
-      })), { onConflict: 'key' });
+      .upsert(
+        saves.map(s=>({
+          key: s.key,
+          value: s.value,
+          updated_at: new Date().toISOString(),
+          updated_by: _loggedInUser.email || 'unknown'
+        })),
+        { onConflict: 'key', ignoreDuplicates: false }
+      );
 
     if(error) throw error;
     toast('Data saved ✓','success');
