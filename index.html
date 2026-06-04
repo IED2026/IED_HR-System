@@ -398,6 +398,14 @@ window.addEventListener('load', async function(){
     }
   });
 
+  // ── INIT APP ──
+  const main = document.querySelector('.main');
+  if(main) main.style.opacity='0.6';
+  await loadState();
+  if(main) main.style.opacity='1';
+  renderDashboard();
+  document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
+
   // ── SESSION CHECK ON REFRESH ──
 (async function(){
   try {
@@ -4261,14 +4269,7 @@ function updateClock(){
 setInterval(updateClock,1000);updateClock();
 
 // ══════════════ INIT ══════════════
-document.addEventListener('DOMContentLoaded', async ()=>{
-  const main = document.querySelector('.main');
-  if(main) main.style.opacity='0.6';
-  await loadState();
-  if(main) main.style.opacity='1';
-  renderDashboard();
-  document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
-});
+// Init moved to window.load — after _supabase is ready
 
 // ══════════════════════════════════════════════════════════
 //  YEAR HISTORY MODULE - v8
