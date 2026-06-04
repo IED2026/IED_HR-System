@@ -41,6 +41,11 @@ input,select,textarea{font-family:inherit;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
 .page{display:none;padding:20px;flex:1;}
 .page.active{display:block;}
+/* ── SORT DROPDOWN ── */
+.sort-opt{padding:9px 16px;font-size:13px;color:var(--text2);cursor:pointer;transition:background .15s;}
+.sort-opt:hover{background:rgba(212,175,55,0.08);color:var(--gold);}
+.sort-opt.active{color:var(--gold);font-weight:600;}
+
 /* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;font-family:inherit;}
 .btn-primary{background:var(--gold);color:var(--navy);}
@@ -652,6 +657,21 @@ async function handleLoginSubmit(e) {
   <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
     <input type="text" class="form-control" id="empSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderEmployees()" onkeydown="if(event.key==='Enter')renderEmployees()" style="flex:2;min-width:200px;">
     <button class="btn btn-primary btn-sm" onclick="renderEmployees()" title="Search"><i class="fa fa-search"></i> Search</button>
+    <!-- Sort Dropdown -->
+    <div style="position:relative;display:inline-block;">
+      <button class="btn btn-secondary btn-sm" onclick="toggleSortDropdown()" id="sortBtn" title="Sort employees">
+        <i class="fa fa-sort"></i> Sort
+      </button>
+      <div id="sortDropdown" style="display:none;position:absolute;top:110%;left:0;z-index:999;background:var(--navy2);border:1px solid var(--border);border-radius:10px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);overflow:hidden;">
+        <div style="padding:8px 12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);">Sort By</div>
+        <div onclick="setSortEmp('')" class="sort-opt" id="sort-none">None</div>
+        <div onclick="setSortEmp('id')" class="sort-opt" id="sort-id">Employee ID</div>
+        <div onclick="setSortEmp('name')" class="sort-opt" id="sort-name">Name</div>
+        <div onclick="setSortEmp('dept')" class="sort-opt" id="sort-dept">Department</div>
+        <div onclick="setSortEmp('gross')" class="sort-opt" id="sort-gross">Salary</div>
+        <div onclick="setSortEmp('status')" class="sort-opt" id="sort-status">Status (Active First)</div>
+      </div>
+    </div>
     <select class="form-control" id="empProjFilter" onchange="renderEmployees()" style="width:130px;">
       <option value="">All Projects</option>
       <option>IED</option><option>BIWTA</option><option>NBR</option><option>PGCL</option><option>BCIC</option>
@@ -2207,6 +2227,36 @@ function destroyChart(id){
 }
 
 // ══════════════ EMPLOYEES ══════════════
+// ── SORT EMPLOYEES ──
+let _empSort = '';
+
+function toggleSortDropdown(){
+  const dd = document.getElementById('sortDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function setSortEmp(val){
+  _empSort = val;
+  // Update active state
+  ['none','id','name','dept','gross','status'].forEach(k=>{
+    const el = document.getElementById('sort-'+k);
+    if(el) el.classList.toggle('active', (val==='' && k==='none') || val===k);
+  });
+  // Update button label
+  const labels = {'':'Sort','id':'Sort: ID','name':'Sort: Name','dept':'Sort: Dept','gross':'Sort: Salary','status':'Sort: Status'};
+  document.getElementById('sortBtn').innerHTML = '<i class="fa fa-sort"></i> '+(labels[val]||'Sort');
+  document.getElementById('sortDropdown').style.display = 'none';
+  renderEmployees();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#sortBtn') && !e.target.closest('#sortDropdown')){
+    const dd = document.getElementById('sortDropdown');
+    if(dd) dd.style.display = 'none';
+  }
+});
+
 function renderEmployees(){
   const search=(document.getElementById('empSearch').value||'').toLowerCase();
   const proj=document.getElementById('empProjFilter').value;
@@ -2231,6 +2281,13 @@ function renderEmployees(){
     if(search && !`${e.name}${e.empId}${e.desig}${e.dept}`.toLowerCase().includes(search)) return false;
     return true;
   });
+
+  // ── APPLY SORT ──
+  if(_empSort === 'id') filtered.sort((a,b)=>String(a.empId||'').localeCompare(String(b.empId||''), undefined, {numeric:true}));
+  else if(_empSort === 'name') filtered.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else if(_empSort === 'dept') filtered.sort((a,b)=>(a.dept||'').localeCompare(b.dept||''));
+  else if(_empSort === 'gross') filtered.sort((a,b)=>(b.gross||0)-(a.gross||0));
+  else if(_empSort === 'status') filtered.sort((a,b)=>{ const aa=isEmpActive(a)?0:1; const bb=isEmpActive(b)?0:1; return aa-bb; });
 
   const tbody=document.getElementById('empTableBody');
   tbody.innerHTML=filtered.map((e,i)=>{
