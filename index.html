@@ -549,6 +549,7 @@ async function handleLoginSubmit(e) {
     <div class="nav-label">Overview</div>
     <div class="nav-item active" onclick="nav('dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
     <div class="nav-item" onclick="nav('employees')"><i class="fa-solid fa-users"></i> Employees</div>
+    <div class="nav-item" onclick="nav('resigned')"><i class="fa-solid fa-user-minus"></i> Resigned/Terminated</div>
     <div class="nav-item" onclick="nav('emphistory')"><i class="fa-solid fa-clock-rotate-left"></i> Emp. History</div>
     <div class="nav-item" onclick="nav('starboard')"><i class="fa-solid fa-star"></i> Star & Scores</div>
   </div>
@@ -1158,6 +1159,46 @@ async function handleLoginSubmit(e) {
 <!-- ══════════════════════════════════════════════════════════════
      PAGE: Employee Full History (standalone search)
 ════════════════════════════════════════════════════════════════ -->
+<!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
+<div class="page" id="page-resigned">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID..." oninput="renderResigned()" style="width:260px;">
+      <select class="form-control" id="resignedTypeFilter" onchange="renderResigned()" style="width:160px;">
+        <option value="">All Exit Types</option>
+        <option value="Terminated">Terminated</option>
+        <option value="Resigned">Resigned</option>
+        <option value="Retired">Retired</option>
+        <option value="Contract Ended">Contract Ended</option>
+      </select>
+      <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:160px;">
+        <option value="">All Departments</option>
+      </select>
+    </div>
+    <div id="resignedCount" style="font-size:13px;color:var(--text3);"></div>
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="data-table" id="resignedTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>PHOTO</th>
+          <th>EMP ID</th>
+          <th>NAME</th>
+          <th>DEPARTMENT</th>
+          <th>DESIGNATION</th>
+          <th>PROJECT</th>
+          <th>EXIT TYPE</th>
+          <th>EXIT DATE</th>
+          <th>FINAL SETTLEMENT</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="resignedTbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <div class="page" id="page-emphistory">
   <div class="page-hdr">
     <h2>🕐 Employee History</h2>
@@ -2143,7 +2184,80 @@ function canEdit(){return currentRole!=='viewer';}
 function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 // ── NAVIGATION ──
-const PAGE_TITLES={dashboard:'Dashboard',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+// ── RESIGNED PAGE ──
+function renderResigned(){
+  const search = (document.getElementById('resignedSearch')?.value||'').toLowerCase().trim();
+  const typeF  = document.getElementById('resignedTypeFilter')?.value||'';
+  const deptF  = document.getElementById('resignedDeptFilter')?.value||'';
+
+  // Fill dept filter
+  const deptSel = document.getElementById('resignedDeptFilter');
+  if(deptSel && deptSel.options.length <= 1){
+    const depts = [...new Set(employees.map(e=>e.dept).filter(Boolean))].sort();
+    depts.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; deptSel.appendChild(o); });
+  }
+
+  const resigned = employees.filter(e=>{
+    if(!e.exitType || e.exitType==='') return false;
+    if(typeF && e.exitType!==typeF) return false;
+    if(deptF && e.dept!==deptF) return false;
+    if(search && !`${e.name}${e.empId}${e.desig}${e.dept}`.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  // Sort by exit date descending
+  resigned.sort((a,b)=> new Date(b.exitDate||0) - new Date(a.exitDate||0));
+
+  const countEl = document.getElementById('resignedCount');
+  if(countEl) countEl.textContent = resigned.length + ' exited employee' + (resigned.length!==1?'s':'');
+
+  const tbody = document.getElementById('resignedTbody');
+  if(!tbody) return;
+
+  if(resigned.length===0){
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);">No resigned or terminated employees found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = resigned.map((e,i)=>{
+    const initial = (e.name||'?')[0].toUpperCase();
+    const exitBadge = e.exitType==='Terminated' ? 'background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);' :
+                      e.exitType==='Resigned'    ? 'background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);' :
+                                                   'background:rgba(149,165,166,0.15);color:#95a5a6;border:1px solid rgba(149,165,166,0.3);';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><div style="width:36px;height:36px;border-radius:50%;background:var(--navy3);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text2);">${initial}</div></td>
+      <td>${e.empId||'-'}</td>
+      <td style="font-weight:600;">${e.name||'-'}</td>
+      <td>${e.dept||'-'}</td>
+      <td>${e.desig||'-'}</td>
+      <td><span class="badge-proj">${e.project||'-'}</span></td>
+      <td><span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;${exitBadge}">${e.exitType}</span></td>
+      <td>${e.exitDate||'-'}</td>
+      <td>${e.exitSettlement ? '৳'+Number(e.exitSettlement).toLocaleString() : '-'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="exitEmployee(${e.id})" title="Edit exit info"><i class="fa fa-pen"></i></button>
+        <button class="btn btn-primary btn-sm" onclick="restoreEmployee(${e.id})" title="Restore to Active"><i class="fa fa-rotate-left"></i> Restore</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function restoreEmployee(id){
+  if(!confirm('Restore this employee to Active?')) return;
+  const emp = employees.find(e=>e.id===id);
+  if(!emp) return;
+  emp.exitType = '';
+  emp.exitDate = '';
+  emp.exitReason = '';
+  emp.exitSettlement = 0;
+  emp.active = true;
+  saveState();
+  renderResigned();
+  toast(emp.name+' restored to Active!','success');
+}
+
+const PAGE_TITLES={dashboard:'Dashboard',resigned:'Resigned / Terminated Employees',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
 function showAdminOnly(){
   const roleLabels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'IT (View Only)'};
   const roleEl=document.getElementById('adminOnlyRoleText');
@@ -2166,6 +2280,7 @@ function nav(page){
   if(pg) pg.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active');});
   document.getElementById('pageTitle').textContent=PAGE_TITLES[page]||page;
+  if(page==='resigned') renderResigned();
   if(page==='dashboard') renderDashboard();
   else if(page==='employees') renderEmployees();
   else if(page==='emphistory') initEmpHistory();
@@ -2307,6 +2422,8 @@ function renderEmployees(){
   }
 
   let filtered=employees.filter(e=>{
+    // Hide resigned/terminated from main directory
+    if(e.exitType && e.exitType!=='') return false;
     const active=isEmpActive(e);
     if(statusF==='active' && !active) return false;
     if(statusF==='inactive' && active) return false;
@@ -2644,8 +2761,14 @@ function saveExitEmployee(){
   }
   saveState();
   closeModal('exitModal');
-  renderEmployees();
-  toast(isActive ? emp.name+' status restored to Active' : emp.name+' marked as '+exitType, isActive?'success':'warning');
+  if(!isActive){
+    // Redirect to resigned page
+    nav('resigned');
+    toast(emp.name+' moved to Resigned/Terminated','warning');
+  } else {
+    renderEmployees();
+    toast(emp.name+' status restored to Active','success');
+  }
 }
 
 function previewSalCalc(){
