@@ -40,7 +40,7 @@ input,select,textarea{font-family:inherit;}
 .topbar h2{font-size:15px;font-weight:600;flex:1;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
 .page{display:none;padding:20px;flex:1;}
-.page.active{display:block;}
+.page.active{display:block;align-items:unset;justify-content:unset;min-height:unset;}
 /* ── SORT DROPDOWN ── */
 .sort-opt{padding:9px 16px;font-size:13px;color:var(--text2);cursor:pointer;transition:background .15s;}
 .sort-opt:hover{background:rgba(212,175,55,0.08);color:var(--gold);}
@@ -1160,7 +1160,7 @@ async function handleLoginSubmit(e) {
      PAGE: Employee Full History (standalone search)
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
-<div class="page" id="page-resigned">
+<div class="page" id="page-resigned" style="display:block;">
   <div class="toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
     <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" style="flex:2;min-width:200px;">
     <button class="btn btn-primary btn-sm" onclick="renderResigned()"><i class="fa fa-search"></i> Search</button>
