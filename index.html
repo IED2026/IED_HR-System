@@ -35,13 +35,13 @@ input,select,textarea{font-family:inherit;}
 .nav-item.active{background:rgba(212,175,55,.12);color:var(--gold);border-left-color:var(--gold);font-weight:600;}
 .nav-item i{width:18px;text-align:center;font-size:13px;}
 /* ── MAIN ── */
-.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+.main{margin-left:var(--sidebar-w);min-height:100vh;position:relative;}
 .topbar{position:sticky;top:0;background:var(--navy2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;z-index:50;}
 .topbar h2{font-size:15px;font-weight:600;flex:1;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
-.page{display:none;padding:20px;height:0;overflow:hidden;padding:0;}
-.page.active{display:block;flex:none;width:100%;height:auto;overflow:visible;padding:20px;}
-#page-adminonly.active{display:flex;flex:none;align-items:center;justify-content:center;min-height:70vh;width:100%;height:auto;overflow:visible;padding:20px;}
+.page{display:none;}
+.page.active{display:block;width:100%;padding:20px;}
+#page-adminonly.active{display:flex;align-items:center;justify-content:center;min-height:70vh;}
 /* ── SORT DROPDOWN ── */
 .sort-opt{padding:9px 16px;font-size:13px;color:var(--text2);cursor:pointer;transition:background .15s;}
 .sort-opt:hover{background:rgba(212,175,55,0.08);color:var(--gold);}
