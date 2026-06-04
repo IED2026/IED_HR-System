@@ -390,9 +390,10 @@ const SUPABASE_URL  = 'https://jtdpvydgbmtrbaapswys.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storageKey: 'ied_supabase_auth'
   }
 });
 
@@ -406,8 +407,10 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     // Check if this is a refresh (not new navigation)
     const navType = performance.getEntriesByType('navigation')[0]?.type;
     if (navType !== 'reload') {
-      // Not a refresh → clear session, show login
+      // Not a refresh (new tab/window) → clear session, show login
       sessionStorage.removeItem('ied_session');
+      // Also sign out from Supabase to prevent auto-login
+      await _supabase.auth.signOut();
       return;
     }
     // It's a refresh → restore session
@@ -2028,6 +2031,15 @@ async function saveState(){
 
   // Save to Supabase
   try{
+    // Re-authenticate if session expired
+    const { data: { session } } = await _supabase.auth.getSession();
+    if(!session){
+      // Try to sign in again using stored credentials
+      console.warn('No active session, attempting re-auth...');
+      toast('Session expired, please login again','error');
+      doLogout();
+      return;
+    }
     const saves = [
       { key:'employees',     value: employees },
       { key:'projects',      value: projects },
