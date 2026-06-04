@@ -398,60 +398,48 @@ window.addEventListener('load', async function(){
     }
   });
 
-  // ── INIT APP ──
-  const main = document.querySelector('.main');
-  if(main) main.style.opacity='0.6';
-  await loadState();
-  if(main) main.style.opacity='1';
-  renderDashboard();
-  document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
-
-  // ── SESSION CHECK ON REFRESH ──
-(async function(){
-  try {
-    const s = sessionStorage.getItem('ied_session');
-    if (!s) return;
-    const user = JSON.parse(s);
-    // Check if this is a refresh (not new navigation)
-    const navType = performance.getEntriesByType('navigation')[0]?.type;
-    if (navType !== 'reload') {
-      // Not a refresh (new tab/window) → clear session, show login
-      sessionStorage.removeItem('ied_session');
-      // Also sign out from Supabase to prevent auto-login
-      await _supabase.auth.signOut();
-      return;
-    }
-    // It's a refresh → restore session
-    // Restore Supabase auth token
-    if(user.access_token){
-      await _supabase.auth.setSession({
-        access_token: user.access_token,
-        refresh_token: user.refresh_token
-      });
-    }
-    const overlay = document.getElementById('loginOverlay');
-    if (overlay) {
-      overlay.style.transition = 'none';
-      overlay.style.opacity = '0';
-      overlay.style.pointerEvents = 'none';
-      overlay.style.display = 'none';
-    }
-    window.addEventListener('DOMContentLoaded', function(){
+  // ── CHECK SESSION (refresh vs new visit) ──
+  const s = sessionStorage.getItem('ied_session');
+  const navType = performance.getEntriesByType('navigation')[0]?.type;
+  
+  if(s && navType === 'reload'){
+    // REFRESH → restore session, skip login
+    try{
+      const user = JSON.parse(s);
+      const overlay = document.getElementById('loginOverlay');
+      if(overlay){ overlay.style.transition='none'; overlay.style.opacity='0'; overlay.style.pointerEvents='none'; overlay.style.display='none'; }
       currentRole = user.role;
       const rs = document.getElementById('roleSelector');
-      if (rs) { rs.disabled = false; rs.value = user.role; rs.disabled = true; }
-      if (window.setUserInfo) setUserInfo(user.name, user.email, user.role);
-      if (currentRole === 'viewer') {
-        showAdminOnly();
-      } else {
-        const lastPage = user.page || 'dashboard';
-        setTimeout(async function(){ if(window.nav) nav(lastPage); }, 400);
-      }
-    });
-  } catch(e) {
+      if(rs){ rs.disabled=false; rs.value=user.role; rs.disabled=true; }
+      if(window.setUserInfo) setUserInfo(user.name, user.email, user.role);
+      // Restore Supabase auth
+      if(user.access_token) await _supabase.auth.setSession({access_token:user.access_token, refresh_token:user.refresh_token});
+      // Load data then go to last page
+      const main = document.querySelector('.main');
+      if(main) main.style.opacity='0.6';
+      await loadState();
+      if(main) main.style.opacity='1';
+      const lastPage = user.page || 'dashboard';
+      if(currentRole==='viewer'){ showAdminOnly(); } else { nav(lastPage); }
+    }catch(e){
+      sessionStorage.removeItem('ied_session');
+      // Fall through to normal init
+      await loadState();
+      renderDashboard();
+    }
+  } else {
+    // NEW VISIT → clear session, show login page
     sessionStorage.removeItem('ied_session');
+    // Load data in background
+    const main = document.querySelector('.main');
+    if(main) main.style.opacity='0.6';
+    await loadState();
+    if(main) main.style.opacity='1';
+    renderDashboard();
+    document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
   }
-})();
+
+
 
 
 });
