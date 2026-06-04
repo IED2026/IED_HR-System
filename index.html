@@ -1162,44 +1162,51 @@ async function handleLoginSubmit(e) {
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
 <div class="page" id="page-resigned">
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-    <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" style="flex:2;min-width:200px;">
-    <button class="btn btn-primary btn-sm" onclick="renderResigned()"><i class="fa fa-search"></i> Search</button>
-    <select class="form-control" id="resignedTypeFilter" onchange="renderResigned()" style="width:150px;">
-      <option value="">All Exit Types</option>
-      <option value="Terminated">Terminated</option>
-      <option value="Resigned">Resigned</option>
-      <option value="Retired">Retired</option>
-      <option value="Contract Ended">Contract Ended</option>
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+    <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" onkeydown="if(event.key==='Enter')renderResigned()" style="flex:2;min-width:200px;">
+    <button class="btn btn-primary btn-sm" onclick="renderResigned()" title="Search"><i class="fa fa-search"></i> Search</button>
+    <!-- Sort Dropdown -->
+    <div style="position:relative;display:inline-block;">
+      <button class="btn btn-secondary btn-sm" onclick="toggleSortDropdown()" id="sortBtn" title="Sort employees">
+        <i class="fa fa-sort"></i> Sort
+      </button>
+      <div id="sortDropdown" style="display:none;position:absolute;top:110%;left:0;z-index:999;background:var(--navy2);border:1px solid var(--border);border-radius:10px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);overflow:hidden;">
+        <div style="padding:8px 12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);">Sort By</div>
+        <div onclick="setSortEmp('')" class="sort-opt" id="sort-none">None</div>
+        <div onclick="setSortEmp('id')" class="sort-opt" id="sort-id">Employee ID</div>
+        <div onclick="setSortEmp('name')" class="sort-opt" id="sort-name">Name</div>
+        <div onclick="setSortEmp('dept')" class="sort-opt" id="sort-dept">Department</div>
+        <div onclick="setSortEmp('gross')" class="sort-opt" id="sort-gross">Salary</div>
+        <div onclick="setSortEmp('status')" class="sort-opt" id="sort-status">Status (Active First)</div>
+      </div>
+    </div>
+    <select class="form-control" id="resignedProjFilter" onchange="renderResigned()" style="width:130px;">
+      <option value="">All Projects</option>
+      <option>IED</option><option>BIWTA</option><option>NBR</option><option>PGCL</option><option>BCIC</option>
     </select>
-    <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:160px;">
+    <select class="form-control" id="resignedStatusFilter" onchange="renderResigned()" style="width:140px;">
+      <option value="">All Status</option>
+      <option value="active">Active Only</option>
+      <option value="inactive">Terminated/Resigned</option>
+    </select>
+    <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:150px;">
       <option value="">All Departments</option>
     </select>
-    <span id="resignedCount" style="font-size:13px;color:var(--text3);margin-left:auto;"></span>
+    <button class="btn btn-primary btn-sm" onclick="openAddEmp()"><i class="fa fa-plus"></i> Add Employee</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportEmpMaster()"><i class="fa fa-file-excel"></i> Export</button>
   </div>
-  <div class="card" style="overflow-x:auto;">
-    <table class="data-table" id="resignedTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>PHOTO</th>
-          <th>EMP ID</th>
-          <th>NAME</th>
-          <th>DEPARTMENT</th>
-          <th>DESIGNATION</th>
-          <th>PROJECT</th>
-          <th>EMPLOYMENT</th>
-          <th>EXIT TYPE</th>
-          <th>EXIT DATE</th>
-          <th>FINAL SETTLEMENT</th>
-          <th>ACTIONS</th>
-        </tr>
-      </thead>
-      <tbody id="resignedTbody"></tbody>
-    </table>
-  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>#</th><th>Photo</th><th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th>
+      <th>Project</th><th>Employment</th><th>Basic (60%)</th><th>Gross</th><th>Net</th>
+      <th>⭐ Stars</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody id="resignedTableBody"></tbody>
+  </table></div>
+  <div id="empCount" style="font-size:12px;color:var(--text2);margin-top:8px;"></div>
 </div>
 
+<!-- STAR BOARD -->
 <div class="page" id="page-emphistory">
   <div class="page-hdr">
     <h2>🕐 Employee History</h2>
@@ -2188,61 +2195,59 @@ function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 // ── RESIGNED PAGE ──
 function renderResigned(){
   const search = (document.getElementById('resignedSearch')?.value||'').toLowerCase().trim();
-  const typeF  = document.getElementById('resignedTypeFilter')?.value||'';
-  const deptF  = document.getElementById('resignedDeptFilter')?.value||'';
+  const proj   = document.getElementById('resignedProjFilter')?.value||'';
+  const dept   = document.getElementById('resignedDeptFilter')?.value||'';
 
-  // Fill dept filter
-  const deptSel = document.getElementById('resignedDeptFilter');
-  if(deptSel && deptSel.options.length <= 1){
-    const depts = [...new Set(employees.map(e=>e.dept).filter(Boolean))].sort();
-    depts.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; deptSel.appendChild(o); });
-  }
-
-  const resigned = employees.filter(e=>{
-    if(!e.exitType || e.exitType==='') return false;
-    if(typeF && e.exitType!==typeF) return false;
-    if(deptF && e.dept!==deptF) return false;
+  let filtered = employees.filter(e=>{
+    if(!e.exitType || e.exitType==='') return false; // only resigned/terminated
+    if(proj && e.project!==proj) return false;
+    if(dept && e.dept!==dept) return false;
     if(search && !`${e.name}${e.empId}${e.desig}${e.dept}`.toLowerCase().includes(search)) return false;
     return true;
   });
 
-  // Sort by exit date descending
-  resigned.sort((a,b)=> new Date(b.exitDate||0) - new Date(a.exitDate||0));
+  // Sort by Employee ID
+  filtered.sort((a,b)=>{ const ai=a.empId&&a.empId!=='-'&&a.empId!==''?0:1; const bi=b.empId&&b.empId!=='-'&&b.empId!==''?0:1; if(ai!==bi) return ai-bi; return String(a.empId||'').localeCompare(String(b.empId||''),undefined,{numeric:true}); });
 
-  const countEl = document.getElementById('resignedCount');
-  if(countEl) countEl.textContent = resigned.length + ' exited employee' + (resigned.length!==1?'s':'');
-
-  const tbody = document.getElementById('resignedTbody');
+  const tbody = document.getElementById('resignedTableBody');
   if(!tbody) return;
 
-  if(resigned.length===0){
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);">No resigned or terminated employees found</td></tr>';
+  if(filtered.length===0){
+    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text3);">No resigned or terminated employees</td></tr>';
     return;
   }
 
-  tbody.innerHTML = resigned.map((e,i)=>{
-    const initial = (e.name||'?')[0].toUpperCase();
-    const photo = e.photo ? `<img src="${e.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` :
-      `<div style="width:36px;height:36px;border-radius:50%;background:var(--navy3);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text2);">${initial}</div>`;
-    const exitBadge = e.exitType==='Terminated' ? 'background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);' :
-                      e.exitType==='Resigned'    ? 'background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);' :
-                                                   'background:rgba(149,165,166,0.15);color:#95a5a6;border:1px solid rgba(149,165,166,0.3);';
-    return `<tr style="opacity:0.85;">
+  tbody.innerHTML = filtered.map((e,i)=>{
+    const active = false; // all are inactive
+    const gross  = e.gross||0;
+    const basic  = Math.round(gross*0.6);
+    const net    = e.net||Math.round(gross*0.941);
+    const stars  = e.starScore||0;
+    const starHtml = [1,2,3,4,5].map(s=>`<i class="fa-star ${s<=Math.round(stars/20)?'fa-solid':'fa-regular'} ${s<=Math.round(stars/20)?'':'empty'}"></i>`).join('');
+    const photo  = e.photo ? `<img src="${e.photo}" class="emp-avatar" style="width:36px;height:36px;">` :
+      `<div class="emp-avatar-placeholder" style="width:36px;height:36px;font-size:14px;">${(e.name||'?')[0].toUpperCase()}</div>`;
+    const exitBadge = e.exitType==='Terminated'
+      ? `<span style="background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${e.exitType}</span>`
+      : `<span style="background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${e.exitType||'Exited'}</span>`;
+
+    return `<tr style="opacity:0.8;">
       <td>${i+1}</td>
       <td>${photo}</td>
       <td>${e.empId||'-'}</td>
-      <td style="font-weight:600;">${e.name||'-'}</td>
+      <td style="font-weight:600;cursor:pointer;" onclick="viewEmployee(${e.id})">${e.name||'-'}</td>
       <td>${e.dept||'-'}</td>
       <td>${e.desig||'-'}</td>
-      <td><span class="badge-proj">${e.project||'-'}</span></td>
+      <td><span class="badge-proj" style="background:var(--navy3);padding:2px 8px;border-radius:999px;font-size:11px;">${e.project||'-'}</span></td>
       <td><span style="font-size:12px;color:var(--text2);">${e.employment||'-'}</span></td>
-      <td><span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;${exitBadge}">${e.exitType}</span></td>
-      <td>${e.exitDate||'-'}</td>
-      <td>${e.exitSettlement ? '৳'+Number(e.exitSettlement).toLocaleString() : '-'}</td>
-      <td style="white-space:nowrap;">
+      <td style="color:var(--text2);">৳${basic.toLocaleString()}</td>
+      <td style="color:var(--gold);">৳${gross.toLocaleString()}</td>
+      <td style="color:var(--text2);">৳${net.toLocaleString()}</td>
+      <td><span class="stars">${starHtml}</span> <span style="font-size:11px;color:var(--text3);">${stars}pts</span></td>
+      <td>${exitBadge}</td>
+      <td>
         <button class="btn btn-secondary btn-sm" onclick="viewEmployee(${e.id})" title="View"><i class="fa fa-eye"></i></button>
-        <button class="btn btn-secondary btn-sm" onclick="exitEmployee(${e.id})" title="Edit exit info"><i class="fa fa-pen"></i></button>
-        <button class="btn btn-primary btn-sm" onclick="restoreEmployee(${e.id})" title="Restore to Active"><i class="fa fa-rotate-left"></i> Restore</button>
+        <button class="btn btn-secondary btn-sm" onclick="exitEmployee(${e.id})" title="Edit exit"><i class="fa fa-pen"></i></button>
+        <button class="btn btn-warning btn-sm" onclick="restoreEmployee(${e.id})" title="Restore"><i class="fa fa-rotate-left"></i></button>
       </td>
     </tr>`;
   }).join('');
