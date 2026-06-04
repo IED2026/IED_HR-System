@@ -1161,21 +1161,20 @@ async function handleLoginSubmit(e) {
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
 <div class="page" id="page-resigned">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID..." oninput="renderResigned()" style="width:260px;">
-      <select class="form-control" id="resignedTypeFilter" onchange="renderResigned()" style="width:160px;">
-        <option value="">All Exit Types</option>
-        <option value="Terminated">Terminated</option>
-        <option value="Resigned">Resigned</option>
-        <option value="Retired">Retired</option>
-        <option value="Contract Ended">Contract Ended</option>
-      </select>
-      <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:160px;">
-        <option value="">All Departments</option>
-      </select>
-    </div>
-    <div id="resignedCount" style="font-size:13px;color:var(--text3);"></div>
+  <div class="toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" style="flex:2;min-width:200px;">
+    <button class="btn btn-primary btn-sm" onclick="renderResigned()"><i class="fa fa-search"></i> Search</button>
+    <select class="form-control" id="resignedTypeFilter" onchange="renderResigned()" style="width:150px;">
+      <option value="">All Exit Types</option>
+      <option value="Terminated">Terminated</option>
+      <option value="Resigned">Resigned</option>
+      <option value="Retired">Retired</option>
+      <option value="Contract Ended">Contract Ended</option>
+    </select>
+    <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:160px;">
+      <option value="">All Departments</option>
+    </select>
+    <span id="resignedCount" style="font-size:13px;color:var(--text3);margin-left:auto;"></span>
   </div>
   <div class="card" style="overflow-x:auto;">
     <table class="data-table" id="resignedTable">
@@ -1188,6 +1187,7 @@ async function handleLoginSubmit(e) {
           <th>DEPARTMENT</th>
           <th>DESIGNATION</th>
           <th>PROJECT</th>
+          <th>EMPLOYMENT</th>
           <th>EXIT TYPE</th>
           <th>EXIT DATE</th>
           <th>FINAL SETTLEMENT</th>
@@ -2221,21 +2221,25 @@ function renderResigned(){
 
   tbody.innerHTML = resigned.map((e,i)=>{
     const initial = (e.name||'?')[0].toUpperCase();
+    const photo = e.photo ? `<img src="${e.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">` :
+      `<div style="width:36px;height:36px;border-radius:50%;background:var(--navy3);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text2);">${initial}</div>`;
     const exitBadge = e.exitType==='Terminated' ? 'background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);' :
                       e.exitType==='Resigned'    ? 'background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);' :
                                                    'background:rgba(149,165,166,0.15);color:#95a5a6;border:1px solid rgba(149,165,166,0.3);';
-    return `<tr>
+    return `<tr style="opacity:0.85;">
       <td>${i+1}</td>
-      <td><div style="width:36px;height:36px;border-radius:50%;background:var(--navy3);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text2);">${initial}</div></td>
+      <td>${photo}</td>
       <td>${e.empId||'-'}</td>
       <td style="font-weight:600;">${e.name||'-'}</td>
       <td>${e.dept||'-'}</td>
       <td>${e.desig||'-'}</td>
       <td><span class="badge-proj">${e.project||'-'}</span></td>
+      <td><span style="font-size:12px;color:var(--text2);">${e.employment||'-'}</span></td>
       <td><span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;${exitBadge}">${e.exitType}</span></td>
       <td>${e.exitDate||'-'}</td>
       <td>${e.exitSettlement ? '৳'+Number(e.exitSettlement).toLocaleString() : '-'}</td>
-      <td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-secondary btn-sm" onclick="viewEmployee(${e.id})" title="View"><i class="fa fa-eye"></i></button>
         <button class="btn btn-secondary btn-sm" onclick="exitEmployee(${e.id})" title="Edit exit info"><i class="fa fa-pen"></i></button>
         <button class="btn btn-primary btn-sm" onclick="restoreEmployee(${e.id})" title="Restore to Active"><i class="fa fa-rotate-left"></i> Restore</button>
       </td>
