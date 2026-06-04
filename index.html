@@ -2054,22 +2054,25 @@ async function saveState(){
       { key:'monthlySalary', value: monthlySalary },
       { key:'manningSched2', value: manningSched2 }
     ];
-    const { error } = await _supabase
-      .from('app_data')
-      .upsert(
-        saves.map(s=>({
-          key: s.key,
-          value: s.value,
-          updated_at: new Date().toISOString(),
-          updated_by: _loggedInUser.email || 'unknown'
-        })),
-        { onConflict: 'key', ignoreDuplicates: false }
-      );
+    // Check existing keys
+    const { data: existing } = await _supabase.from('app_data').select('key');
+    const existingKeys = (existing||[]).map(r=>r.key);
 
-    if(error) throw error;
+    for(const s of saves){
+      if(existingKeys.includes(s.key)){
+        const { error: ue } = await _supabase.from('app_data')
+          .update({ value: s.value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' })
+          .eq('key', s.key);
+        if(ue) throw ue;
+      } else {
+        const { error: ie } = await _supabase.from('app_data')
+          .insert({ key: s.key, value: s.value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' });
+        if(ie) throw ie;
+      }
+    }
     toast('Data saved ✓','success');
   }catch(err){
-    console.error('Supabase save failed:', JSON.stringify(err), err.message, err.status, err.code);
+    console.error('Supabase save failed:', err.message, err.code, err.status);
     toast('Saved locally (sync failed): '+err.message,'warning');
   }
 }
