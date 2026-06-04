@@ -426,7 +426,8 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       if (currentRole === 'viewer') {
         showAdminOnly();
       } else {
-        setTimeout(function(){ if(window.renderDashboard) renderDashboard(); }, 400);
+        const lastPage = user.page || 'dashboard';
+        setTimeout(function(){ if(window.nav) nav(lastPage); }, 400);
       }
     });
   } catch(e) {
@@ -2129,6 +2130,7 @@ function showAdminOnly(){
 
 function nav(page){
   if(currentRole==='viewer'){ showAdminOnly(); return; }
+  try{ const s=sessionStorage.getItem('ied_session'); if(s){ const u=JSON.parse(s); u.page=page; sessionStorage.setItem('ied_session',JSON.stringify(u)); }}catch(e){}
 
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
