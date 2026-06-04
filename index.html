@@ -2283,7 +2283,7 @@ function renderEmployees(){
   });
 
   // ── APPLY SORT ──
-  if(_empSort === 'id') filtered.sort((a,b)=>String(a.empId||'').localeCompare(String(b.empId||''), undefined, {numeric:true}));
+  if(_empSort === 'id') filtered.sort((a,b)=>{ const ai=a.empId&&a.empId!=='-'&&a.empId!==''?0:1; const bi=b.empId&&b.empId!=='-'&&b.empId!==''?0:1; if(ai!==bi) return ai-bi; return String(a.empId||'').localeCompare(String(b.empId||''), undefined, {numeric:true}); });
   else if(_empSort === 'name') filtered.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   else if(_empSort === 'dept') filtered.sort((a,b)=>(a.dept||'').localeCompare(b.dept||''));
   else if(_empSort === 'gross') filtered.sort((a,b)=>(b.gross||0)-(a.gross||0));
