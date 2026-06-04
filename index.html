@@ -396,51 +396,6 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   }
 });
 
-// ── SESSION CHECK (sessionStorage based) ──
-(function(){
-  const s = sessionStorage.getItem('ied_user');
-  if (!s) return; // No session → show login page normally
-  try {
-    const user = JSON.parse(s);
-    // Only restore if this is a page refresh (not new tab/window)
-    if(!performance.navigation || performance.navigation.type === 1 || 
-       (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]?.type === 'reload')){
-      const overlay = document.getElementById('loginOverlay');
-      if (overlay) {
-        overlay.style.transition = 'none';
-        overlay.style.opacity = '0';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.display = 'none';
-      }
-    } else {
-      // New tab/window → show login page
-      sessionStorage.removeItem('ied_user');
-      return;
-    }
-    // Restore role & user info after DOM ready
-    window.addEventListener('DOMContentLoaded', function(){
-      currentRole = user.role;
-      const rs = document.getElementById('roleSelector');
-      if (rs && user.role) {
-        rs.disabled = false;
-        rs.value = user.role;
-        rs.disabled = true;
-      }
-      if (window.setUserInfo) setUserInfo(user.name, user.email, user.role);
-      if(currentRole === 'viewer'){
-        showAdminOnly();
-      } else {
-        // Restore to last visited page
-        const lastPage = user.page || 'dashboard';
-        setTimeout(function(){
-          if(window.nav) nav(lastPage);
-        }, 500);
-      }
-    });
-  } catch(e) {
-    sessionStorage.removeItem('ied_user');
-  }
-})();
 
 async function handleLoginSubmit(e) {
   e.preventDefault();
@@ -489,12 +444,7 @@ async function handleLoginSubmit(e) {
     setTimeout(function () {
       overlay.style.display = 'none';
       // Set role selector in HR system
-      // Save session to sessionStorage
-      sessionStorage.setItem('ied_user', JSON.stringify({
-        name: profile.full_name || email,
-        email: email,
-        role: profile.role
-      }));
+
       // Set currentRole FIRST before anything else
       currentRole = profile.role;
       const rs = document.getElementById('roleSelector');
@@ -2068,8 +2018,7 @@ function closeUserPanel(e){
   if(e.target.id==='userPanel') document.getElementById('userPanel').style.display='none';
 }
 function doLogout(){
-  // Clear sessionStorage
-  sessionStorage.removeItem('ied_user');
+
   // Sign out from Supabase
   if(window._supabase) _supabase.auth.signOut();
   // Show login overlay again
@@ -2137,8 +2086,7 @@ function showAdminOnly(){
 
 function nav(page){
   if(currentRole==='viewer'){ showAdminOnly(); return; }
-  // Save current page to localStorage
-  try{ const s=sessionStorage.getItem('ied_user'); if(s){ const u=JSON.parse(s); u.page=page; sessionStorage.setItem('ied_user',JSON.stringify(u)); } }catch(e){}
+
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
