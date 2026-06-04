@@ -390,10 +390,9 @@ const SUPABASE_URL  = 'https://jtdpvydgbmtrbaapswys.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-    storageKey: 'ied_supabase_auth'
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   }
 });
 
@@ -414,6 +413,13 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       return;
     }
     // It's a refresh → restore session
+    // Restore Supabase auth token
+    if(user.access_token){
+      await _supabase.auth.setSession({
+        access_token: user.access_token,
+        refresh_token: user.refresh_token
+      });
+    }
     const overlay = document.getElementById('loginOverlay');
     if (overlay) {
       overlay.style.transition = 'none';
@@ -498,7 +504,9 @@ async function handleLoginSubmit(e) {
       sessionStorage.setItem('ied_session', JSON.stringify({
         name: profile.full_name || email,
         email: email,
-        role: profile.role
+        role: profile.role,
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token
       }));
       // Set user info in sidebar & panel
       if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
