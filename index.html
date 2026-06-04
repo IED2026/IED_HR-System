@@ -398,7 +398,7 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 
 // ── SESSION CHECK (sessionStorage based) ──
 (function(){
-  const s = sessionStorage.getItem('ied_user');
+  const s = localStorage.getItem('ied_user');
   if (!s) return; // No session → show login page
   try {
     const user = JSON.parse(s);
@@ -422,11 +422,14 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       if(currentRole === 'viewer'){
         showAdminOnly();
       } else {
-        if(window.renderDashboard) renderDashboard();
+        // Wait for DOM and data to load, then render dashboard
+        setTimeout(function(){
+          if(window.renderDashboard) renderDashboard();
+        }, 300);
       }
     });
   } catch(e) {
-    sessionStorage.removeItem('ied_user');
+    localStorage.removeItem('ied_user');
   }
 })();
 
@@ -478,7 +481,7 @@ async function handleLoginSubmit(e) {
       overlay.style.display = 'none';
       // Set role selector in HR system
       // Save session to sessionStorage
-      sessionStorage.setItem('ied_user', JSON.stringify({
+      localStorage.setItem('ied_user', JSON.stringify({
         name: profile.full_name || email,
         email: email,
         role: profile.role
@@ -2057,7 +2060,7 @@ function closeUserPanel(e){
 }
 function doLogout(){
   // Clear sessionStorage
-  sessionStorage.removeItem('ied_user');
+  localStorage.removeItem('ied_user');
   // Sign out from Supabase
   if(window._supabase) _supabase.auth.signOut();
   // Show login overlay again
