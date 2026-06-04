@@ -2046,8 +2046,8 @@ async function saveState(){
     if(error) throw error;
     toast('Data saved ✓','success');
   }catch(err){
-    console.error('Supabase save failed:', err);
-    toast('Saved locally (sync failed)','warning');
+    console.error('Supabase save failed:', JSON.stringify(err), err.message, err.status, err.code);
+    toast('Saved locally (sync failed): '+err.message,'warning');
   }
 }
 
