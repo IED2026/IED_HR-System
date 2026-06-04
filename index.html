@@ -1162,10 +1162,7 @@ async function handleLoginSubmit(e) {
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
 <div class="page" id="page-resigned">
-  <div class="page-hdr">
-    <h2>🚪 Resigned / Terminated Employees</h2>
-  </div>
-  <div class="toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
     <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" style="flex:2;min-width:200px;">
     <button class="btn btn-primary btn-sm" onclick="renderResigned()"><i class="fa fa-search"></i> Search</button>
     <select class="form-control" id="resignedTypeFilter" onchange="renderResigned()" style="width:150px;">
