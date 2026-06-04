@@ -35,12 +35,12 @@ input,select,textarea{font-family:inherit;}
 .nav-item.active{background:rgba(212,175,55,.12);color:var(--gold);border-left-color:var(--gold);font-weight:600;}
 .nav-item i{width:18px;text-align:center;font-size:13px;}
 /* ── MAIN ── */
-.main{margin-left:var(--sidebar-w);min-height:100vh;position:relative;}
+.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
 .topbar{position:sticky;top:0;background:var(--navy2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;z-index:50;}
 .topbar h2{font-size:15px;font-weight:600;flex:1;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
-.page{display:none;}
-.page.active{display:block;width:100%;padding:20px;}
+.page{display:none;padding:20px;flex:1;}
+.page.active{display:block;}
 #page-adminonly.active{display:flex;align-items:center;justify-content:center;min-height:70vh;}
 /* ── SORT DROPDOWN ── */
 .sort-opt{padding:9px 16px;font-size:13px;color:var(--text2);cursor:pointer;transition:background .15s;}
@@ -550,7 +550,6 @@ async function handleLoginSubmit(e) {
     <div class="nav-label">Overview</div>
     <div class="nav-item active" onclick="nav('dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
     <div class="nav-item" onclick="nav('employees')"><i class="fa-solid fa-users"></i> Employees</div>
-    <div class="nav-item" onclick="nav('resigned')"><i class="fa-solid fa-user-minus"></i> Resigned/Terminated</div>
     <div class="nav-item" onclick="nav('emphistory')"><i class="fa-solid fa-clock-rotate-left"></i> Emp. History</div>
     <div class="nav-item" onclick="nav('starboard')"><i class="fa-solid fa-star"></i> Star & Scores</div>
   </div>
@@ -1161,52 +1160,6 @@ async function handleLoginSubmit(e) {
      PAGE: Employee Full History (standalone search)
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
-<div class="page" id="page-resigned">
-  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-    <input type="text" class="form-control" id="resignedSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderResigned()" onkeydown="if(event.key==='Enter')renderResigned()" style="flex:2;min-width:200px;">
-    <button class="btn btn-primary btn-sm" onclick="renderResigned()" title="Search"><i class="fa fa-search"></i> Search</button>
-    <!-- Sort Dropdown -->
-    <div style="position:relative;display:inline-block;">
-      <button class="btn btn-secondary btn-sm" onclick="toggleSortDropdown()" id="sortBtn" title="Sort employees">
-        <i class="fa fa-sort"></i> Sort
-      </button>
-      <div id="sortDropdown" style="display:none;position:absolute;top:110%;left:0;z-index:999;background:var(--navy2);border:1px solid var(--border);border-radius:10px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);overflow:hidden;">
-        <div style="padding:8px 12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);">Sort By</div>
-        <div onclick="setSortEmp('')" class="sort-opt" id="sort-none">None</div>
-        <div onclick="setSortEmp('id')" class="sort-opt" id="sort-id">Employee ID</div>
-        <div onclick="setSortEmp('name')" class="sort-opt" id="sort-name">Name</div>
-        <div onclick="setSortEmp('dept')" class="sort-opt" id="sort-dept">Department</div>
-        <div onclick="setSortEmp('gross')" class="sort-opt" id="sort-gross">Salary</div>
-        <div onclick="setSortEmp('status')" class="sort-opt" id="sort-status">Status (Active First)</div>
-      </div>
-    </div>
-    <select class="form-control" id="resignedProjFilter" onchange="renderResigned()" style="width:130px;">
-      <option value="">All Projects</option>
-      <option>IED</option><option>BIWTA</option><option>NBR</option><option>PGCL</option><option>BCIC</option>
-    </select>
-    <select class="form-control" id="resignedStatusFilter" onchange="renderResigned()" style="width:140px;">
-      <option value="">All Status</option>
-      <option value="active">Active Only</option>
-      <option value="inactive">Terminated/Resigned</option>
-    </select>
-    <select class="form-control" id="resignedDeptFilter" onchange="renderResigned()" style="width:150px;">
-      <option value="">All Departments</option>
-    </select>
-    <button class="btn btn-primary btn-sm" onclick="openAddEmp()"><i class="fa fa-plus"></i> Add Employee</button>
-    <button class="btn btn-secondary btn-sm" onclick="exportEmpMaster()"><i class="fa fa-file-excel"></i> Export</button>
-  </div>
-  <div class="table-wrap"><table>
-    <thead><tr>
-      <th>#</th><th>Photo</th><th>Emp ID</th><th>Name</th><th>Department</th><th>Designation</th>
-      <th>Project</th><th>Employment</th><th>Basic (60%)</th><th>Gross</th><th>Net</th>
-      <th>⭐ Stars</th><th>Status</th><th>Actions</th>
-    </tr></thead>
-    <tbody id="resignedTableBody"></tbody>
-  </table></div>
-  <div id="empCount" style="font-size:12px;color:var(--text2);margin-top:8px;"></div>
-</div>
-
-<!-- STAR BOARD -->
 <div class="page" id="page-emphistory">
   <div class="page-hdr">
     <h2>🕐 Employee History</h2>
@@ -2192,82 +2145,8 @@ function canEdit(){return currentRole!=='viewer';}
 function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 // ── NAVIGATION ──
-// ── RESIGNED PAGE ──
-function renderResigned(){
-  const search = (document.getElementById('resignedSearch')?.value||'').toLowerCase().trim();
-  const proj   = document.getElementById('resignedProjFilter')?.value||'';
-  const dept   = document.getElementById('resignedDeptFilter')?.value||'';
 
-  let filtered = employees.filter(e=>{
-    if(!e.exitType || e.exitType==='') return false; // only resigned/terminated
-    if(proj && e.project!==proj) return false;
-    if(dept && e.dept!==dept) return false;
-    if(search && !`${e.name}${e.empId}${e.desig}${e.dept}`.toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  // Sort by Employee ID
-  filtered.sort((a,b)=>{ const ai=a.empId&&a.empId!=='-'&&a.empId!==''?0:1; const bi=b.empId&&b.empId!=='-'&&b.empId!==''?0:1; if(ai!==bi) return ai-bi; return String(a.empId||'').localeCompare(String(b.empId||''),undefined,{numeric:true}); });
-
-  const tbody = document.getElementById('resignedTableBody');
-  if(!tbody) return;
-
-  if(filtered.length===0){
-    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text3);">No resigned or terminated employees</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = filtered.map((e,i)=>{
-    const active = false; // all are inactive
-    const gross  = e.gross||0;
-    const basic  = Math.round(gross*0.6);
-    const net    = e.net||Math.round(gross*0.941);
-    const stars  = e.starScore||0;
-    const starHtml = [1,2,3,4,5].map(s=>`<i class="fa-star ${s<=Math.round(stars/20)?'fa-solid':'fa-regular'} ${s<=Math.round(stars/20)?'':'empty'}"></i>`).join('');
-    const photo  = e.photo ? `<img src="${e.photo}" class="emp-avatar" style="width:36px;height:36px;">` :
-      `<div class="emp-avatar-placeholder" style="width:36px;height:36px;font-size:14px;">${(e.name||'?')[0].toUpperCase()}</div>`;
-    const exitBadge = e.exitType==='Terminated'
-      ? `<span style="background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${e.exitType}</span>`
-      : `<span style="background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">${e.exitType||'Exited'}</span>`;
-
-    return `<tr style="opacity:0.8;">
-      <td>${i+1}</td>
-      <td>${photo}</td>
-      <td>${e.empId||'-'}</td>
-      <td style="font-weight:600;cursor:pointer;" onclick="viewEmployee(${e.id})">${e.name||'-'}</td>
-      <td>${e.dept||'-'}</td>
-      <td>${e.desig||'-'}</td>
-      <td><span class="badge-proj" style="background:var(--navy3);padding:2px 8px;border-radius:999px;font-size:11px;">${e.project||'-'}</span></td>
-      <td><span style="font-size:12px;color:var(--text2);">${e.employment||'-'}</span></td>
-      <td style="color:var(--text2);">৳${basic.toLocaleString()}</td>
-      <td style="color:var(--gold);">৳${gross.toLocaleString()}</td>
-      <td style="color:var(--text2);">৳${net.toLocaleString()}</td>
-      <td><span class="stars">${starHtml}</span> <span style="font-size:11px;color:var(--text3);">${stars}pts</span></td>
-      <td>${exitBadge}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="viewEmployee(${e.id})" title="View"><i class="fa fa-eye"></i></button>
-        <button class="btn btn-secondary btn-sm" onclick="exitEmployee(${e.id})" title="Edit exit"><i class="fa fa-pen"></i></button>
-        <button class="btn btn-warning btn-sm" onclick="restoreEmployee(${e.id})" title="Restore"><i class="fa fa-rotate-left"></i></button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function restoreEmployee(id){
-  if(!confirm('Restore this employee to Active?')) return;
-  const emp = employees.find(e=>e.id===id);
-  if(!emp) return;
-  emp.exitType = '';
-  emp.exitDate = '';
-  emp.exitReason = '';
-  emp.exitSettlement = 0;
-  emp.active = true;
-  saveState();
-  renderResigned();
-  toast(emp.name+' restored to Active!','success');
-}
-
-const PAGE_TITLES={dashboard:'Dashboard',resigned:'Resigned / Terminated Employees',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+const PAGE_TITLES={dashboard:'Dashboard',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
 function showAdminOnly(){
   const roleLabels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'IT (View Only)'};
   const roleEl=document.getElementById('adminOnlyRoleText');
@@ -2432,8 +2311,6 @@ function renderEmployees(){
   }
 
   let filtered=employees.filter(e=>{
-    // Hide resigned/terminated from main directory
-    if(e.exitType && e.exitType!=='') return false;
     const active=isEmpActive(e);
     if(statusF==='active' && !active) return false;
     if(statusF==='inactive' && active) return false;
@@ -2771,14 +2648,8 @@ function saveExitEmployee(){
   }
   saveState();
   closeModal('exitModal');
-  if(!isActive){
-    // Redirect to resigned page
-    nav('resigned');
-    toast(emp.name+' moved to Resigned/Terminated','warning');
-  } else {
-    renderEmployees();
-    toast(emp.name+' status restored to Active','success');
-  }
+  renderEmployees();
+  toast(isActive ? emp.name+' status restored to Active' : emp.name+' marked as '+exitType, isActive?'success':'warning');
 }
 
 function previewSalCalc(){
