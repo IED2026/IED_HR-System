@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>IED HR-FMS v7</title>
+<title>IED HR System</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -26,8 +26,8 @@ input,select,textarea{font-family:inherit;}
 .sidebar{position:fixed;left:0;top:0;width:var(--sidebar-w);height:100vh;background:var(--navy2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform .3s;}
 .sidebar-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .logo-icon{width:40px;height:40px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:16px;flex-shrink:0;}
-.logo-text h3{font-size:12px;font-weight:700;color:var(--gold);line-height:1.2;}
-.logo-text p{font-size:10px;color:var(--text2);}
+.logo-text h3{font-size:15px;font-weight:700;color:var(--gold);line-height:1.2;}
+.logo-text p{font-size:10px;color:var(--text2);white-space:nowrap;}
 .nav-section{padding:6px 0;}
 .nav-label{padding:5px 16px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;color:var(--text2);font-size:13px;}
@@ -35,11 +35,11 @@ input,select,textarea{font-family:inherit;}
 .nav-item.active{background:rgba(212,175,55,.12);color:var(--gold);border-left-color:var(--gold);font-weight:600;}
 .nav-item i{width:18px;text-align:center;font-size:13px;}
 /* ── MAIN ── */
-.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+.main{margin-left:var(--sidebar-w);min-height:100vh;}
 .topbar{position:sticky;top:0;background:var(--navy2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;z-index:50;}
 .topbar h2{font-size:15px;font-weight:600;flex:1;}
 .topbar-actions{display:flex;gap:8px;align-items:center;}
-.page{display:none;padding:20px;flex:1;}
+.page{display:none;padding:20px;}
 .page.active{display:block;}
 #page-adminonly.active{display:flex;align-items:center;justify-content:center;min-height:70vh;}
 /* ── SORT DROPDOWN ── */
@@ -266,7 +266,7 @@ table tr.inactive-row td.no-strike{text-decoration:none;}
           <div class="flex items-center justify-center mb-6">
             <img
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8SiEWWv56_p1RnesE1tfdJeF0mUfHuQ4b0QghRw7HZ8dtk_CSWHeaLGlYkD0Dnxfx52sfwkmtzs-giKvAx6u6PIotNTeQGOHu4a6_OqNVYFAksu842PLcslBxpjP_5Z-KQC9IjRfHfu9QXWNl3dXxTWtj_Pp7eprXy9Z4mA6Rw14NW40YO-onABxuCqh9sCx1QFlzeabZw5RFgQzPuVxjG8XxDxiiCSC_WyRKMkL8DvEvAAjI5GnfN1tYI-Ufb1aSG3p2kIoZtIMc"
-              alt="Innovate Engineering &amp; Development Logo"
+              alt="Innovate Engineering & Development &amp; Development Logo"
               class="h-20 w-auto object-contain" style="mix-blend-mode:screen;">
           </div>
           <h1 class="text-2xl font-bold text-on-surface mb-2">Sign In</h1>
@@ -542,8 +542,8 @@ async function handleLoginSubmit(e) {
   <div class="sidebar-logo">
     <div class="logo-icon">IED</div>
     <div class="logo-text">
-      <h3>HR-FMS v7</h3>
-      <p>Innovate Engineering</p>
+      <h3>HR System</h3>
+      <p>Innovate Engineering & Development</p>
     </div>
   </div>
   <div class="nav-section">
@@ -551,6 +551,7 @@ async function handleLoginSubmit(e) {
     <div class="nav-item active" onclick="nav('dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
     <div class="nav-item" onclick="nav('employees')"><i class="fa-solid fa-users"></i> Employees</div>
     <div class="nav-item" onclick="nav('emphistory')"><i class="fa-solid fa-clock-rotate-left"></i> Emp. History</div>
+    <div class="nav-item" onclick="nav('attendance')"><i class="fa-solid fa-calendar-check"></i> Attendance & Leave</div>
     <div class="nav-item" onclick="nav('starboard')"><i class="fa-solid fa-star"></i> Star & Scores</div>
   </div>
   <div class="nav-section">
@@ -672,6 +673,196 @@ async function handleLoginSubmit(e) {
 </div>
 
 <!-- EMPLOYEES -->
+<div class="page" id="page-attendance">
+  <!-- Employee Selector -->
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
+      <label style="font-size:12px;color:var(--text2);white-space:nowrap;">Employee:</label>
+      <select class="form-control" id="attEmpSelect" onchange="renderAttendancePage()" style="flex:1;">
+        <option value="">-- Select Employee --</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <label style="font-size:12px;color:var(--text2);">Year:</label>
+      <select class="form-control" id="attYear" onchange="renderAttendancePage()" style="width:90px;"></select>
+      <button class="btn btn-primary btn-sm" onclick="saveAttPage()"><i class="fa fa-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+
+  <!-- Employee Info Bar -->
+  <div id="attEmpBar" style="display:none;background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;">
+    <div style="width:40px;height:40px;border-radius:50%;background:var(--gold2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#0a1020;" id="attEmpInitial">-</div>
+    <div>
+      <div style="font-weight:700;font-size:14px;" id="attEmpName">-</div>
+      <div style="font-size:12px;color:var(--text2);" id="attEmpInfo">-</div>
+    </div>
+  </div>
+
+  <!-- No employee selected -->
+  <div id="attNoEmp" style="text-align:center;padding:60px;color:var(--text3);">
+    <i class="fa fa-user-circle" style="font-size:48px;margin-bottom:16px;display:block;"></i>
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Select an Employee</div>
+    <div style="font-size:13px;">Choose an employee from the dropdown above</div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="attMainContent" style="display:none;">
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="attKpi" style="margin-bottom:16px;"></div>
+
+    <!-- Monthly Attendance Table -->
+    <div class="form-section" style="margin-bottom:16px;">
+      <div class="form-section-title"><i class="fa fa-calendar-check"></i> Monthly Attendance Record</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Month</th>
+            <th>Working Days</th><th>Present</th><th>Leave</th><th>Absent</th>
+            <th>Late</th><th>Half Day</th><th>OT Hours</th>
+            <th>Attendance %</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="attTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Leave Records -->
+    <div class="form-section" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="form-section-title" style="margin:0;"><i class="fa fa-umbrella-beach"></i> Leave Records</div>
+        <button class="btn btn-primary btn-sm" onclick="addLeavePageRecord()"><i class="fa fa-plus"></i> Add Leave</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;" id="attLeaveBalance"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Leave Type</th><th>From</th><th>To</th>
+            <th>Days</th><th>Reason</th><th>Status</th><th>Approved By</th><th>Action</th>
+          </tr></thead>
+          <tbody id="attLeaveBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Add Leave Form -->
+    <div class="form-section" id="attAddLeaveForm" style="display:none;">
+      <div class="form-section-title"><i class="fa fa-plus"></i> New Leave Application</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Leave Type</label>
+          <select class="form-control" id="attLeaveType">
+            <option value="Annual">Annual Leave</option>
+            <option value="Sick">Sick Leave</option>
+            <option value="Casual">Casual Leave</option>
+            <option value="Maternity">Maternity Leave</option>
+            <option value="Paternity">Paternity Leave</option>
+            <option value="Emergency">Emergency Leave</option>
+            <option value="Unpaid">Unpaid Leave</option>
+            <option value="Compensatory">Compensatory Leave</option>
+          </select>
+        </div>
+        <div class="form-group"><label>From Date</label><input class="form-control" id="attLeaveFrom" type="date"></div>
+        <div class="form-group"><label>To Date</label><input class="form-control" id="attLeaveTo" type="date"></div>
+        <div class="form-group"><label>Status</label>
+          <select class="form-control" id="attLeaveStatus">
+            <option value="Approved">Approved</option>
+            <option value="Pending">Pending</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Approved By</label><input class="form-control" id="attLeaveApprover" placeholder="Approver name"></div>
+        <div class="form-group"><label>Reason</label><input class="form-control" id="attLeaveReason" placeholder="Reason for leave..."></div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-success btn-sm" onclick="saveLeavePageRecord()"><i class="fa fa-floppy-disk"></i> Save Leave</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('attAddLeaveForm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-emphistory">
+  <div class="page-hdr">
+    <h2>🕐 Employee History</h2>
+    <div class="page-hdr-actions">
+      <button class="btn btn-secondary btn-sm" onclick="printEmpHistoryPage()"><i class="fa fa-print"></i> Print</button>
+      <button class="btn btn-success btn-sm" onclick="exportEhHistoryExcel()"><i class="fa fa-file-excel"></i> Export Excel</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;padding:14px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="margin:0;flex:2;min-width:200px;">
+        <label style="font-size:11px;font-weight:600;">🔍 Search Employee</label>
+        <input type="text" class="form-control" id="ehSearch"
+          placeholder="Type name, ID, designation, department..."
+          oninput="renderEmpHistorySearch()"
+          onkeydown="if(event.key==='Enter')renderEmpHistorySearch()"
+          style="font-size:13px;">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:11px;font-weight:600;">Project</label>
+        <select class="form-control" id="ehProjFilter" onchange="renderEmpHistorySearch()">
+          <option value="">All Projects</option>
+          <option value="IED">IED</option><option value="BIWTA">BIWTA</option>
+          <option value="NBR">NBR</option><option value="PGCL">PGCL</option>
+          <option value="BCIC">BCIC</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:11px;font-weight:600;">Status</label>
+        <select class="form-control" id="ehStatusFilter" onchange="renderEmpHistorySearch()">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Exited</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:11px;font-weight:600;">Department</label>
+        <select class="form-control" id="ehDeptFilter" onchange="renderEmpHistorySearch()">
+          <option value="">All Departments</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="renderEmpHistorySearch()"><i class="fa fa-search"></i> Search</button>
+        <button class="btn btn-secondary" onclick="clearEhSearch()"><i class="fa fa-rotate-left"></i> Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;" id="ehPickCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span id="ehPickCount" style="font-size:12px;color:var(--text2);">Loading employees...</span>
+      <span style="font-size:11px;color:var(--text3);">Click any row to view full history</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Photo</th><th>Emp ID</th><th>Name</th>
+          <th>Department</th><th>Designation</th><th>Project</th>
+          <th>Status</th><th>Join Date</th><th>Service</th><th>Gross</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="ehPickTableBody">
+          <tr><td colspan="12" style="text-align:center;color:var(--text2);padding:20px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div id="ehHistoryDisplay" style="display:none;">
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="font-size:15px;font-weight:700;" id="ehEmpNameHeader">—</div>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('ehHistoryDisplay').style.display='none';window.scrollTo(0,0)">
+            <i class="fa fa-times"></i> Close
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="editFromEhPage()"><i class="fa fa-edit"></i> Edit Profile</button>
+          <button class="btn btn-secondary btn-sm" onclick="printEmpHistoryPage()"><i class="fa fa-print"></i> Print</button>
+          <button class="btn btn-success btn-sm" onclick="exportEhHistoryExcel()"><i class="fa fa-file-excel"></i> Excel</button>
+        </div>
+      </div>
+      <div id="ehFullHistoryContent"></div>
+    </div>
+  </div>
+</div>
+<!-- ═══════ MODALS ═══════ -->
 <div class="page" id="page-employees">
   <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
     <input type="text" class="form-control" id="empSearch" placeholder="🔍 Search name, ID, designation..." oninput="renderEmployees()" onkeydown="if(event.key==='Enter')renderEmployees()" style="flex:2;min-width:200px;">
@@ -1160,89 +1351,9 @@ async function handleLoginSubmit(e) {
      PAGE: Employee Full History (standalone search)
 ════════════════════════════════════════════════════════════════ -->
 <!-- ═══ RESIGNED / TERMINATED PAGE ═══ -->
-<div class="page" id="page-emphistory">
-  <div class="page-hdr">
-    <h2>🕐 Employee History</h2>
-    <div class="page-hdr-actions">
-      <button class="btn btn-secondary btn-sm" onclick="printEmpHistoryPage()"><i class="fa fa-print"></i> Print</button>
-      <button class="btn btn-success btn-sm" onclick="exportEhHistoryExcel()"><i class="fa fa-file-excel"></i> Export Excel</button>
-    </div>
-  </div>
-  <div class="card" style="margin-bottom:12px;padding:14px;">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-      <div class="form-group" style="margin:0;flex:2;min-width:200px;">
-        <label style="font-size:11px;font-weight:600;">🔍 Search Employee</label>
-        <input type="text" class="form-control" id="ehSearch"
-          placeholder="Type name, ID, designation, department..."
-          oninput="renderEmpHistorySearch()"
-          onkeydown="if(event.key==='Enter')renderEmpHistorySearch()"
-          style="font-size:13px;">
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:11px;font-weight:600;">Project</label>
-        <select class="form-control" id="ehProjFilter" onchange="renderEmpHistorySearch()">
-          <option value="">All Projects</option>
-          <option value="IED">IED</option><option value="BIWTA">BIWTA</option>
-          <option value="NBR">NBR</option><option value="PGCL">PGCL</option>
-          <option value="BCIC">BCIC</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:11px;font-weight:600;">Status</label>
-        <select class="form-control" id="ehStatusFilter" onchange="renderEmpHistorySearch()">
-          <option value="">All</option>
-          <option value="active">Active</option>
-          <option value="inactive">Exited</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:11px;font-weight:600;">Department</label>
-        <select class="form-control" id="ehDeptFilter" onchange="renderEmpHistorySearch()">
-          <option value="">All Departments</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:16px;">
-        <button class="btn btn-primary" onclick="renderEmpHistorySearch()"><i class="fa fa-search"></i> Search</button>
-        <button class="btn btn-secondary" onclick="clearEhSearch()"><i class="fa fa-rotate-left"></i> Clear</button>
-      </div>
-    </div>
-  </div>
-  <div class="card" style="margin-bottom:12px;" id="ehPickCard">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span id="ehPickCount" style="font-size:12px;color:var(--text2);">Loading employees...</span>
-      <span style="font-size:11px;color:var(--text3);">Click any row to view full history</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>#</th><th>Photo</th><th>Emp ID</th><th>Name</th>
-          <th>Department</th><th>Designation</th><th>Project</th>
-          <th>Status</th><th>Join Date</th><th>Service</th><th>Gross</th><th>Actions</th>
-        </tr></thead>
-        <tbody id="ehPickTableBody">
-          <tr><td colspan="12" style="text-align:center;color:var(--text2);padding:20px;">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div id="ehHistoryDisplay" style="display:none;">
-    <div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-        <div style="font-size:15px;font-weight:700;" id="ehEmpNameHeader">—</div>
-        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('ehHistoryDisplay').style.display='none';window.scrollTo(0,0)">
-            <i class="fa fa-times"></i> Close
-          </button>
-          <button class="btn btn-primary btn-sm" onclick="editFromEhPage()"><i class="fa fa-edit"></i> Edit Profile</button>
-          <button class="btn btn-secondary btn-sm" onclick="printEmpHistoryPage()"><i class="fa fa-print"></i> Print</button>
-          <button class="btn btn-success btn-sm" onclick="exportEhHistoryExcel()"><i class="fa fa-file-excel"></i> Excel</button>
-        </div>
-      </div>
-      <div id="ehFullHistoryContent"></div>
-    </div>
-  </div>
-</div>
-<!-- ═══════ MODALS ═══════ -->
+<!-- ═══ ATTENDANCE & LEAVE PAGE ═══ -->
+
+
 
 
 <!-- Employee Modal -->
@@ -1818,7 +1929,7 @@ async function handleLoginSubmit(e) {
 </datalist>
 <script>
 // ══════════════════════════════════════════════════════════
-//  IED HR-FMS v7  |  Core Data, State, Business Logic
+//  IED HR System  |  Core Data, State, Business Logic
 //  74 Employees | 5 Projects | localStorage persistence
 // ══════════════════════════════════════════════════════════
 
@@ -1933,7 +2044,7 @@ function fmt(n){return Math.round(parseFloat(n)||0).toLocaleString('en-IN');}
 const DEFAULT_EMPLOYEES = [{"id": 1, "name": "Mst. Zannatul Ferdusi", "empId": "02", "dept": "Director", "desig": "CEO", "status": "Permanent", "gross": 150000, "project": "IED", "join": "2018-11-01", "bank": "United Commercial Bank Ltd.", "branch": "Pragati Sarani", "account": "1133204000110654"}, {"id": 2, "name": "Md. Jewel Rana", "empId": "12", "dept": "Business Development", "desig": "Sr. Deputy Manager", "status": "Permanent", "gross": 76140, "project": "IED", "join": "2018-02-01", "bank": "United Commercial Bank Ltd.", "branch": "Pragati Sarani", "account": "1133204000110608"}, {"id": 3, "name": "Md. Sohel Rana", "empId": "21", "dept": "Accounts & Finance", "desig": "Assistant Manager", "status": "Permanent", "gross": 54290, "project": "IED", "join": "2018-10-10", "bank": "United Commercial Bank Ltd.", "branch": "Pragati Sarani", "account": "1133204000110687"}, {"id": 4, "name": "Md. Parvez Jhinuk", "empId": "39", "dept": "Supply Chain Mgmt", "desig": "Assistant Manager", "status": "Permanent", "gross": 60000, "project": "IED", "join": "2021-01-02", "bank": "United Commercial Bank Ltd.", "branch": "Pragati Sarani", "account": "1133204000110610"}, {"id": 5, "name": "Ehsan Ullah", "empId": "49", "dept": "Civil", "desig": "Assistant Manager", "status": "Permanent", "gross": 59537, "project": "IED", "join": "2021-11-17", "bank": "United Commercial Bank Ltd.", "branch": "Pragati Sarani", "account": "1133201000032476"}, {"id": 6, "name": "M. Shafel Alam", "empId": "50", "dept": "Accounts & Finance", "desig": "Junior Accounts Officer", "status": "Permanent", "gross": 25000, "project": "IED", "join": "2022-04-13", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC006"}, {"id": 7, "name": "Md. Mizanur Rahman", "empId": "51", "dept": "Business Development", "desig": "Sr. Manager", "status": "Permanent", "gross": 86000, "project": "IED", "join": "2022-04-14", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC007"}, {"id": 8, "name": "Md. Shohan", "empId": "54", "dept": "HR & Admin", "desig": "Office Assistance", "status": "Permanent", "gross": 17940, "project": "IED", "join": "2022-07-19", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC008"}, {"id": 9, "name": "Mubinul Haque", "empId": "59", "dept": "Business Development", "desig": "Sr. Tender & IT Officer", "status": "Permanent", "gross": 52310, "project": "IED", "join": "2022-09-06", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC009"}, {"id": 10, "name": "Md. Rafik", "empId": "75", "dept": "HR & Admin", "desig": "Driver", "status": "Permanent", "gross": 28750, "project": "IED", "join": "2023-05-10", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC010"}, {"id": 11, "name": "Siamul Islam", "empId": "76", "dept": "Business Development", "desig": "Planning & Design Engineer", "status": "Permanent", "gross": 34500, "project": "IED", "join": "2023-08-09", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC011"}, {"id": 12, "name": "Md. Raihan Ali", "empId": "82", "dept": "Accounts & Finance", "desig": "Assets Mgmt Officer", "status": "Permanent", "gross": 15000, "project": "IED", "join": "2024-03-10", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC012"}, {"id": 13, "name": "Montasir Ahmed", "empId": "94", "dept": "BDT", "desig": "Regional Manager", "status": "Permanent", "gross": 60000, "project": "IED", "join": "2024-11-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC013"}, {"id": 14, "name": "Tanjum Ara Sarker", "empId": "98", "dept": "HR & Admin", "desig": "HR Officer", "status": "Permanent", "gross": 40000, "project": "IED", "join": "2024-12-17", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC014"}, {"id": 15, "name": "Md. Samiul Islam Sonet", "empId": "99", "dept": "IT", "desig": "IT Executive", "status": "Permanent", "gross": 35000, "project": "IED", "join": "2025-01-22", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC015"}, {"id": 16, "name": "Nishat Jahan Lima", "empId": "121", "dept": "HR & Admin", "desig": "HR Officer", "status": "Probationary", "gross": 27000, "project": "IED", "join": "2026-01-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC016"}, {"id": 17, "name": "Md. Mintu Sarder", "empId": "15", "dept": "Business Development", "desig": "Sr. Office Assistant", "status": "Permanent", "gross": 29700, "project": "IED", "join": "2015-10-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC017"}, {"id": 18, "name": "Mahafuzul Haque", "empId": "42", "dept": "HR & Admin", "desig": "Sr. Office Assistance", "status": "Permanent", "gross": 21360, "project": "IED", "join": "2021-03-06", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC018"}, {"id": 19, "name": "Md. Jihad UL Islam", "empId": "92", "dept": "HR & Admin", "desig": "Office Assistant", "status": "Permanent", "gross": 12000, "project": "IED", "join": "2023-06-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC019"}, {"id": 20, "name": "Mst. Fatema Akter", "empId": "-", "dept": "HR & Admin", "desig": "Cleaner", "status": "Permanent", "gross": 6000, "project": "IED", "join": "", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC020"}, {"id": 21, "name": "Md. Nurul Huda", "empId": "-", "dept": "Project", "desig": "DTL", "status": "Project", "gross": 200000, "project": "BIWTA", "join": "2025-10-14", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC021"}, {"id": 22, "name": "Md. Farid Uddin", "empId": "-", "dept": "Project", "desig": "Sr. SE", "status": "Project", "gross": 125000, "project": "BIWTA", "join": "2024-03-10", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC022"}, {"id": 23, "name": "Nurul Momen", "empId": "-", "dept": "Project", "desig": "Sr. GE", "status": "Project", "gross": 300000, "project": "BIWTA", "join": "2025-01-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC023"}, {"id": 24, "name": "Md. Nurul Islam", "empId": "-", "dept": "Project", "desig": "RE", "status": "Project", "gross": 120000, "project": "BIWTA", "join": "2024-11-10", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC024"}, {"id": 25, "name": "Md. Rafique Ahmad Khan", "empId": "-", "dept": "Project", "desig": "RE", "status": "Project", "gross": 100000, "project": "BIWTA", "join": "2024-04-18", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC025"}, {"id": 26, "name": "Md. Rana Masud", "empId": "1", "dept": "Director", "desig": "CEO/Structural Expert", "status": "Permanent", "gross": 350000, "project": "NBR", "join": "2015-12-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC026"}, {"id": 27, "name": "Md Ziaul Ahsan Biswas", "empId": "106", "dept": "Project", "desig": "DTL", "status": "Project", "gross": 300000, "project": "NBR", "join": "2025-03-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC027"}, {"id": 28, "name": "Nur Mohammad Khan", "empId": "9", "dept": "System Support", "desig": "Engineer", "status": "Permanent", "gross": 35080, "project": "NBR", "join": "2017-03-27", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC028"}, {"id": 29, "name": "Md. Rubel Hossain", "empId": "10", "dept": "System Support", "desig": "Engineer", "status": "Permanent", "gross": 32320, "project": "NBR", "join": "2017-09-06", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC029"}, {"id": 30, "name": "Sharmin Sultana Tithi", "empId": "11", "dept": "ARC", "desig": "Sr. Deputy Manager", "status": "Permanent", "gross": 76910, "project": "NBR", "join": "2018-02-10", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC030"}, {"id": 31, "name": "Md. Mazharul Islam Talukder", "empId": "17", "dept": "ARC", "desig": "Assistant Manager", "status": "Permanent", "gross": 50940, "project": "NBR", "join": "2018-06-04", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC031"}, {"id": 32, "name": "Md. Anower Hosain", "empId": "30", "dept": "System Support", "desig": "Senior Document Controller", "status": "Permanent", "gross": 25800, "project": "NBR", "join": "2019-10-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC032"}, {"id": 33, "name": "Md. Rafiul Al Mosaddque", "empId": "48", "dept": "Architect", "desig": "Junior Architect", "status": "Permanent", "gross": 35363, "project": "NBR", "join": "2021-11-14", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC033"}, {"id": 34, "name": "Ziaul Haque Shuvro", "empId": "70", "dept": "MAC", "desig": "Manager", "status": "Permanent", "gross": 60000, "project": "NBR", "join": "2023-03-06", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC034"}, {"id": 35, "name": "Dewan Monayam Ali", "empId": "90", "dept": "Civil", "desig": "Civil Engineer", "status": "Permanent", "gross": 40000, "project": "NBR", "join": "2024-07-13", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC035"}, {"id": 36, "name": "Md. Zamiul Hassan Siam", "empId": "96", "dept": "EEE", "desig": "Electrical Engineer", "status": "Permanent", "gross": 37000, "project": "NBR", "join": "2024-11-13", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC036"}, {"id": 37, "name": "Md. Mahedi Hasan", "empId": "69", "dept": "Civil", "desig": "Assistant Engineer", "status": "Permanent", "gross": 25000, "project": "NBR", "join": "2023-01-15", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC037"}, {"id": 38, "name": "Md. Zahid Sarker", "empId": "117", "dept": "MAC", "desig": "Mechanical Engineer", "status": "Probationary", "gross": 25000, "project": "NBR", "join": "2025-11-17", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC038"}, {"id": 39, "name": "Shoab Ahmmed Abir", "empId": "73", "dept": "MAC", "desig": "Mechanical Engineer", "status": "Permanent", "gross": 28750, "project": "NBR", "join": "2023-05-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC039"}, {"id": 40, "name": "S.M Ahsanullah", "empId": "74", "dept": "ARC", "desig": "Senior Architect", "status": "Permanent", "gross": 60000, "project": "NBR", "join": "2023-05-27", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC040"}, {"id": 41, "name": "Md. Mahfuzur Rahman", "empId": "86", "dept": "Civil", "desig": "Civil Engineer", "status": "Permanent", "gross": 40000, "project": "NBR", "join": "2024-04-23", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC041"}, {"id": 42, "name": "Hasib Ahmed Sarthak", "empId": "91", "dept": "Architect", "desig": "Architect", "status": "Permanent", "gross": 30000, "project": "NBR", "join": "2024-07-25", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC042"}, {"id": 43, "name": "Md. Fuad Mokaddes", "empId": "93", "dept": "EEE", "desig": "Electrical Engineer", "status": "Permanent", "gross": 37000, "project": "NBR", "join": "2024-10-15", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC043"}, {"id": 44, "name": "Md. Jamiul Akhter", "empId": "102", "dept": "BIM Coordinator", "desig": "BIM Coordinator", "status": "Permanent", "gross": 120000, "project": "NBR", "join": "2025-03-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC044"}, {"id": 45, "name": "Golam Mowlla Hridoy", "empId": "105", "dept": "Structural BIM", "desig": "Structural BIM Expert", "status": "Permanent", "gross": 60000, "project": "NBR", "join": "2025-03-08", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC045"}, {"id": 46, "name": "Md. Zakaria Mahmud", "empId": "109", "dept": "Civil", "desig": "Sr. Deputy Manager", "status": "Project", "gross": 125000, "project": "NBR", "join": "2025-08-20", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC046"}, {"id": 47, "name": "Samiul Islam Shohag", "empId": "110", "dept": "Civil", "desig": "Civil Engineer", "status": "Probationary", "gross": 25000, "project": "NBR", "join": "2025-09-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC047"}, {"id": 48, "name": "Ferdows Kabir Hridoy", "empId": "111", "dept": "Civil", "desig": "Civil Engineer", "status": "Probationary", "gross": 35000, "project": "NBR", "join": "2025-09-20", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC048"}, {"id": 49, "name": "Md Kawshique Ahmed", "empId": "114", "dept": "System Support", "desig": "Engineer", "status": "Probationary", "gross": 22000, "project": "NBR", "join": "2025-09-24", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC049"}, {"id": 50, "name": "Md. Mamun Reza", "empId": "112", "dept": "Civil", "desig": "Asst. Manager-Civil", "status": "Probationary", "gross": 75000, "project": "NBR", "join": "2025-10-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC050"}, {"id": 51, "name": "Shah Emrose", "empId": "115", "dept": "System Support", "desig": "Engineer", "status": "Probationary", "gross": 30000, "project": "NBR", "join": "2025-10-09", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC051"}, {"id": 52, "name": "Jakir Hossain", "empId": "-", "dept": "Project", "desig": "Office Assistant", "status": "Project", "gross": 25000, "project": "NBR", "join": "2025-06-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC052"}, {"id": 53, "name": "Belayet Ullah", "empId": "-", "dept": "Project", "desig": "Office Assistant", "status": "Project", "gross": 25000, "project": "NBR", "join": "2025-10-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC053"}, {"id": 54, "name": "Abdur Rahman", "empId": "108", "dept": "Project", "desig": "Procurement Expert", "status": "Permanent", "gross": 160000, "project": "PGCL", "join": "2025-07-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC054"}, {"id": 55, "name": "Md. Geas Uddin Joarder", "empId": "103", "dept": "EEE", "desig": "Electrical Manager", "status": "Permanent", "gross": 150000, "project": "PGCL", "join": "2025-01-01", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC055"}, {"id": 56, "name": "Md. Jubayer Khan", "empId": "31", "dept": "Business Development", "desig": "Deputy Manager", "status": "Permanent", "gross": 58700, "project": "PGCL", "join": "2020-01-15", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC056"}, {"id": 57, "name": "Md. Amdadul Haque", "empId": "57", "dept": "Electrical", "desig": "System Support Engineer", "status": "Permanent", "gross": 30000, "project": "PGCL", "join": "2022-08-13", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC057"}, {"id": 58, "name": "Israk Entisar", "empId": "80", "dept": "IT", "desig": "IT Executive", "status": "Permanent", "gross": 28750, "project": "PGCL", "join": "2023-10-14", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC058"}, {"id": 59, "name": "Aminul Islam Md Tariq", "empId": "-", "dept": "Project", "desig": "HSE Expert", "status": "Project", "gross": 140000, "project": "PGCL", "join": "", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC059"}, {"id": 60, "name": "Nessar Uddin Ahmed", "empId": "-", "dept": "Project", "desig": "GIS Expert", "status": "Project", "gross": 50000, "project": "PGCL", "join": "", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC060"}, {"id": 61, "name": "Iftekar Ahmed", "empId": "-", "dept": "Project", "desig": "I & C Expert", "status": "Project", "gross": 130000, "project": "PGCL", "join": "", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC061"}, {"id": 62, "name": "Md. Rezaul Hasan", "empId": "107", "dept": "QMME", "desig": "Deputy Manager", "status": "Probationary", "gross": 58000, "project": "BCIC", "join": "2025-07-24", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC062"}, {"id": 63, "name": "Yasin Arafat", "empId": "113", "dept": "Civil", "desig": "Quality & Safety Engineer", "status": "Project", "gross": 35000, "project": "BCIC", "join": "2025-10-05", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC063"}, {"id": 64, "name": "Sakib Ahmed", "empId": "116", "dept": "Civil", "desig": "Civil Engineer", "status": "Project", "gross": 25000, "project": "BCIC", "join": "2025-11-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC064"}, {"id": 65, "name": "S M Jakir Hasan", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 23000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC065"}, {"id": 66, "name": "Abu Talha", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 24000, "project": "BCIC", "join": "2025-09-27", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC066"}, {"id": 67, "name": "Hasanuzzaman", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 24000, "project": "BCIC", "join": "2025-11-03", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC067"}, {"id": 68, "name": "Md. Moynul Islam", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 21000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC068"}, {"id": 69, "name": "Abdullah Al Mamun", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 22000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC069"}, {"id": 70, "name": "Md Tajul Islam", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 22000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC070"}, {"id": 71, "name": "Md. Mohidul Islam", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 22000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC071"}, {"id": 72, "name": "Syed Abu Salman", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 24000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC072"}, {"id": 73, "name": "Tonmoy Biswas", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 20000, "project": "BCIC", "join": "2025-08-02", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC073"}, {"id": 74, "name": "Abdullah Al Mamun (2)", "empId": "-", "dept": "Project", "desig": "Site Engineer", "status": "Project", "gross": 23000, "project": "BCIC", "join": "2025-08-13", "bank": "UCBL", "branch": "Pragati Sarani", "account": "ACC074"}];
 
 const DEFAULT_PROJECTS={
-  IED:{name:'Innovate Engineering & Development',color:'#0D1B2A',light:'#7fb3d3',status:'Active',client:'IED'},
+  IED:{name:'Innovate Engineering & Development & Development',color:'#0D1B2A',light:'#7fb3d3',status:'Active',client:'IED'},
   BIWTA:{name:'Bangladesh Inland Water Transport Authority',color:'#1A5276',light:'#7fc8f8',status:'Active',client:'BIWTA'},
   NBR:{name:'National Board of Revenue',color:'#1E8449',light:'#7ef5a2',status:'Active',client:'NBR'},
   PGCL:{name:'Power Grid Company of Bangladesh',color:'#6C3483',light:'#d0a0f0',status:'Active',client:'PGCL'},
@@ -2146,7 +2257,217 @@ function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 // ── NAVIGATION ──
 
-const PAGE_TITLES={dashboard:'Dashboard',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+const PAGE_TITLES={dashboard:'Dashboard',attendance:'Attendance & Leave',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+// ══════════════ ATTENDANCE & LEAVE PAGE ══════════════
+function renderAttendancePage(){
+  // Init employee dropdown
+  const empSel = document.getElementById('attEmpSelect');
+  if(empSel && empSel.options.length <= 1){
+    const active = employees.filter(e=>!e.exitType||e.exitType==='');
+    active.sort((a,b)=>{
+      const ai = a.empId&&a.empId!=='-'&&a.empId!==''?0:1;
+      const bi = b.empId&&b.empId!=='-'&&b.empId!==''?0:1;
+      if(ai!==bi) return ai-bi;
+      if(ai===0) return String(a.empId).localeCompare(String(b.empId),undefined,{numeric:true});
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    active.forEach(e=>{
+      const o=document.createElement('option');
+      o.value=e.id;
+      o.textContent=(e.empId?e.empId+' - ':'')+e.name;
+      empSel.appendChild(o);
+    });
+  }
+
+  // Init year dropdown
+  const ySel = document.getElementById('attYear');
+  if(ySel && !ySel.options.length){
+    for(let y=2020;y<=2030;y++){const o=document.createElement('option');o.value=y;o.textContent=y;ySel.appendChild(o);}
+    ySel.value=new Date().getFullYear();
+  }
+
+  const empId = parseInt(empSel?.value)||null;
+  const year = parseInt(ySel?.value)||new Date().getFullYear();
+  const emp = empId ? employees.find(e=>e.id===empId) : null;
+
+  // Show/hide sections
+  document.getElementById('attNoEmp').style.display = emp ? 'none' : 'block';
+  document.getElementById('attMainContent').style.display = emp ? 'block' : 'none';
+  const bar = document.getElementById('attEmpBar');
+  if(emp){
+    bar.style.display='flex';
+    document.getElementById('attEmpInitial').textContent=(emp.name||'?')[0].toUpperCase();
+    document.getElementById('attEmpName').textContent=emp.name||'-';
+    document.getElementById('attEmpInfo').textContent=(emp.desig||'-')+' | '+(emp.dept||'-')+' | '+(emp.project||'-');
+  } else {
+    bar.style.display='none';
+    return;
+  }
+
+  // Render attendance table
+  const attData=(emp.attendance||{})[year]||{};
+  let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
+  const rows=MONTHS.map((m,i)=>{
+    const mData=attData[i]||{wd:22,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
+    totalPresent+=parseInt(mData.present)||0;
+    totalAbsent+=parseInt(mData.absent)||0;
+    totalLate+=parseInt(mData.late)||0;
+    totalOT+=parseFloat(mData.ot)||0;
+    const pct=mData.wd>0?Math.round((mData.present||0)/mData.wd*100):0;
+    const pctColor=pct>=90?'var(--green)':pct>=75?'var(--orange)':'var(--red)';
+    const pct2 = mData.wd>0 ? Math.round((parseInt(mData.present)||0)/parseInt(mData.wd)*100) : 0;
+    const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
+    const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
+    const locked = !attPageEditRow || attPageEditRow !== `${year}_${i}`;
+    const inputStyle = locked
+      ? 'width:65px;font-size:13px;color:var(--text);font-weight:600;background:transparent;border:none;pointer-events:none;text-align:center;'
+      : 'width:65px;font-size:13px;color:#111;font-weight:700;text-align:center;background:#fff;border:2px solid var(--gold);border-radius:6px;';
+    const noteStyle = locked
+      ? 'width:110px;font-size:12px;background:transparent;border:none;pointer-events:none;color:var(--text3);'
+      : 'width:110px;font-size:12px;color:#111;background:#fff;border:2px solid var(--gold);border-radius:6px;';
+    const rowBg = locked ? '' : 'background:rgba(212,175,55,0.04);';
+    return `<tr style="${rowBg}transition:background .2s;">
+      <td style="font-weight:700;font-size:13px;color:var(--text);">${m}</td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.wd||26}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'wd',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.present||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'present',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.leave||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'leave',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.absent||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'absent',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.late||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'late',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
+      <td style="text-align:center;">
+        <span style="display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;color:${pctColor2};background:${pctBg};">${pct2}%</span>
+      </td>
+      <td style="display:flex;align-items:center;gap:6px;">
+        <input class="form-control" style="${noteStyle}" value="${mData.note||''}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'note',this.value)" placeholder="—">
+        <button onclick="toggleAttEdit(${year},${i})" title="${locked?'Edit':'Save'}" style="width:30px;height:30px;border-radius:8px;border:1px solid ${locked?'var(--border)':'var(--gold)'};background:${locked?'var(--navy3)':'rgba(212,175,55,0.15)'};color:${locked?'var(--text3)':'var(--gold)'};cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">
+          <i class="fa ${locked?'fa-pen':'fa-check'}"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+  const tbody=document.getElementById('attTableBody');
+  if(tbody) tbody.innerHTML=rows;
+
+  const totalWD=312;
+  const annPct=totalWD>0?Math.round(totalPresent/totalWD*100):0;
+  const kpiEl=document.getElementById('attKpi');
+  if(kpiEl) kpiEl.innerHTML=`
+    <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent}</div><div class="kpi-label">Days Absent</div></div>
+    <div class="kpi-card orange"><div class="kpi-icon">⏰</div><div class="kpi-val">${totalLate}</div><div class="kpi-label">Late Arrivals</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-val">${annPct}%</div><div class="kpi-label">Annual Attendance</div></div>
+  `;
+
+  // Render leave records
+  const leaveTypes=['Annual','Sick','Casual','Maternity','Paternity'];
+  const leaveEntitlements={Annual:18,Sick:14,Casual:10,Maternity:180,Paternity:3};
+  const usedLeave={};
+  (emp.leaveRecords||[]).filter(l=>l.status==='Approved'&&new Date(l.from).getFullYear()===year)
+    .forEach(l=>{usedLeave[l.type]=(usedLeave[l.type]||0)+(parseInt(l.days)||0);});
+
+  const balCards=document.getElementById('attLeaveBalance');
+  if(balCards) balCards.innerHTML=leaveTypes.map(t=>{
+    const entitled=leaveEntitlements[t]||0;
+    const used=usedLeave[t]||0;
+    const bal=entitled-used;
+    const clr=bal>5?'var(--green)':bal>0?'var(--orange)':'var(--red)';
+    return `<div style="background:var(--navy3);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">${t}</div>
+      <div style="font-size:18px;font-weight:700;color:${clr}">${bal}</div>
+      <div style="font-size:10px;color:var(--text3)">${used}/${entitled} used</div>
+    </div>`;
+  }).join('');
+
+  const leaves=(emp.leaveRecords||[]).filter(l=>{
+    if(!year) return true;
+    return l.from && new Date(l.from).getFullYear()===year;
+  }).sort((a,b)=>new Date(b.from)-new Date(a.from));
+
+  const leaveTbody=document.getElementById('attLeaveBody');
+  if(leaveTbody) leaveTbody.innerHTML=leaves.length?leaves.map((l,i)=>{
+    const stClr={Approved:'var(--green)',Pending:'var(--orange)',Rejected:'var(--red)'}[l.status]||'var(--text2)';
+    return `<tr>
+      <td><span style="font-weight:600">${l.type}</span></td>
+      <td style="font-size:11px">${l.from||'—'}</td>
+      <td style="font-size:11px">${l.to||'—'}</td>
+      <td style="font-weight:700">${l.days||'—'}</td>
+      <td style="font-size:11px">${l.reason||'—'}</td>
+      <td><span style="color:${stClr};font-weight:600">${l.status}</span></td>
+      <td style="font-size:11px">${l.approver||'—'}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="deleteLeavePageRecord(${i})"><i class="fa fa-trash"></i></button></td>
+    </tr>`;
+  }).join(''):
+  '<tr><td colspan="8" style="text-align:center;font-size:12px;color:var(--text2);padding:10px;">No leave records for this year.</td></tr>';
+}
+
+let attPageEditRow = null;
+
+function toggleAttEdit(year, month){
+  const key = `${year}_${month}`;
+  if(attPageEditRow === key){
+    attPageEditRow = null;
+  } else {
+    attPageEditRow = key;
+  }
+  renderAttendancePage();
+}
+
+function updateAttPage(year, month, field, val){
+  const empId=parseInt(document.getElementById('attEmpSelect').value)||null;
+  if(!empId) return;
+  const emp=employees.find(e=>e.id===empId);
+  if(!emp.attendance) emp.attendance={};
+  if(!emp.attendance[year]) emp.attendance[year]={};
+  if(!emp.attendance[year][month]) emp.attendance[year][month]={wd:26,present:0,absent:0,late:0,half:0,ot:0,note:''};
+  emp.attendance[year][month][field]=val;
+}
+
+function saveAttPage(){
+  const empId=parseInt(document.getElementById('attEmpSelect').value)||null;
+  if(!empId){toast('Select an employee first','error');return;}
+  saveState();
+  toast('Attendance data saved!','success');
+}
+
+function addLeavePageRecord(){
+  document.getElementById('attAddLeaveForm').style.display='block';
+}
+
+function saveLeavePageRecord(){
+  const empId=parseInt(document.getElementById('attEmpSelect').value)||null;
+  if(!empId){toast('Select an employee first','error');return;}
+  const emp=employees.find(e=>e.id===empId);
+  const from=document.getElementById('attLeaveFrom').value;
+  const to=document.getElementById('attLeaveTo').value;
+  if(!from||!to){toast('Please enter dates','error');return;}
+  const days=Math.round((new Date(to)-new Date(from))/(1000*60*60*24))+1;
+  if(!emp.leaveRecords) emp.leaveRecords=[];
+  emp.leaveRecords.push({
+    type:document.getElementById('attLeaveType').value,
+    from,to,days,
+    status:document.getElementById('attLeaveStatus').value,
+    approver:document.getElementById('attLeaveApprover').value,
+    reason:document.getElementById('attLeaveReason').value
+  });
+  saveState();
+  document.getElementById('attAddLeaveForm').style.display='none';
+  renderAttendancePage();
+  toast('Leave record saved!','success');
+}
+
+function deleteLeavePageRecord(idx){
+  const empId=parseInt(document.getElementById('attEmpSelect').value)||null;
+  if(!empId) return;
+  const emp=employees.find(e=>e.id===empId);
+  if(!confirm('Delete this leave record?')) return;
+  emp.leaveRecords.splice(idx,1);
+  saveState();
+  renderAttendancePage();
+  toast('Leave record deleted','info');
+}
+
 function showAdminOnly(){
   const roleLabels={hr:'HR Manager',dept_head:'Department Head',ceo:'CEO / Director',viewer:'IT (View Only)'};
   const roleEl=document.getElementById('adminOnlyRoleText');
@@ -2169,7 +2490,7 @@ function nav(page){
   if(pg) pg.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active');});
   document.getElementById('pageTitle').textContent=PAGE_TITLES[page]||page;
-  if(page==='resigned') renderResigned();
+  if(page==='attendance') renderAttendancePage();
   if(page==='dashboard') renderDashboard();
   else if(page==='employees') renderEmployees();
   else if(page==='emphistory') initEmpHistory();
@@ -3380,7 +3701,7 @@ function generateEmpStatement(){
           <td></td>
         </tr></tfoot>
       </table>
-      <div style="font-size:11px;color:var(--text3);text-align:center;">Generated: ${new Date().toLocaleString()} | IED HR-FMS v7</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;">Generated: ${new Date().toLocaleString()} | IED HR System</div>
     </div>`;
   document.getElementById('empStmtOut').innerHTML=html;
   toast('Statement generated','success');
@@ -3459,7 +3780,7 @@ function generateProjStatement(){
           <td style="padding:9px 8px;text-align:right;color:var(--gold);">৳${bdt(grandTotal)}</td>
         </tr></tfoot>
       </table></div>
-      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px;">Generated: ${new Date().toLocaleString()} | IED HR-FMS v7</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px;">Generated: ${new Date().toLocaleString()} | IED HR System</div>
     </div>`;
   document.getElementById('projStmtOut').innerHTML=html;
   toast('Project statement generated','success');
@@ -5277,7 +5598,7 @@ function renderAttendanceTab(){
   // Populate attendance rows
   let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
   const rows=MONTHS.map((m,i)=>{
-    const mData=attData[i]||{wd:26,present:26,absent:0,late:0,half:0,ot:0,note:''};
+    const mData=attData[i]||{wd:22,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
@@ -5526,7 +5847,7 @@ function generateDocLetter(i){
   .header{text-align:center;margin-bottom:30px;}.ref{margin-bottom:20px;font-size:11pt;}
   h1{font-size:16pt;font-weight:bold;}.sig{margin-top:60px;}</style></head><body>
   <div class="header">
-    <h2 style="font-size:14pt;font-weight:bold;margin:0">IED — Innovate Engineering & Development</h2>
+    <h2 style="font-size:14pt;font-weight:bold;margin:0">IED — Innovate Engineering & Development & Development</h2>
     <p style="font-size:10pt;color:#555;margin:4px 0">HR Department | Official Document</p>
     <hr style="border-top:2px solid #333;margin:10px 0">
   </div>
