@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -709,6 +710,9 @@ async function handleLoginSubmit(e) {
   <div id="attMainContent" style="display:none;">
     <!-- KPI Cards -->
     <div class="kpi-grid" id="attKpi" style="margin-bottom:16px;"></div>
+
+    <!-- Charts -->
+    <div id="attChartSection" style="margin-bottom:16px;"></div>
 
     <!-- Monthly Attendance Table -->
     <div class="form-section" style="margin-bottom:16px;">
@@ -2306,18 +2310,36 @@ function renderAttendancePage(){
 
   // Render attendance table
   const attData=(emp.attendance||{})[year]||{};
-  let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
+  const nowM = new Date().getFullYear()===year ? new Date().getMonth() : 11;
+  let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
+  const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
   const rows=MONTHS.map((m,i)=>{
     const mData=attData[i]||{wd:22,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
-    totalPresent+=parseInt(mData.present)||0;
-    totalAbsent+=parseInt(mData.absent)||0;
-    totalLate+=parseInt(mData.late)||0;
-    totalOT+=parseFloat(mData.ot)||0;
-    const pct=mData.wd>0?Math.round((mData.present||0)/mData.wd*100):0;
-    const pctColor=pct>=90?'var(--green)':pct>=75?'var(--orange)':'var(--red)';
-    const pct2 = mData.wd>0 ? Math.round((parseInt(mData.present)||0)/parseInt(mData.wd)*100) : 0;
+    const present=parseInt(mData.present)||0;
+    const leave=parseInt(mData.leave)||0;
+    const half=parseInt(mData.half)||0;
+    const absent=parseInt(mData.absent)||0;
+    const wd=parseInt(mData.wd)||22;
+    // 2 half days = 1 leave equivalent for attendance %
+    const leaveEquiv = leave + (half/2);
+    // Attendance % = present / working days * 100
+    const pct2 = wd>0 ? Math.round(present/wd*100) : 0;
     const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
     const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
+    totalPresent+=present;
+    totalLeave+=leave;
+    totalAbsent+=absent;
+    totalLate+=parseInt(mData.late)||0;
+    totalOT+=parseFloat(mData.ot)||0;
+    // Only count months up to current for overall %
+    if(i<=nowM){ totalWDSoFar+=wd; }
+    // Bar chart - only up to current month
+    if(i<=nowM){
+      barLabels.push(m.slice(0,3));
+      barWD.push(wd);
+      barPresent.push(present);
+      barLeaveAbsent.push(Math.round(leaveEquiv+absent));
+    }
     const locked = !attPageEditRow || attPageEditRow !== `${year}_${i}`;
     const inputStyle = locked
       ? 'width:65px;font-size:13px;color:var(--text);font-weight:600;background:transparent;border:none;pointer-events:none;text-align:center;'
@@ -2349,16 +2371,116 @@ function renderAttendancePage(){
   const tbody=document.getElementById('attTableBody');
   if(tbody) tbody.innerHTML=rows;
 
-  const totalWD=312;
-  const annPct=totalWD>0?Math.round(totalPresent/totalWD*100):0;
+  // Overall attendance = total present / total working days so far
+  const overallPct = totalWDSoFar>0 ? Math.round(totalPresent/totalWDSoFar*100) : 0;
+  const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
   const kpiEl=document.getElementById('attKpi');
   if(kpiEl) kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
     <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent}</div><div class="kpi-label">Days Absent</div></div>
     <div class="kpi-card orange"><div class="kpi-icon">⏰</div><div class="kpi-val">${totalLate}</div><div class="kpi-label">Late Arrivals</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
-    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-val">${annPct}%</div><div class="kpi-label">Annual Attendance</div></div>
+    <div class="kpi-card" style="border-top:2px solid ${overallClr};"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:${overallClr}">${overallPct}%</div><div class="kpi-label">Overall Attendance</div></div>
+    <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px;"><i class="fa fa-robot"></i> AI Data Import</div>
+      <div id="attDropZoneKpi" onclick="document.getElementById('attFileInput').click()" 
+        style="border:1.5px dashed var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;flex:1;"
+        ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="handleAttFileDrop(event)">
+        <i class="fa fa-file-excel" style="color:#10b981;font-size:16px;"></i>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;" id="attFileNameKpi">Click or drag Excel</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button id="attFillBtnKpi" onclick="openAttImportDropdown()" disabled style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--gold);background:rgba(212,175,55,0.1);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;opacity:0.5;font-family:inherit;">
+          <i class="fa fa-wand-magic-sparkles"></i> Fill
+        </button>
+        <button onclick="clearAttFileData()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+      <div id="attAiStatusKpi" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;"></div>
+      <div id="attImportDropdown" style="display:none;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Select month:</div>
+        <div id="attMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+    </div>
   `;
+  // Sync file input
+  if(!document.getElementById('attFileInput')){
+    const inp=document.createElement('input');
+    inp.type='file';inp.id='attFileInput';inp.accept='.xlsx,.xls,.csv';inp.style.display='none';
+    inp.onchange=handleAttFileSelect;
+    document.body.appendChild(inp);
+  }
+
+  // ── CHARTS ──
+  const attChartWrap = document.getElementById('attChartSection');
+  if(attChartWrap){
+    attChartWrap.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card" style="padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px;"><i class="fa fa-chart-bar"></i> Monthly Overview ${year}</div>
+          <div style="position:relative;height:200px;"><canvas id="attBarChart"></canvas></div>
+        </div>
+        <div class="card" style="padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px;"><i class="fa fa-chart-pie"></i> Attendance Breakdown</div>
+          <div style="position:relative;height:200px;"><canvas id="attPieChart"></canvas></div>
+        </div>
+      </div>`;
+
+    setTimeout(()=>{
+      // Bar Chart
+      const barCtx = document.getElementById('attBarChart');
+      if(barCtx){
+        if(window._attBarChart) window._attBarChart.destroy();
+        window._attBarChart = new Chart(barCtx,{
+          type:'bar',
+          data:{
+            labels: barLabels,
+            datasets:[
+              {label:'Working Days',data:barWD,backgroundColor:'rgba(37,99,235,0.35)',borderColor:'#2563eb',borderWidth:1,borderRadius:4},
+              {label:'Present',data:barPresent,backgroundColor:'rgba(16,185,129,0.75)',borderColor:'#10b981',borderWidth:1,borderRadius:4},
+              {label:'Leave/Absent',data:barLeaveAbsent,backgroundColor:'rgba(239,68,68,0.65)',borderColor:'#ef4444',borderWidth:1,borderRadius:4}
+            ]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{labels:{color:'#a0b0c8',font:{size:11}}}},
+            scales:{
+              x:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}
+            }
+          }
+        });
+      }
+      // Pie Chart
+      const pieCtx = document.getElementById('attPieChart');
+      if(pieCtx){
+        if(window._attPieChart) window._attPieChart.destroy();
+        const pieTotal = (totalPresent+totalLeave+totalAbsent)||1;
+        window._attPieChart = new Chart(pieCtx,{
+          type:'doughnut',
+          data:{
+            labels:[
+              'Present ('+Math.round(totalPresent/pieTotal*100)+'%)',
+              'Leave ('+Math.round(totalLeave/pieTotal*100)+'%)',
+              'Absent ('+Math.round(totalAbsent/pieTotal*100)+'%)'
+            ],
+            datasets:[{
+              data:[totalPresent,totalLeave,totalAbsent],
+              backgroundColor:['#10b981','#3b82f6','#ef4444'],
+              borderWidth:0,hoverOffset:6
+            }]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,cutout:'62%',
+            plugins:{legend:{position:'bottom',labels:{color:'#a0b0c8',font:{size:11},padding:10}}}
+          }
+        });
+      }
+    },150);
+  }
 
   // Render leave records
   const leaveTypes=['Annual','Sick','Casual','Maternity','Paternity'];
@@ -2403,6 +2525,140 @@ function renderAttendancePage(){
 }
 
 let attPageEditRow = null;
+let attImportedData = null; // Stores AI-extracted data from file
+
+// ── AI FILE IMPORT ──
+function handleAttFileDrop(e){
+  e.preventDefault();
+  document.getElementById('attDropZone').style.borderColor='var(--border)';
+  const file = e.dataTransfer.files[0];
+  if(file) processAttFile(file);
+}
+
+function handleAttFileSelect(e){
+  const file = e.target.files[0];
+  if(file) processAttFile(file);
+}
+
+async function processAttFile(file){
+  const statusEl = document.getElementById('attAiStatusKpi');
+  const fillBtn = document.getElementById('attFillBtnKpi');
+  const nameEl = document.getElementById('attFileNameKpi');
+
+  nameEl.textContent = file.name;
+  statusEl.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Reading file...';
+  fillBtn.disabled = true;
+  fillBtn.style.opacity = '0.5';
+  attImportedData = null;
+
+  try {
+    // Read Excel file with SheetJS → convert to CSV text
+    const csvText = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          res(csv);
+        } catch(err) { rej(err); }
+      };
+      reader.onerror = rej;
+      reader.readAsArrayBuffer(file);
+    });
+
+    statusEl.innerHTML = '<i class="fa fa-robot fa-spin"></i> AI analyzing file...';
+
+    // Call Supabase Edge Function (Gemini AI)
+    const response = await fetch('https://jtdpvydgbmtrbaapswys.supabase.co/functions/v1/analyze-attendance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4'
+      },
+      body: JSON.stringify({ csvText: csvText.slice(0, 8000) })
+    });
+
+    const result = await response.json();
+    if(!result.success) throw new Error(result.error || 'AI analysis failed');
+    const parsed = result.data;
+    if(!parsed.months || !parsed.months.length) throw new Error('No data found in file');
+    attImportedData = parsed.months;
+    statusEl.innerHTML = '<i class="fa fa-check-circle" style="color:var(--green)"></i> Found ' + parsed.months.length + ' month(s) of data!';
+    fillBtn.disabled = false;
+    fillBtn.style.opacity = '1';
+    fillBtn.style.cursor = 'pointer';
+
+  } catch(err) {
+    console.error(err);
+    statusEl.innerHTML = '<i class="fa fa-circle-xmark" style="color:var(--red)"></i> Error: ' + (err.message||'Failed to analyze file');
+  }
+}
+
+function openAttImportDropdown(){
+  if(!attImportedData) return;
+  const dropdown = document.getElementById('attImportDropdown');
+  const optContainer = document.getElementById('attMonthOptions');
+  dropdown.style.display = 'block';
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  optContainer.innerHTML = attImportedData.map((m,i) => {
+    const mName = m.month || monthNames[i] || 'Month '+(i+1);
+    const yr = m.year || new Date().getFullYear();
+    return `<button onclick="confirmAttImport(${i})" 
+      style="padding:8px 14px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;"
+      onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+      ${mName} ${yr}
+    </button>`;
+  }).join('');
+}
+
+function confirmAttImport(idx){
+  const m = attImportedData[idx];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mName = m.month || monthNames[idx];
+  const yr = m.year || new Date().getFullYear();
+
+  if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${m.working_days||0}\nPresent: ${m.present||0}\nLeave: ${m.leave||0}\nAbsent: ${m.absent||0}\nLate: ${m.late||0}\nHalf Day: ${m.half_day||0}\nOT Hours: ${m.ot_hours||0}`)) return;
+
+  // Find month index
+  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
+  const year = parseInt(document.getElementById('attYear').value)||new Date().getFullYear();
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp) return;
+
+  const mIdx = monthNames.findIndex(n=>n.toLowerCase()===mName.toLowerCase());
+  if(mIdx<0) { toast('Could not match month name','error'); return; }
+
+  if(!emp.attendance) emp.attendance={};
+  if(!emp.attendance[year]) emp.attendance[year]={};
+  emp.attendance[year][mIdx] = {
+    wd: m.working_days||22,
+    present: m.present||0,
+    leave: m.leave||0,
+    absent: m.absent||0,
+    late: m.late||0,
+    half: m.half_day||0,
+    ot: m.ot_hours||0,
+    note: emp.attendance[year][mIdx]?.note||''
+  };
+
+  document.getElementById('attImportDropdown').style.display='none';
+  renderAttendancePage();
+  toast(mName+' '+yr+' data imported successfully!','success');
+}
+
+function clearAttFileData(){
+  if(!confirm('Clear uploaded file and reset import?')) return;
+  attImportedData = null;
+  const fi=document.getElementById('attFileInput'); if(fi) fi.value='';
+  const fn=document.getElementById('attFileNameKpi'); if(fn) fn.textContent='Click or drag Excel';
+  const as=document.getElementById('attAiStatusKpi'); if(as) as.textContent='';
+  const fb=document.getElementById('attFillBtnKpi'); if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+  const dd=document.getElementById('attImportDropdown'); if(dd) dd.style.display='none';
+  toast('File data cleared','info');
+}
 
 function toggleAttEdit(year, month){
   const key = `${year}_${month}`;
