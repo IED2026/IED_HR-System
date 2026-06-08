@@ -2589,13 +2589,14 @@ function renderYearlyAttCalendar(emp, year, attData){
     const titleClr = isPast ? '#60a5fa' : isCurrent ? '#94a3b8' : '#475569';
     const bgClr = isPast ? 'rgba(37,99,235,0.05)' : 'rgba(255,255,255,0.02)';
 
-    // Build mini calendar
+    // Build mini calendar with daily colors
     const firstDay = new Date(year, mIdx, 1).getDay();
     const daysInMonth = new Date(year, mIdx+1, 0).getDate();
+    const daily = mData.daily || [];
 
-    let calGrid = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:6px;">`;
+    let calGrid = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px;">`;
     dayLabels.forEach(d => {
-      calGrid += `<div style="text-align:center;font-size:8px;color:${isPast?'#64748b':'#334155'};padding:1px 0;">${d}</div>`;
+      calGrid += `<div style="text-align:center;font-size:8px;color:${isPast?'#64748b':'#334155'};padding:1px 0;font-weight:600;">${d}</div>`;
     });
 
     for(let i=0; i<firstDay; i++){
@@ -2603,8 +2604,22 @@ function renderYearlyAttCalendar(emp, year, attData){
     }
 
     for(let d=1; d<=daysInMonth; d++){
-      const dayClr = isPast ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
-      calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};padding:1px 0;">${d}</div>`;
+      const status = daily[d-1] || '';
+      let dayClr, bgDay, fontW;
+      if(!isPast){
+        dayClr='rgba(255,255,255,0.15)'; bgDay='transparent'; fontW='400';
+      } else if(status==='A'){
+        dayClr='#ef4444'; bgDay='rgba(239,68,68,0.15)'; fontW='700';
+      } else if(status==='L'){
+        dayClr='#3b82f6'; bgDay='rgba(59,130,246,0.15)'; fontW='700';
+      } else if(status==='P'){
+        dayClr='rgba(255,255,255,0.6)'; bgDay='transparent'; fontW='600';
+      } else if(status==='W' || status==='H'){
+        dayClr='rgba(255,255,255,0.2)'; bgDay='transparent'; fontW='400';
+      } else {
+        dayClr='rgba(255,255,255,0.4)'; bgDay='transparent'; fontW='400';
+      }
+      calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};">${d}</div>`;
     }
     calGrid += `</div>`;
 
@@ -2707,18 +2722,24 @@ async function processAttFile(file){
 
             if(headerIdx < 0) return;
 
-            // Store all employee rows for this month
+            // Store all employee rows for this month (with daily data)
             const empRows = [];
             for(let i=headerIdx+1; i<rows.length; i++){
               const row = rows[i];
               if(!row || !row[1]) break;
+              // Daily data: columns 3 to 33 (day 1-31)
+              const daily = [];
+              for(let d=3; d<=33; d++){
+                daily.push(String(row[d]||'').trim());
+              }
               empRows.push({
                 name: String(row[1]||'').trim(),
                 present: parseInt(row[presentCol])||0,
                 absent: parseInt(row[absentCol])||0,
                 late: parseInt(row[lateCol])||0,
                 leave: parseInt(row[leaveCol])||0,
-                wd: parseInt(row[workedCol])||0
+                wd: parseInt(row[workedCol])||0,
+                daily: daily
               });
             }
 
@@ -2833,7 +2854,8 @@ function importAllAttMonths(){
     emp.attendance[year][mIdx] = {
       wd: empRow2.wd||0, present: empRow2.present||0, leave: empRow2.leave||0,
       absent: empRow2.absent||0, late: empRow2.late||0, half: 0, ot: 0,
-      note: emp.attendance[year]?.[mIdx]?.note||''
+      note: emp.attendance[year]?.[mIdx]?.note||'',
+      daily: empRow2.daily||[]
     };
     count++;
   });
@@ -2915,7 +2937,8 @@ function confirmAttImport(idx){
     late: empRow ? empRow.late||0 : m.late||0,
     half: m.half_day||0,
     ot: m.ot_hours||0,
-    note: emp.attendance[year][mIdx]?.note||''
+    note: emp.attendance[year][mIdx]?.note||'',
+    daily: empRow?.daily || []
   };
 
   // Re-render but restore file state after
