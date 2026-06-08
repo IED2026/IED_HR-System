@@ -2654,6 +2654,13 @@ function confirmAttImport(idx){
   const mName = m.month || monthNames[idx];
   const yr = m.year || new Date().getFullYear();
 
+  // Year mismatch check
+  const selectedYear = parseInt(document.getElementById('attYear').value)||new Date().getFullYear();
+  if(yr !== selectedYear){
+    toast(`Year mismatch! File has ${yr} data but you selected ${selectedYear}. Please select year ${yr} first.`,'error');
+    return;
+  }
+
   if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${m.working_days||0}\nPresent: ${m.present||0}\nLeave: ${m.leave||0}\nAbsent: ${m.absent||0}\nLate: ${m.late||0}\nHalf Day: ${m.half_day||0}\nOT Hours: ${m.ot_hours||0}`)) return;
 
   // Find month index
