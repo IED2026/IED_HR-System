@@ -2561,9 +2561,24 @@ async function processAttFile(file){
           const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
           const result = [];
 
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonthIdx = now.getMonth();
+
           wb.SheetNames.forEach(sheetName => {
             const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
             if(mIdx < 0) return;
+
+            // Check title row for year
+            const ws2 = wb.Sheets[sheetName];
+            const titleCell = ws2['A1'];
+            const title = titleCell ? String(titleCell.v || '') : '';
+            const yearMatch = title.match(/20\d\d/);
+            const sheetYear = yearMatch ? parseInt(yearMatch[0]) : currentYear;
+
+            // Skip if this month/year is in the future
+            if(sheetYear > currentYear) return;
+            if(sheetYear === currentYear && mIdx >= currentMonthIdx) return;
             const ws = wb.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
