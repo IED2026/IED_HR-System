@@ -2649,17 +2649,85 @@ function openAttImportDropdown(){
   const optContainer = document.getElementById('attMonthOptions');
   dropdown.style.display = 'block';
 
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  optContainer.innerHTML = attImportedData.map((m,i) => {
-    const mName = m.month || monthNames[i] || 'Month '+(i+1);
-    const yr = m.year || new Date().getFullYear();
-    return `<button onclick="confirmAttImport(${i})" 
-      style="padding:8px 14px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;"
-      onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
-      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-      ${mName} ${yr}
-    </button>`;
-  }).join('');
+  const allMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now = new Date();
+  const currentMonthIdx = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Build calendar grid
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;">`;
+
+  allMonths.forEach((m, i) => {
+    const importedIdx = attImportedData.findIndex(d => fullNames.indexOf(d.month) === i);
+    const hasData = importedIdx >= 0;
+    const isFuture = i > currentMonthIdx;
+
+    if(hasData && !isFuture){
+      // Available month
+      html += `<button onclick="confirmAttImport(${importedIdx})" 
+        style="padding:8px 4px;border-radius:8px;background:var(--navy3);border:1px solid var(--gold);color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;"
+        onmouseover="this.style.background='rgba(212,175,55,0.15)'"
+        onmouseout="this.style.background='var(--navy3)'">${m}</button>`;
+    } else {
+      // Disabled month (future or no data)
+      html += `<button disabled
+        style="padding:8px 4px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.2);font-size:12px;font-weight:600;cursor:not-allowed;position:relative;">
+        ${m}<div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.15);"></div>
+      </button>`;
+    }
+  });
+
+  html += `</div>`;
+  html += `<div style="display:flex;gap:8px;margin-top:4px;">
+    <button onclick="importAllAttMonths()" style="flex:1;padding:7px;border-radius:8px;background:rgba(212,175,55,0.12);border:1px solid var(--gold);color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+      <i class="fa fa-check-double"></i> All Fill
+    </button>
+    <button onclick="document.getElementById('attImportDropdown').style.display='none'" style="flex:1;padding:7px;border-radius:8px;background:var(--navy3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">
+      <i class="fa fa-xmark"></i> Cancel
+    </button>
+  </div>`;
+
+  optContainer.innerHTML = html;
+}
+
+function importAllAttMonths(){
+  if(!attImportedData) return;
+  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
+  const year = parseInt(document.getElementById('attYear').value)||new Date().getFullYear();
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp) return;
+
+  const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let count = 0;
+  attImportedData.forEach(m => {
+    if(m.year !== year) return;
+    const mIdx = fullNames.indexOf(m.month);
+    if(mIdx < 0) return;
+    if(!emp.attendance) emp.attendance={};
+    if(!emp.attendance[year]) emp.attendance[year]={};
+    emp.attendance[year][mIdx] = {
+      wd: m.working_days||22, present: m.present||0, leave: m.leave||0,
+      absent: m.absent||0, late: m.late||0, half: m.half_day||0, ot: m.ot_hours||0,
+      note: emp.attendance[year]?.[mIdx]?.note||''
+    };
+    count++;
+  });
+
+  const savedData = attImportedData;
+  saveState();
+  renderAttendancePage();
+  attImportedData = savedData;
+  setTimeout(()=>{
+    const fb=document.getElementById('attFillBtnKpi');
+    const st=document.getElementById('attAiStatusKpi');
+    const fn=document.getElementById('attFileNameKpi');
+    if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
+    if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+savedData.length+' month(s) ready!';
+    if(fn) fn.textContent='File loaded ✓';
+    openAttImportDropdown();
+  },200);
+  toast(count+' months imported!','success');
 }
 
 function confirmAttImport(idx){
