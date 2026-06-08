@@ -2595,7 +2595,7 @@ async function processAttFile(file){
               if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;empCount++; }
             }
 
-            if(empCount>0) result.push({
+            if(empCount>0 && totalP>0) result.push({
               month: fullNames[mIdx], year: 2026, working_days: 22,
               present: Math.round(totalP/empCount),
               leave: Math.round(totalLv/empCount),
