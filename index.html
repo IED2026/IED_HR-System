@@ -2314,7 +2314,11 @@ function renderAttendancePage(){
   let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
   const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
   const rows=MONTHS.map((m,i)=>{
-    const mData=attData[i]||{wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
+    const isFutureOrCurrent = (year===new Date().getFullYear() && i>=new Date().getMonth()) || year>new Date().getFullYear();
+    const rawData = attData[i]||{};
+    const mData = isFutureOrCurrent
+      ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
+      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData};
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
@@ -5998,7 +6002,11 @@ function renderAttendanceTab(){
   // Populate attendance rows
   let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
   const rows=MONTHS.map((m,i)=>{
-    const mData=attData[i]||{wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
+    const isFutureOrCurrent = (year===new Date().getFullYear() && i>=new Date().getMonth()) || year>new Date().getFullYear();
+    const rawData = attData[i]||{};
+    const mData = isFutureOrCurrent
+      ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
+      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
