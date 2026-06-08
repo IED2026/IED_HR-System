@@ -2791,6 +2791,12 @@ function confirmAttImport(idx){
     return;
   }
 
+  // Get selected employee
+  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
+  const year = selectedYear;
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp){ toast('Select an employee first','error'); return; }
+
   // Find employee row for popup preview
   const empNamePrev = (emp.name||'').trim().toLowerCase();
   let prevRow = null;
@@ -2803,11 +2809,6 @@ function confirmAttImport(idx){
   if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${pd.wd||pd.working_days||0}\nPresent: ${pd.present||0}\nLeave: ${pd.leave||0}\nAbsent: ${pd.absent||0}\nLate: ${pd.late||0}\nHalf Day: ${pd.half_day||0}\nOT Hours: ${pd.ot_hours||0}`)) return;
 
   // Find month index
-  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
-  const year = parseInt(document.getElementById('attYear').value)||new Date().getFullYear();
-  const emp = employees.find(e=>e.id===empId);
-  if(!emp) return;
-
   const mIdx = monthNames.findIndex(n=>n.toLowerCase()===mName.toLowerCase());
   if(mIdx<0) { toast('Could not match month name','error'); return; }
 
