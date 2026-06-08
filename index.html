@@ -741,6 +741,9 @@ async function handleLoginSubmit(e) {
       </div>
     </div>
 
+    <!-- Yearly Attendance Status -->
+    <div id="attYearlyCalSection" style="margin-bottom:16px;"></div>
+
     <!-- Leave Records -->
     <div class="form-section" style="margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -2434,6 +2437,9 @@ function renderAttendancePage(){
     document.body.appendChild(inp);
   }
 
+  // ── YEARLY CALENDAR ──
+  renderYearlyAttCalendar(emp, year, attData);
+
   // ── RESTORE FILE STATE after render ──
   if(attImportedData){
     setTimeout(()=>{
@@ -2557,6 +2563,75 @@ function renderAttendancePage(){
 }
 
 let attPageEditRow = null;
+
+function renderYearlyAttCalendar(emp, year, attData){
+  const section = document.getElementById('attYearlyCalSection');
+  if(!section) return;
+
+  const nowM = new Date().getFullYear()===year ? new Date().getMonth() : 11;
+  const mNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dayLabels = ['S','M','T','W','T','F','S'];
+
+  let html = `
+    <div style="border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+      <div style="padding:14px 20px;background:linear-gradient(135deg,#0f1e30,#162840);border-bottom:1px solid rgba(255,255,255,0.08);">
+        <span style="font-size:13px;font-weight:700;color:var(--gold);">📅 Yearly Attendance Status: ${emp.name||''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;background:var(--navy2);">`;
+
+  mNames.forEach((mName, mIdx) => {
+    const isPast = mIdx < nowM;
+    const isCurrent = mIdx === nowM;
+    const isFuture = mIdx > nowM;
+    const mData = attData[mIdx]||{wd:0,present:0,absent:0,leave:0,late:0};
+
+    const borderClr = isPast ? '#2563eb' : 'rgba(255,255,255,0.1)';
+    const titleClr = isPast ? '#60a5fa' : isCurrent ? '#94a3b8' : '#475569';
+    const bgClr = isPast ? 'rgba(37,99,235,0.05)' : 'rgba(255,255,255,0.02)';
+
+    // Build mini calendar
+    const firstDay = new Date(year, mIdx, 1).getDay();
+    const daysInMonth = new Date(year, mIdx+1, 0).getDate();
+
+    let calGrid = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:6px;">`;
+    dayLabels.forEach(d => {
+      calGrid += `<div style="text-align:center;font-size:8px;color:${isPast?'#64748b':'#334155'};padding:1px 0;">${d}</div>`;
+    });
+
+    for(let i=0; i<firstDay; i++){
+      calGrid += `<div></div>`;
+    }
+
+    for(let d=1; d<=daysInMonth; d++){
+      const dayClr = isPast ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
+      calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};padding:1px 0;">${d}</div>`;
+    }
+    calGrid += `</div>`;
+
+    // Stats for past months
+    let stats = '';
+    if(isPast){
+      const pct = mData.wd>0 ? Math.round((mData.present||0)/mData.wd*100) : 0;
+      const pctClr = pct>=90?'#10b981':pct>=75?'#f59e0b':'#ef4444';
+      stats = `<div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">
+        <span style="font-size:9px;color:#10b981;">P:${mData.present||0}</span>
+        <span style="font-size:9px;color:#3b82f6;">L:${mData.leave||0}</span>
+        <span style="font-size:9px;color:#ef4444;">A:${mData.absent||0}</span>
+        <span style="font-size:9px;color:${pctClr};font-weight:700;">${pct}%</span>
+      </div>`;
+    }
+
+    html += `
+      <div style="border:1.5px solid ${borderClr};border-radius:10px;padding:10px;background:${bgClr};opacity:${isFuture?'0.4':'1'};">
+        <div style="font-size:11px;font-weight:700;color:${titleClr};margin-bottom:2px;">${mName} ${year}</div>
+        ${calGrid}
+        ${stats}
+      </div>`;
+  });
+
+  html += `</div></div>`;
+  section.innerHTML = html;
+}
 let attImportedData = null; // Stores AI-extracted data from file
 
 // ── AI FILE IMPORT ──
