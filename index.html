@@ -2561,9 +2561,12 @@ async function processAttFile(file){
           const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
           const result = [];
 
+          const currentMonth = new Date().getMonth(); // 0=Jan, 11=Dec
           wb.SheetNames.forEach(sheetName => {
             const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
             if(mIdx < 0) return;
+            // Skip future months
+            if(mIdx > currentMonth) return;
             const ws = wb.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
