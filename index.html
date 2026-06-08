@@ -2314,7 +2314,7 @@ function renderAttendancePage(){
   let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
   const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
   const rows=MONTHS.map((m,i)=>{
-    const mData=attData[i]||{wd:22,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
+    const mData=attData[i]||{wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
@@ -2582,7 +2582,7 @@ async function processAttFile(file){
             const ws = wb.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            let headerIdx=-1, presentCol=-1, absentCol=-1, lateCol=-1, leaveCol=-1;
+            let headerIdx=-1, presentCol=-1, absentCol=-1, lateCol=-1, leaveCol=-1, workedCol=-1;
             rows.forEach((row, i) => {
               if(!Array.isArray(row)) return;
               const rowStr = row.map(c => String(c||'').toLowerCase());
@@ -2593,13 +2593,14 @@ async function processAttFile(file){
                   else if(c.includes('days absent')) absentCol=ci;
                   else if(c.includes('late count')) lateCol=ci;
                   else if(c.includes('leave days')) leaveCol=ci;
+                  else if(c.includes('days worked') || c.includes('working days') || c.includes('working day')) workedCol=ci;
                 });
               }
             });
 
             if(headerIdx < 0) return;
 
-            let totalP=0,totalA=0,totalL=0,totalLv=0,empCount=0;
+            let totalP=0,totalA=0,totalL=0,totalLv=0,totalWD=0,empCount=0;
             for(let i=headerIdx+1; i<rows.length; i++){
               const row = rows[i];
               if(!row || !row[1]) break;
@@ -2607,13 +2608,14 @@ async function processAttFile(file){
               const a=parseInt(row[absentCol])||0;
               const l=parseInt(row[lateCol])||0;
               const lv=parseInt(row[leaveCol])||0;
-              if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;empCount++; }
+              const wd=parseInt(row[workedCol])||0;
+              if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;totalWD+=wd;empCount++; }
             }
 
             // Only include if there's meaningful variation (not all formula-filled zeros)
             const hasRealData = totalA>0 || totalL>0 || totalLv>0 || (empCount>0 && totalP>0 && totalP < empCount*22);
             if(empCount>0 && hasRealData) result.push({
-              month: fullNames[mIdx], year: 2026, working_days: 22,
+              month: fullNames[mIdx], year: sheetYear, working_days: empCount>0?Math.round(totalWD/empCount):0,
               present: Math.round(totalP/empCount),
               leave: Math.round(totalLv/empCount),
               absent: Math.round(totalA/empCount),
@@ -5996,7 +5998,7 @@ function renderAttendanceTab(){
   // Populate attendance rows
   let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
   const rows=MONTHS.map((m,i)=>{
-    const mData=attData[i]||{wd:22,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
+    const mData=attData[i]||{wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:''};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
