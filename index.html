@@ -2699,11 +2699,14 @@ function importAllAttMonths(){
   if(!emp) return;
 
   const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const currentMonthIdx = new Date().getMonth();
   let count = 0;
   attImportedData.forEach(m => {
     if(m.year !== year) return;
     const mIdx = fullNames.indexOf(m.month);
     if(mIdx < 0) return;
+    // Only past months (before current month)
+    if(mIdx >= currentMonthIdx) return;
     if(!emp.attendance) emp.attendance={};
     if(!emp.attendance[year]) emp.attendance[year]={};
     emp.attendance[year][mIdx] = {
