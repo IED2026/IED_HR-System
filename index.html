@@ -2675,9 +2675,21 @@ function confirmAttImport(idx){
     note: emp.attendance[year][mIdx]?.note||''
   };
 
-  // Keep dropdown open so user can import more months
+  // Re-render but restore file state after
+  const savedData = attImportedData;
   renderAttendancePage();
-  toast(mName+' '+yr+' data imported! Select another month or upload new file.','success');
+  // Restore imported data and dropdown after render
+  attImportedData = savedData;
+  setTimeout(()=>{
+    const fb = document.getElementById('attFillBtnKpi');
+    const st = document.getElementById('attAiStatusKpi');
+    const fn = document.getElementById('attFileNameKpi');
+    if(fb){ fb.disabled=false; fb.style.opacity='1'; fb.style.cursor='pointer'; }
+    if(st) st.innerHTML = '<i class="fa fa-check-circle" style="color:var(--green)"></i> '+savedData.length+' month(s) ready — select another!';
+    if(fn) fn.textContent = 'File loaded ✓';
+    openAttImportDropdown();
+  }, 200);
+  toast(mName+' '+yr+' imported! Select another month to continue.','success');
 }
 
 function clearAttFileData(){
