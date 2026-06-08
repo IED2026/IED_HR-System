@@ -2363,11 +2363,11 @@ function renderAttendancePage(){
     }
     const locked = !attPageEditRow || attPageEditRow !== `${year}_${i}`;
     const inputStyle = locked
-      ? 'width:65px;font-size:13px;color:var(--text);font-weight:600;background:transparent;border:none;pointer-events:none;text-align:center;'
-      : 'width:65px;font-size:13px;color:#111;font-weight:700;text-align:center;background:#fff;border:2px solid var(--gold);border-radius:6px;';
+      ? 'width:52px;font-size:12px;color:var(--text);font-weight:600;background:transparent;border:none;pointer-events:none;text-align:center;height:22px;'
+      : 'width:52px;font-size:12px;color:#111;font-weight:700;text-align:center;background:#fff;border:1.5px solid var(--gold);border-radius:4px;height:22px;';
     const noteStyle = locked
-      ? 'width:110px;font-size:12px;background:transparent;border:none;pointer-events:none;color:var(--text3);'
-      : 'width:110px;font-size:12px;color:#111;background:#fff;border:2px solid var(--gold);border-radius:6px;';
+      ? 'width:90px;font-size:11px;background:transparent;border:none;pointer-events:none;color:var(--text3);height:22px;'
+      : 'width:90px;font-size:11px;color:#111;background:#fff;border:2px solid var(--gold);border-radius:6px;';
     const rowBg = locked ? '' : 'background:rgba(212,175,55,0.04);';
     const rowBorder = 'border-bottom:1px solid rgba(255,255,255,0.04);';
     const colBorder = 'border-right:1px solid rgba(255,255,255,0.04);';
@@ -2397,8 +2397,17 @@ function renderAttendancePage(){
   const tbody=document.getElementById('attTableBody');
   if(tbody) tbody.innerHTML=rows;
 
-  // Overall attendance = total present / total working days so far
-  const overallPct = totalWDSoFar>0 ? Math.round(totalPresent/totalWDSoFar*100) : 0;
+  // Overall attendance = average of monthly attendance % (Jan to last completed month)
+  let monthPctSum = 0, monthPctCount = 0;
+  for(let mi=0; mi<nowM; mi++){
+    const md = attData[mi]||{};
+    const mwd = parseInt(md.wd)||0;
+    const mp = parseInt(md.present)||0;
+    const mh = parseInt(md.holiday)||0;
+    const effWD = (mwd-mh)>0?(mwd-mh):mwd;
+    if(effWD>0){ monthPctSum += Math.round(mp/effWD*100); monthPctCount++; }
+  }
+  const overallPct = monthPctCount>0 ? Math.round(monthPctSum/monthPctCount) : 0;
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
   const kpiEl=document.getElementById('attKpi');
   if(kpiEl) kpiEl.innerHTML=`
