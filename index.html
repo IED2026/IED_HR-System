@@ -2791,7 +2791,16 @@ function confirmAttImport(idx){
     return;
   }
 
-  if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${m.working_days||0}\nPresent: ${m.present||0}\nLeave: ${m.leave||0}\nAbsent: ${m.absent||0}\nLate: ${m.late||0}\nHalf Day: ${m.half_day||0}\nOT Hours: ${m.ot_hours||0}`)) return;
+  // Find employee row for popup preview
+  const empNamePrev = (emp.name||'').trim().toLowerCase();
+  let prevRow = null;
+  if(m.empRows){
+    prevRow = m.empRows.find(r=>r.name.toLowerCase()===empNamePrev);
+    if(!prevRow) prevRow = m.empRows.find(r=>r.name.toLowerCase().includes(empNamePrev.split(' ')[0].toLowerCase())||empNamePrev.includes(r.name.toLowerCase().split(' ')[0]));
+    if(!prevRow) prevRow = m.empRows.find(r=>empNamePrev.split(' ').some(w=>w.length>2&&r.name.toLowerCase().includes(w.toLowerCase())));
+  }
+  const pd = prevRow || m;
+  if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${pd.wd||pd.working_days||0}\nPresent: ${pd.present||0}\nLeave: ${pd.leave||0}\nAbsent: ${pd.absent||0}\nLate: ${pd.late||0}\nHalf Day: ${pd.half_day||0}\nOT Hours: ${pd.ot_hours||0}`)) return;
 
   // Find month index
   const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
