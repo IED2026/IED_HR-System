@@ -2561,12 +2561,9 @@ async function processAttFile(file){
           const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
           const result = [];
 
-          const currentMonth = new Date().getMonth(); // 0=Jan, 11=Dec
           wb.SheetNames.forEach(sheetName => {
             const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
             if(mIdx < 0) return;
-            // Skip current and future months (only show completed months)
-            if(mIdx >= currentMonth) return;
             const ws = wb.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
@@ -2598,7 +2595,9 @@ async function processAttFile(file){
               if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;empCount++; }
             }
 
-            if(empCount>0 && totalP>0) result.push({
+            // Only include if there's meaningful variation (not all formula-filled zeros)
+            const hasRealData = totalA>0 || totalL>0 || totalLv>0 || (empCount>0 && totalP>0 && totalP < empCount*22);
+            if(empCount>0 && hasRealData) result.push({
               month: fullNames[mIdx], year: 2026, working_days: 22,
               present: Math.round(totalP/empCount),
               leave: Math.round(totalLv/empCount),
