@@ -2395,6 +2395,7 @@ function renderAttendancePage(){
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
   const kpiEl=document.getElementById('attKpi');
   if(kpiEl) kpiEl.innerHTML=`
+    <div class="kpi-card blue"><div class="kpi-icon">📅</div><div class="kpi-val">${totalWDSoFar}</div><div class="kpi-label">Working Days</div></div>
     <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
     <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent}</div><div class="kpi-label">Days Absent</div></div>
     <div class="kpi-card orange"><div class="kpi-icon">⏰</div><div class="kpi-val">${totalLate}</div><div class="kpi-label">Late Arrivals</div></div>
