@@ -2700,6 +2700,10 @@ function importAllAttMonths(){
 
   const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const currentMonthIdx = new Date().getMonth();
+  const lastMonth = fullNames[currentMonthIdx - 1];
+
+  if(!confirm(`Are you sure to fill data from January to ${lastMonth} ${year}?`)) return;
+
   let count = 0;
   attImportedData.forEach(m => {
     if(m.year !== year) return;
