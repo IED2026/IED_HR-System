@@ -2618,7 +2618,9 @@ function renderYearlyAttCalendar(emp, year, attData){
         dayClr='#3b82f6'; bgDay='rgba(59,130,246,0.15)'; fontW='700';
       } else if(status==='P'){
         dayClr='rgba(255,255,255,0.6)'; bgDay='transparent'; fontW='600';
-      } else if(status==='W' || status==='H'){
+      } else if(status==='H'){
+        dayClr='#f97316'; bgDay='rgba(249,115,22,0.15)'; fontW='700';
+      } else if(status==='W'){
         dayClr='rgba(255,255,255,0.2)'; bgDay='transparent'; fontW='400';
       } else {
         dayClr='rgba(255,255,255,0.4)'; bgDay='transparent'; fontW='400';
@@ -2736,6 +2738,7 @@ async function processAttFile(file){
               for(let d=3; d<=33; d++){
                 daily.push(String(row[d]||'').trim());
               }
+              const holidayCount = daily.filter(d=>d==='H').length;
               empRows.push({
                 name: String(row[1]||'').trim(),
                 present: parseInt(row[presentCol])||0,
@@ -2743,6 +2746,7 @@ async function processAttFile(file){
                 late: parseInt(row[lateCol])||0,
                 leave: parseInt(row[leaveCol])||0,
                 wd: parseInt(row[workedCol])||0,
+                holiday: holidayCount,
                 daily: daily
               });
             }
@@ -2857,7 +2861,7 @@ function importAllAttMonths(){
     if(!emp.attendance[year]) emp.attendance[year]={};
     emp.attendance[year][mIdx] = {
       wd: empRow2.wd||0, present: empRow2.present||0, leave: empRow2.leave||0,
-      absent: empRow2.absent||0, late: empRow2.late||0, half: 0, ot: 0,
+      absent: empRow2.absent||0, holiday: empRow2.holiday||0, late: empRow2.late||0, half: 0, ot: 0,
       note: emp.attendance[year]?.[mIdx]?.note||'',
       daily: empRow2.daily||[]
     };
@@ -2908,7 +2912,7 @@ function confirmAttImport(idx){
     if(!prevRow) prevRow = m.empRows.find(r=>empNamePrev.split(' ').some(w=>w.length>2&&r.name.toLowerCase().includes(w.toLowerCase())));
   }
   const pd = prevRow || m;
-  if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${pd.wd||pd.working_days||0}\nPresent: ${pd.present||0}\nLeave: ${pd.leave||0}\nAbsent: ${pd.absent||0}\nLate: ${pd.late||0}\nHalf Day: ${pd.half_day||0}\nOT Hours: ${pd.ot_hours||0}`)) return;
+  if(!confirm(`Import data from ${mName} ${yr}?\n\nWorking Days: ${pd.wd||pd.working_days||0}\nPresent: ${pd.present||0}\nLeave: ${pd.leave||0}\nAbsent: ${pd.absent||0}\nHoliday: ${pd.holiday||0}\nLate: ${pd.late||0}\nHalf Day: ${pd.half_day||0}\nOT Hours: ${pd.ot_hours||0}`)) return;
 
   // Find month index
   const mIdx = monthNames.findIndex(n=>n.toLowerCase()===mName.toLowerCase());
@@ -2938,6 +2942,7 @@ function confirmAttImport(idx){
     present: empRow ? empRow.present||0 : m.present||0,
     leave: empRow ? empRow.leave||0 : m.leave||0,
     absent: empRow ? empRow.absent||0 : m.absent||0,
+    holiday: empRow ? empRow.holiday||0 : 0,
     late: empRow ? empRow.late||0 : m.late||0,
     half: m.half_day||0,
     ot: m.ot_hours||0,
