@@ -2552,51 +2552,77 @@ async function processAttFile(file){
   attImportedData = null;
 
   try {
-    // Read Excel file with SheetJS → convert all sheets to CSV text
-    const csvText = await new Promise((res, rej) => {
+    const months = await new Promise((res, rej) => {
       const reader = new FileReader();
       reader.onload = e => {
         try {
           const wb = XLSX.read(e.target.result, { type: 'array' });
-          // Combine all sheets
-          let allCsv = '';
-          wb.SheetNames.forEach(name => {
-            const ws = wb.Sheets[name];
-            const csv = XLSX.utils.sheet_to_csv(ws);
-            allCsv += `\n=== Sheet: ${name} ===\n` + csv;
+          const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const fullNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+          const result = [];
+
+          wb.SheetNames.forEach(sheetName => {
+            const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
+            if(mIdx < 0) return;
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+            let headerIdx=-1, presentCol=-1, absentCol=-1, lateCol=-1, leaveCol=-1;
+            rows.forEach((row, i) => {
+              if(!Array.isArray(row)) return;
+              const rowStr = row.map(c => String(c||'').toLowerCase());
+              if(rowStr.some(c => c.includes('days present') || c.includes('days absent'))){
+                headerIdx = i;
+                rowStr.forEach((c, ci) => {
+                  if(c.includes('days present')) presentCol=ci;
+                  else if(c.includes('days absent')) absentCol=ci;
+                  else if(c.includes('late count')) lateCol=ci;
+                  else if(c.includes('leave days')) leaveCol=ci;
+                });
+              }
+            });
+
+            if(headerIdx < 0) return;
+
+            let totalP=0,totalA=0,totalL=0,totalLv=0,empCount=0;
+            for(let i=headerIdx+1; i<rows.length; i++){
+              const row = rows[i];
+              if(!row || !row[1]) break;
+              const p=parseInt(row[presentCol])||0;
+              const a=parseInt(row[absentCol])||0;
+              const l=parseInt(row[lateCol])||0;
+              const lv=parseInt(row[leaveCol])||0;
+              if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;empCount++; }
+            }
+
+            if(empCount>0) result.push({
+              month: fullNames[mIdx], year: 2026, working_days: 22,
+              present: Math.round(totalP/empCount),
+              leave: Math.round(totalLv/empCount),
+              absent: Math.round(totalA/empCount),
+              late: Math.round(totalL/empCount),
+              half_day: 0, ot_hours: 0
+            });
           });
-          res(allCsv);
-        } catch(err) { rej(err); }
+
+          result.sort((a,b)=>fullNames.indexOf(a.month)-fullNames.indexOf(b.month));
+          res(result);
+        } catch(err){ rej(err); }
       };
       reader.onerror = rej;
       reader.readAsArrayBuffer(file);
     });
 
-    statusEl.innerHTML = '<i class="fa fa-robot fa-spin"></i> AI analyzing file...';
-
-    // Call Supabase Edge Function (Gemini AI)
-    const response = await fetch('https://jtdpvydgbmtrbaapswys.supabase.co/functions/v1/analyze-attendance', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZHB2eWRnYm10cmJhYXBzd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTQ1MzYsImV4cCI6MjA5NTkzMDUzNn0.SoANGN_Qmp5ihhmA62Ojb4aqHZU9HLUxu08f3xm51U4'
-      },
-      body: JSON.stringify({ csvText: csvText.slice(0, 8000) })
-    });
-
-    const result = await response.json();
-    if(!result.success) throw new Error(result.error || 'AI analysis failed');
-    const parsed = result.data;
-    if(!parsed.months || !parsed.months.length) throw new Error('No data found in file');
-    attImportedData = parsed.months;
-    statusEl.innerHTML = '<i class="fa fa-check-circle" style="color:var(--green)"></i> Found ' + parsed.months.length + ' month(s) of data!';
+    if(!months.length) throw new Error('No Att-Jan/Feb... sheets found in file');
+    attImportedData = months;
+    statusEl.innerHTML = '<i class="fa fa-check-circle" style="color:var(--green)"></i> Found '+months.length+' month(s)!';
     fillBtn.disabled = false;
     fillBtn.style.opacity = '1';
     fillBtn.style.cursor = 'pointer';
 
-  } catch(err) {
+  } catch(err){
     console.error(err);
-    statusEl.innerHTML = '<i class="fa fa-circle-xmark" style="color:var(--red)"></i> Error: ' + (err.message||'Failed to analyze file');
+    statusEl.innerHTML = '<i class="fa fa-circle-xmark" style="color:var(--red)"></i> Error: '+(err.message||'Failed');
   }
 }
 
