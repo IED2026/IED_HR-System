@@ -2616,27 +2616,25 @@ async function processAttFile(file){
 
             if(headerIdx < 0) return;
 
-            let totalP=0,totalA=0,totalL=0,totalLv=0,totalWD=0,empCount=0;
+            // Store all employee rows for this month
+            const empRows = [];
             for(let i=headerIdx+1; i<rows.length; i++){
               const row = rows[i];
               if(!row || !row[1]) break;
-              const p=parseInt(row[presentCol])||0;
-              const a=parseInt(row[absentCol])||0;
-              const l=parseInt(row[lateCol])||0;
-              const lv=parseInt(row[leaveCol])||0;
-              const wd=parseInt(row[workedCol])||0;
-              if(p>0||a>0||l>0||lv>0){ totalP+=p;totalA+=a;totalL+=l;totalLv+=lv;totalWD+=wd;empCount++; }
+              empRows.push({
+                name: String(row[1]||'').trim(),
+                present: parseInt(row[presentCol])||0,
+                absent: parseInt(row[absentCol])||0,
+                late: parseInt(row[lateCol])||0,
+                leave: parseInt(row[leaveCol])||0,
+                wd: parseInt(row[workedCol])||0
+              });
             }
 
-            // Only include if there's meaningful variation (not all formula-filled zeros)
-            const hasRealData = totalA>0 || totalL>0 || totalLv>0 || (empCount>0 && totalP>0 && totalP < empCount*22);
-            if(empCount>0 && hasRealData) result.push({
-              month: fullNames[mIdx], year: sheetYear, working_days: empCount>0?Math.round(totalWD/empCount):0,
-              present: Math.round(totalP/empCount),
-              leave: Math.round(totalLv/empCount),
-              absent: Math.round(totalA/empCount),
-              late: Math.round(totalL/empCount),
-              half_day: 0, ot_hours: 0
+            if(empRows.length > 0) result.push({
+              month: fullNames[mIdx],
+              year: sheetYear,
+              empRows: empRows
             });
           });
 
@@ -2729,11 +2727,21 @@ function importAllAttMonths(){
     if(mIdx < 0) return;
     // Only past months (before current month)
     if(mIdx >= currentMonthIdx) return;
+    // Match employee by name
+    const empName2 = (emp.name||'').trim().toLowerCase();
+    let empRow2 = null;
+    if(m.empRows){
+      empRow2 = m.empRows.find(r=>r.name.toLowerCase()===empName2);
+      if(!empRow2) empRow2 = m.empRows.find(r=>r.name.toLowerCase().includes(empName2.split(' ')[0].toLowerCase())||empName2.includes(r.name.toLowerCase().split(' ')[0]));
+      if(!empRow2) empRow2 = m.empRows.find(r=>empName2.split(' ').some(w=>w.length>2&&r.name.toLowerCase().includes(w.toLowerCase())));
+    }
+    if(!empRow2) return; // skip if employee not found in file
+
     if(!emp.attendance) emp.attendance={};
     if(!emp.attendance[year]) emp.attendance[year]={};
     emp.attendance[year][mIdx] = {
-      wd: m.working_days||22, present: m.present||0, leave: m.leave||0,
-      absent: m.absent||0, late: m.late||0, half: m.half_day||0, ot: m.ot_hours||0,
+      wd: empRow2.wd||0, present: empRow2.present||0, leave: empRow2.leave||0,
+      absent: empRow2.absent||0, late: empRow2.late||0, half: 0, ot: 0,
       note: emp.attendance[year]?.[mIdx]?.note||''
     };
     count++;
@@ -2779,14 +2787,31 @@ function confirmAttImport(idx){
   const mIdx = monthNames.findIndex(n=>n.toLowerCase()===mName.toLowerCase());
   if(mIdx<0) { toast('Could not match month name','error'); return; }
 
+  // Find employee in file by name matching
+  const empName = (emp.name||'').trim().toLowerCase();
+  let empRow = null;
+  if(m.empRows){
+    // Try exact match first
+    empRow = m.empRows.find(r => r.name.toLowerCase() === empName);
+    // Try partial match
+    if(!empRow) empRow = m.empRows.find(r => r.name.toLowerCase().includes(empName.split(' ')[0].toLowerCase()) || empName.includes(r.name.toLowerCase().split(' ')[0]));
+    // Try first word of last name
+    if(!empRow) empRow = m.empRows.find(r => empName.split(' ').some(w => w.length>2 && r.name.toLowerCase().includes(w.toLowerCase())));
+  }
+
+  if(!empRow && m.empRows) {
+    toast('Employee "'+emp.name+'" not found in file for '+mName+'. Check name spelling.','error');
+    return;
+  }
+
   if(!emp.attendance) emp.attendance={};
   if(!emp.attendance[year]) emp.attendance[year]={};
   emp.attendance[year][mIdx] = {
-    wd: m.working_days||22,
-    present: m.present||0,
-    leave: m.leave||0,
-    absent: m.absent||0,
-    late: m.late||0,
+    wd: empRow ? empRow.wd||0 : m.working_days||0,
+    present: empRow ? empRow.present||0 : m.present||0,
+    leave: empRow ? empRow.leave||0 : m.leave||0,
+    absent: empRow ? empRow.absent||0 : m.absent||0,
+    late: empRow ? empRow.late||0 : m.late||0,
     half: m.half_day||0,
     ot: m.ot_hours||0,
     note: emp.attendance[year][mIdx]?.note||''
