@@ -2552,15 +2552,20 @@ async function processAttFile(file){
   attImportedData = null;
 
   try {
-    // Read Excel file with SheetJS → convert to CSV text
+    // Read Excel file with SheetJS → convert all sheets to CSV text
     const csvText = await new Promise((res, rej) => {
       const reader = new FileReader();
       reader.onload = e => {
         try {
           const wb = XLSX.read(e.target.result, { type: 'array' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const csv = XLSX.utils.sheet_to_csv(ws);
-          res(csv);
+          // Combine all sheets
+          let allCsv = '';
+          wb.SheetNames.forEach(name => {
+            const ws = wb.Sheets[name];
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            allCsv += `\n=== Sheet: ${name} ===\n` + csv;
+          });
+          res(allCsv);
         } catch(err) { rej(err); }
       };
       reader.onerror = rej;
