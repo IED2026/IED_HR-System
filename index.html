@@ -2565,8 +2565,8 @@ async function processAttFile(file){
           wb.SheetNames.forEach(sheetName => {
             const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
             if(mIdx < 0) return;
-            // Skip future months
-            if(mIdx > currentMonth) return;
+            // Skip current and future months (only show completed months)
+            if(mIdx >= currentMonth) return;
             const ws = wb.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
