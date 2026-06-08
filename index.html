@@ -2418,6 +2418,18 @@ function renderAttendancePage(){
     document.body.appendChild(inp);
   }
 
+  // ── RESTORE FILE STATE after render ──
+  if(attImportedData){
+    setTimeout(()=>{
+      const fb=document.getElementById('attFillBtnKpi');
+      const st=document.getElementById('attAiStatusKpi');
+      const fn=document.getElementById('attFileNameKpi');
+      if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
+      if(st && !st.innerHTML.includes('check-circle')) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+attImportedData.length+' month(s) ready!';
+      if(fn && fn.textContent==='Click or drag Excel') fn.textContent='File loaded ✓';
+    },50);
+  }
+
   // ── CHARTS ──
   const attChartWrap = document.getElementById('attChartSection');
   if(attChartWrap){
