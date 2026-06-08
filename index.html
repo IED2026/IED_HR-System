@@ -2692,7 +2692,7 @@ function openAttImportDropdown(){
   allMonths.forEach((m, i) => {
     const importedIdx = attImportedData.findIndex(d => fullNames.indexOf(d.month) === i);
     const hasData = importedIdx >= 0;
-    const isFuture = i > currentMonthIdx;
+    const isFuture = i >= currentMonthIdx;
 
     if(hasData && !isFuture){
       // Available month
