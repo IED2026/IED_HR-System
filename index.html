@@ -2318,7 +2318,7 @@ function renderAttendancePage(){
     const rawData = attData[i]||{};
     const mData = isFutureOrCurrent
       ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
-      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData};
+      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
@@ -2354,7 +2354,7 @@ function renderAttendancePage(){
     const rowBg = locked ? '' : 'background:rgba(212,175,55,0.04);';
     return `<tr style="${rowBg}transition:background .2s;">
       <td style="font-weight:700;font-size:13px;color:var(--text);">${m}</td>
-      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.wd||26}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'wd',this.value)"></td>
+      <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.wd||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'wd',this.value)"></td>
       <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.present||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'present',this.value)"></td>
       <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.leave||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'leave',this.value)"></td>
       <td style="text-align:center;"><input class="form-control" type="number" style="${inputStyle}" value="${mData.absent||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'absent',this.value)"></td>
@@ -6006,7 +6006,7 @@ function renderAttendanceTab(){
     const rawData = attData[i]||{};
     const mData = isFutureOrCurrent
       ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
-      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData};
+      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
