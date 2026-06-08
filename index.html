@@ -2675,9 +2675,9 @@ function confirmAttImport(idx){
     note: emp.attendance[year][mIdx]?.note||''
   };
 
-  document.getElementById('attImportDropdown').style.display='none';
+  // Keep dropdown open so user can import more months
   renderAttendancePage();
-  toast(mName+' '+yr+' data imported successfully!','success');
+  toast(mName+' '+yr+' data imported! Select another month or upload new file.','success');
 }
 
 function clearAttFileData(){
