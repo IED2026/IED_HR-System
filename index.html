@@ -729,6 +729,7 @@ async function handleLoginSubmit(e) {
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#10b981;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(16,185,129,0.5);border-right:1px solid rgba(255,255,255,0.04);">Present</th>
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#3b82f6;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(59,130,246,0.5);border-right:1px solid rgba(255,255,255,0.04);">Leave</th>
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(239,68,68,0.5);border-right:1px solid rgba(255,255,255,0.04);">Absent</th>
+              <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#818cf8;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(129,140,248,0.5);border-right:1px solid rgba(255,255,255,0.04);">Holiday</th>
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#f59e0b;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(245,158,11,0.5);border-right:1px solid rgba(255,255,255,0.04);">Late</th>
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#a78bfa;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(167,139,250,0.5);border-right:1px solid rgba(255,255,255,0.04);">Half Day</th>
               <th style="padding:11px 8px;text-align:center;font-size:10px;font-weight:700;color:#06b6d4;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(6,182,212,0.5);border-right:1px solid rgba(255,255,255,0.04);">OT Hours</th>
@@ -2331,8 +2332,8 @@ function renderAttendancePage(){
     const isFutureOrCurrent = (year===new Date().getFullYear() && i>=new Date().getMonth()) || year>new Date().getFullYear();
     const rawData = attData[i]||{};
     const mData = isFutureOrCurrent
-      ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
-      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
+      ? {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:rawData.note||''}
+      : {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
@@ -2341,7 +2342,9 @@ function renderAttendancePage(){
     // 2 half days = 1 leave equivalent for attendance %
     const leaveEquiv = leave + (half/2);
     // Attendance % = present / working days * 100
-    const pct2 = wd>0 ? Math.round(present/wd*100) : 0;
+    const holiday = parseInt(mData.holiday)||0;
+    const effectiveWD = (wd - holiday) > 0 ? (wd - holiday) : wd;
+    const pct2 = effectiveWD>0 ? Math.round(present/effectiveWD*100) : 0;
     const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
     const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
     totalPresent+=present;
@@ -2368,14 +2371,15 @@ function renderAttendancePage(){
     const rowBg = locked ? '' : 'background:rgba(212,175,55,0.04);';
     const rowBorder = 'border-bottom:1px solid rgba(255,255,255,0.04);';
     const colBorder = 'border-right:1px solid rgba(255,255,255,0.04);';
-    const tdStyle = 'padding:10px 8px;text-align:center;'+rowBorder+colBorder;
-    const tdLeft = 'padding:10px 16px;'+rowBorder+colBorder;
+    const tdStyle = 'padding:5px 6px;text-align:center;'+rowBorder+colBorder;
+    const tdLeft = 'padding:5px 12px;'+rowBorder+colBorder;
     return `<tr style="${rowBg}transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='${locked?'':'rgba(212,175,55,0.04)'}'">
       <td style="${tdLeft}font-weight:700;font-size:13px;color:var(--text);">${m}</td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.wd||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'wd',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.present||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'present',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.leave||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'leave',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.absent||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'absent',this.value)"></td>
+      <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.holiday||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'holiday',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.late||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'late',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
@@ -6166,8 +6170,8 @@ function renderAttendanceTab(){
     const isFutureOrCurrent = (year===new Date().getFullYear() && i>=new Date().getMonth()) || year>new Date().getFullYear();
     const rawData = attData[i]||{};
     const mData = isFutureOrCurrent
-      ? {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:rawData.note||''}
-      : {wd:0,present:0,leave:0,absent:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
+      ? {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:rawData.note||''}
+      : {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:'',...rawData, wd: rawData.wd||0};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
