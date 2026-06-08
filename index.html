@@ -2791,11 +2791,6 @@ function confirmAttImport(idx){
     return;
   }
 
-  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
-  const year = selectedYear;
-  const emp = employees.find(e=>e.id===empId);
-  if(!emp){ toast('Select an employee first','error'); return; }
-
   // Find employee row for popup preview
   const empNamePrev = (emp.name||'').trim().toLowerCase();
   let prevRow = null;
