@@ -2466,7 +2466,8 @@ function renderAttendancePage(){
           <i class="fa fa-trash"></i>
         </button>
       </div>
-      <div id="pihrStatusKpi" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;">Coming soon...</div>
+      <div id="pihrStatusKpi" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;">Upload file to begin</div>
+      <div style="text-align:center;"><button onclick="openPihrMappingManager()" style="background:none;border:none;color:var(--text3);font-size:9px;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;"><i class="fa fa-gear"></i> Manage saved mappings</button></div>
       <div id="pihrImportDropdown" style="display:none;">
         <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Select month:</div>
         <div id="pihrMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
@@ -2886,18 +2887,218 @@ function renderYearlyAttCalendar(emp, year, attData){
 let attImportedData = null; // Stores AI-extracted data from file
 
 // ── AI FILE IMPORT ──
-// ── PIHR DATA IMPORT (Coming Soon) ──
+// ══════════════════════════════════════════════════════════════
+// ── PIHR DATA IMPORT — Employee Job Card Report ──
+// ══════════════════════════════════════════════════════════════
+
+let pihrExtractedData = null;
+
 function handlePihrFileDrop(e){
   e.preventDefault();
-  document.getElementById('pihrDropZoneKpi').style.borderColor='rgba(16,185,129,0.4)';
-  toast('PIHR Data Import coming soon!','info');
+  const dz=document.getElementById('pihrDropZoneKpi');
+  if(dz) dz.style.borderColor='rgba(16,185,129,0.4)';
+  const file=e.dataTransfer?.files?.[0];
+  if(file) processPihrJobCard(file);
 }
-function handlePihrFileSelect(e){ toast('PIHR Data Import coming soon!','info'); }
-function openPihrImportDropdown(){ toast('PIHR Data Import coming soon!','info'); }
+function handlePihrFileSelect(e){
+  const file=e.target?.files?.[0];
+  if(file) processPihrJobCard(file);
+}
+
+async function processPihrJobCard(file){
+  const fn=document.getElementById('pihrFileNameKpi');
+  const st=document.getElementById('pihrStatusKpi');
+  const fb=document.getElementById('pihrFillBtnKpi');
+  if(fn) fn.textContent=file.name;
+  if(st) st.innerHTML='<i class="fa fa-spinner fa-spin"></i> Reading...';
+  if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+    const result={};
+    let curEmp=null;
+    let inDaily=false;
+
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i].map(v=>String(v===null||v===undefined?'':''+v).trim());
+
+      if(r[0]==='Employee Code'){
+        if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
+        curEmp={code:r[2],name:'',months:{}};
+        inDaily=false;
+      } else if(curEmp && r[0]==='Employee Name'){
+        curEmp.name=r[2];
+      } else if(curEmp && r[0]==='Attendance Date'){
+        inDaily=true;
+      } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
+        const month=r[0].substring(3,5);
+        const status=r[1];
+        const otRaw=r[6];
+        if(!curEmp.months[month]) curEmp.months[month]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0};
+        const m=curEmp.months[month];
+        if(status==='W'){ m.weekend++; }
+        else if(status==='H'){ m.holiday++; }
+        else if(status==='P'){ m.present++; m.wd++; }
+        else if(status==='D'){ m.present++; m.wd++; m.late++; }
+        else if(status==='E'){ m.present++; m.wd++; }
+        else if(status==='A'){ m.absent++; m.wd++; }
+        else if(status==='L'){ m.leave++; m.wd++; }
+        if(otRaw && otRaw!=='-' && otRaw!==''){
+          const parts=otRaw.split(':');
+          if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
+        }
+      }
+    }
+    if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
+
+    const empCount=Object.keys(result).length;
+    if(!empCount){ if(st) st.textContent='No employee data found'; return; }
+
+    Object.values(result).forEach(emp=>{
+      Object.values(emp.months).forEach(m=>{ m.ot=parseFloat((m.otMins/60).toFixed(1)); delete m.otMins; });
+    });
+
+    pihrExtractedData=result;
+
+    const monthSet=new Set();
+    Object.values(result).forEach(e=>Object.keys(e.months).forEach(m=>monthSet.add(m)));
+    const mNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthsFound=[...monthSet].sort().map(m=>mNames[parseInt(m)-1]).join(', ');
+
+    if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+empCount+' employees · '+monthSet.size+' months ('+monthsFound+')';
+    if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
+    toast('PIHR: '+empCount+' employees extracted ✓','success');
+
+  }catch(err){
+    console.error('PIHR parse error:',err);
+    if(st) st.textContent='Error: '+err.message;
+    toast('Could not read file','error');
+  }
+}
+
+function openPihrImportDropdown(){
+  if(!pihrExtractedData){ toast('Upload a file first','error'); return; }
+  openPihrPreviewModal();
+}
+
+function openPihrPreviewModal(){
+  const existing=document.getElementById('pihrPreviewModal');
+  if(existing) existing.remove();
+
+  const year=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
+  const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const rows=[];
+  Object.values(pihrExtractedData).forEach(pe=>{
+    const matched=pihrMatchEmp(pe.code,pe.name);
+    Object.keys(pe.months).sort().forEach(mk=>{
+      const mi=parseInt(mk)-1;
+      const d=pe.months[mk];
+      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d});
+    });
+  });
+
+  const tableRows=rows.map(r=>{
+    const matchCell=r.matched
+      ? '<span style="color:var(--green);font-size:10px;"><i class="fa fa-check"></i> '+r.matched.name+'</span>'
+      : '<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
+    const rowBg=r.matched?'':`rgba(239,68,68,0.05)`;
+    return '<tr style="background:'+rowBg+'"><td style="padding:5px 8px;font-size:10px;color:var(--text2);">'+r.pihrCode+'</td><td style="padding:5px 8px;font-size:10px;">'+r.pihrName+'</td><td style="padding:5px 8px;">'+matchCell+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.monthName+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.data.wd+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:var(--green);">'+r.data.present+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">'+r.data.absent+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;">'+r.data.leave+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;">'+r.data.late+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;">'+r.data.holiday+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">'+r.data.ot+'</td></tr>';
+  }).join('');
+
+  const matched=rows.filter(r=>r.matched).length;
+  const unmatched=rows.filter(r=>!r.matched).length;
+
+  const modal=document.createElement('div');
+  modal.id='pihrPreviewModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text1);display:flex;align-items:center;gap:8px;"><i class="fa fa-table" style="color:#10b981"></i> PIHR Import Preview</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+            <span style="color:var(--green);font-weight:600;">${matched} matched</span>
+            ${unmatched>0?'<span style="color:#ef4444;margin-left:6px;">· '+unmatched+' not found</span>':''}
+            · Year: <b>${year}</b>
+          </div>
+        </div>
+        <button onclick="document.getElementById('pihrPreviewModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead style="position:sticky;top:0;background:var(--navy3);z-index:1;">
+            <tr>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">PIHR Code</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">PIHR Name</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">System Match</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Month</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">WD</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--green);border-bottom:1px solid var(--border);">Present</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Absent</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">Leave</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0;">
+        <div style="font-size:11px;color:var(--text3);flex:1;">Year <b>${year}</b> এ fill হবে। Existing data overwrite হবে।</div>
+        <button onclick="document.getElementById('pihrPreviewModal').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="confirmPihrFill(${year})" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
+      </div>
+    </div>
+  \`;
+  document.body.appendChild(modal);
+}
+
+function pihrMatchEmp(code, name){
+  let emp=employees.find(e=>(e.empId||''). trim().toLowerCase()===code.toLowerCase());
+  if(emp) return emp;
+  const norm=s=>(s||''). toLowerCase().replace(/\s+/g,' ').trim();
+  emp=employees.find(e=>norm(e.name)===norm(name));
+  if(emp) return emp;
+  const words=norm(name).split(' ').filter(w=>w.length>2);
+  emp=employees.find(e=>{ const en=norm(e.name); return words.filter(w=>en.includes(w)).length>=Math.min(2,words.length); });
+  return emp||null;
+}
+
+function confirmPihrFill(year){
+  document.getElementById('pihrPreviewModal')?.remove();
+  let filled=0, skipped=0;
+  Object.values(pihrExtractedData).forEach(pe=>{
+    const emp=pihrMatchEmp(pe.code,pe.name);
+    if(!emp){ skipped++; return; }
+    if(!emp.attendance) emp.attendance={};
+    if(!emp.attendance[year]) emp.attendance[year]={};
+    Object.entries(pe.months).forEach(([mk,d])=>{
+      const mi=parseInt(mk)-1;
+      emp.attendance[year][mi]={
+        wd: d.wd||22, present: d.present||0, absent: d.absent||0,
+        leave: d.leave||0, late: d.late||0, half: 0,
+        ot: d.ot||0, holiday: d.holiday||0,
+        note: emp.attendance[year][mi]?.note||''
+      };
+      filled++;
+    });
+  });
+  saveState();
+  renderAttendancePage();
+  toast('PIHR: '+filled+' month records filled · '+skipped+' not matched','success');
+}
+
 function clearPihrFileData(){
+  pihrExtractedData=null;
   const fi=document.getElementById('pihrFileInput'); if(fi) fi.value='';
   const fn=document.getElementById('pihrFileNameKpi'); if(fn) fn.textContent='Click or drag file';
-  const st=document.getElementById('pihrStatusKpi'); if(st) st.textContent='Coming soon...';
+  const st=document.getElementById('pihrStatusKpi'); if(st) st.textContent='Ready';
   const fb=document.getElementById('pihrFillBtnKpi'); if(fb){fb.disabled=true;fb.style.opacity='0.5';}
 }
 
