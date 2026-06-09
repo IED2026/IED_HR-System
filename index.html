@@ -2534,24 +2534,39 @@ function renderAttendancePage(){
   }
 
   // Render leave records
-  const leaveTypes=['Annual','Sick','Casual','Maternity','Paternity'];
-  const leaveEntitlements={Annual:18,Sick:14,Casual:10,Maternity:180,Paternity:3};
-  const usedLeave={};
-  (emp.leaveRecords||[]).filter(l=>l.status==='Approved'&&new Date(l.from).getFullYear()===year)
-    .forEach(l=>{usedLeave[l.type]=(usedLeave[l.type]||0)+(parseInt(l.days)||0);});
-
+  const lb = (emp.leaveBalance||{})[year]||{};
   const balCards=document.getElementById('attLeaveBalance');
-  if(balCards) balCards.innerHTML=leaveTypes.map(t=>{
-    const entitled=leaveEntitlements[t]||0;
-    const used=usedLeave[t]||0;
-    const bal=entitled-used;
-    const clr=bal>5?'var(--green)':bal>0?'var(--orange)':'var(--red)';
-    return `<div style="background:var(--navy3);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border);">
-      <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">${t}</div>
-      <div style="font-size:18px;font-weight:700;color:${clr}">${bal}</div>
-      <div style="font-size:10px;color:var(--text3)">${used}/${entitled} used</div>
-    </div>`;
-  }).join('');
+  if(balCards){
+    const annE=lb.annualEntitled||0, annT=lb.annualTaken||0, annB=lb.annualBalance||(annE-annT);
+    const casE=lb.casualEntitled||0, casT=lb.casualTaken||0, casB=lb.casualBalance||(casE-casT);
+    const totE=lb.totalEntitled||(annE+casE), totT=lb.totalTaken||(annT+casT), totB=lb.totalBalance||(totE-totT);
+
+    const card = (label, entitled, taken, balance, clr) => `
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:12px;border-top:2px solid ${clr};">
+        <div style="font-size:11px;font-weight:700;color:${clr};margin-bottom:8px;">${label}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:800;color:var(--text)">${entitled}</div>
+            <div style="font-size:10px;color:var(--text3);">Entitled</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:800;color:var(--orange)">${taken}</div>
+            <div style="font-size:10px;color:var(--text3);">Taken</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:800;color:${balance>5?'var(--green)':balance>0?'var(--orange)':'var(--red)'}">${balance}</div>
+            <div style="font-size:10px;color:var(--text3);">Remaining</div>
+          </div>
+        </div>
+      </div>`;
+
+    balCards.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+        ${card('Total Leave', totE, totT, totB, '#d4af37')}
+        ${card('Annual Leave', annE, annT, annB, '#10b981')}
+        ${card('Casual Leave', casE, casT, casB, '#3b82f6')}
+      </div>`;
+  }
 
   const leaves=(emp.leaveRecords||[]).filter(l=>{
     if(!year) return true;
@@ -2768,6 +2783,37 @@ async function processAttFile(file){
           });
 
           result.sort((a,b)=>fullNames.indexOf(a.month)-fullNames.indexOf(b.month));
+
+          // Extract Leave Tracker data
+          const leaveSheet = wb.Sheets['Leave Tracker'];
+          if(leaveSheet){
+            const leaveRows = XLSX.utils.sheet_to_json(leaveSheet, {header:1});
+            // Header at row 3 (index 3), data from row 4 (index 4)
+            leaveRows.slice(4).forEach(row => {
+              if(!row || !row[1]) return;
+              result._leaveTracker = result._leaveTracker || [];
+              result._leaveTracker.push({
+                name: String(row[1]||'').trim(),
+                // Casual Leave (cols 3-5)
+                clEntitled: parseInt(row[3])||0,
+                clTaken: parseInt(row[4])||0,
+                clBalance: parseInt(row[5])||0,
+                // Sick Leave (cols 7-9)
+                slEntitled: parseInt(row[7])||0,
+                slTaken: parseInt(row[8])||0,
+                slBalance: parseInt(row[9])||0,
+                // Earned/Annual Leave (cols 11-13)
+                elEntitled: parseInt(row[11])||0,
+                elTaken: parseInt(row[12])||0,
+                elBalance: parseInt(row[13])||0,
+                // Total (cols 15-17)
+                totalEntitled: parseInt(row[15])||0,
+                totalTaken: parseInt(row[16])||0,
+                totalBalance: parseInt(row[17])||0,
+              });
+            });
+          }
+
           res(result);
         } catch(err){ rej(err); }
       };
@@ -2960,6 +3006,28 @@ function confirmAttImport(idx){
   };
 
   // Re-render but restore file state after
+  // Store leave data for this employee
+  if(attImportedData._leaveTracker){
+    const empNameL = (emp.name||'').trim().toLowerCase();
+    let leaveRow = attImportedData._leaveTracker.find(r=>r.name.toLowerCase()===empNameL);
+    if(!leaveRow) leaveRow = attImportedData._leaveTracker.find(r=>r.name.toLowerCase().includes(empNameL.split(' ')[0].toLowerCase())||empNameL.includes(r.name.toLowerCase().split(' ')[0]));
+    if(!leaveRow) leaveRow = attImportedData._leaveTracker.find(r=>empNameL.split(' ').some(w=>w.length>2&&r.name.toLowerCase().includes(w.toLowerCase())));
+    if(leaveRow){
+      if(!emp.leaveBalance) emp.leaveBalance = {};
+      emp.leaveBalance[year] = {
+        annualEntitled: leaveRow.elEntitled,
+        annualTaken: leaveRow.elTaken,
+        annualBalance: leaveRow.elBalance,
+        casualEntitled: leaveRow.clEntitled + leaveRow.slEntitled,
+        casualTaken: leaveRow.clTaken + leaveRow.slTaken,
+        casualBalance: leaveRow.clBalance + leaveRow.slBalance,
+        totalEntitled: leaveRow.totalEntitled,
+        totalTaken: leaveRow.totalTaken,
+        totalBalance: leaveRow.totalBalance,
+      };
+    }
+  }
+
   const savedData = attImportedData;
   renderAttendancePage();
   // Restore imported data and dropdown after render
