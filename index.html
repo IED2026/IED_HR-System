@@ -2562,7 +2562,23 @@ function renderAttendancePage(){
 
     balCards.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
-        ${card('Total Leave', totE, totT, totB, '#d4af37')}
+        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #d4af37;">
+          <div style="font-size:12px;font-weight:700;color:#d4af37;margin-bottom:14px;letter-spacing:0.04em;">Total Leave</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+              <div style="font-size:22px;font-weight:800;color:var(--text);line-height:1;">${totE}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Total</div>
+            </div>
+            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+              <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;">${annE}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Annual</div>
+            </div>
+            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+              <div style="font-size:22px;font-weight:800;color:${casB>5?'var(--green)':casB>0?'var(--orange)':'var(--red)'};line-height:1;">${casE}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Casual</div>
+            </div>
+          </div>
+        </div>
         ${card('Annual Leave', annE, annT, annB, '#10b981')}
         ${card('Casual Leave', casE, casT, casB, '#3b82f6')}
       </div>`;
