@@ -2446,6 +2446,33 @@ function renderAttendancePage(){
       </div>
     </div>
 
+    <!-- PIHR Data Import Card -->
+    <div class="kpi-card" style="border-top:2px solid #10b981;padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
+      <div style="font-size:11px;font-weight:700;color:#10b981;display:flex;align-items:center;gap:6px;"><i class="fa fa-database"></i> PIHR Data Import</div>
+      <div id="pihrDropZoneKpi" onclick="document.getElementById('pihrFileInput').click()"
+        style="border:1.5px dashed rgba(16,185,129,0.4);border-radius:8px;padding:8px;text-align:center;cursor:pointer;flex:1;"
+        ondragover="event.preventDefault();this.style.borderColor='#10b981'"
+        ondragleave="this.style.borderColor='rgba(16,185,129,0.4)'"
+        ondrop="handlePihrFileDrop(event)">
+        <i class="fa fa-file-import" style="color:#10b981;font-size:16px;"></i>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;" id="pihrFileNameKpi">Click or drag file</div>
+      </div>
+      <input type="file" id="pihrFileInput" accept=".xlsx,.xls,.csv,.pdf" style="display:none;" onchange="handlePihrFileSelect(event)">
+      <div style="display:flex;gap:6px;">
+        <button id="pihrFillBtnKpi" onclick="openPihrImportDropdown()" disabled style="flex:1;padding:6px;border-radius:6px;border:1px solid #10b981;background:rgba(16,185,129,0.1);color:#10b981;font-size:11px;font-weight:600;cursor:pointer;opacity:0.5;font-family:inherit;">
+          <i class="fa fa-wand-magic-sparkles"></i> Fill
+        </button>
+        <button onclick="clearPihrFileData()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+      <div id="pihrStatusKpi" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;">Coming soon...</div>
+      <div id="pihrImportDropdown" style="display:none;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Select month:</div>
+        <div id="pihrMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+    </div>
+
     <!-- AI Data Import Card -->
     <div class="kpi-card" style="border-top:2px solid #3b82f6;padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
       <div style="font-size:11px;font-weight:700;color:#3b82f6;display:flex;align-items:center;gap:6px;"><i class="fa fa-robot"></i> AI Data Import</div>
@@ -2859,6 +2886,21 @@ function renderYearlyAttCalendar(emp, year, attData){
 let attImportedData = null; // Stores AI-extracted data from file
 
 // ── AI FILE IMPORT ──
+// ── PIHR DATA IMPORT (Coming Soon) ──
+function handlePihrFileDrop(e){
+  e.preventDefault();
+  document.getElementById('pihrDropZoneKpi').style.borderColor='rgba(16,185,129,0.4)';
+  toast('PIHR Data Import coming soon!','info');
+}
+function handlePihrFileSelect(e){ toast('PIHR Data Import coming soon!','info'); }
+function openPihrImportDropdown(){ toast('PIHR Data Import coming soon!','info'); }
+function clearPihrFileData(){
+  const fi=document.getElementById('pihrFileInput'); if(fi) fi.value='';
+  const fn=document.getElementById('pihrFileNameKpi'); if(fn) fn.textContent='Click or drag file';
+  const st=document.getElementById('pihrStatusKpi'); if(st) st.textContent='Coming soon...';
+  const fb=document.getElementById('pihrFillBtnKpi'); if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+}
+
 // ── AI DATA IMPORT (Coming Soon) ──
 function handleAiFileDrop(e){
   e.preventDefault();
