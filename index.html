@@ -3089,21 +3089,35 @@ function openPihrPreviewModal(){
         <button onclick="document.getElementById('pihrPreviewModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
       </div>
       <div style="overflow-y:auto;flex:1;">
-        <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup>
+            <col style="width:62px">
+            <col style="width:115px">
+            <col style="width:105px">
+            <col style="width:38px">
+            <col style="width:34px">
+            <col style="width:42px">
+            <col style="width:42px">
+            <col style="width:40px">
+            <col style="width:36px">
+            <col style="width:52px">
+            <col style="width:40px">
+            <col style="width:42px">
+          </colgroup>
           <thead style="position:sticky;top:0;background:var(--navy3);z-index:1;">
             <tr>
-              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">PIHR Code</th>
-              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">PIHR Name</th>
-              <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">System Match</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Month</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">WD</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--green);border-bottom:1px solid var(--border);">Present</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Absent</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">Leave</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
-              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
+              <th style="padding:7px 5px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;">Code</th>
+              <th style="padding:7px 5px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;">Name</th>
+              <th style="padding:7px 5px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;">Match</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Mon</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">WD</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#10b981;border-bottom:1px solid var(--border);">Pres.</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Abs.</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">Leave</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
