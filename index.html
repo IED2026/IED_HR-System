@@ -2561,7 +2561,7 @@ function renderAttendancePage(){
       </div>`;
 
     balCards.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 180px;gap:16px;margin-bottom:16px;width:100%;align-items:start;">
         <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #d4af37;">
           <div style="font-size:12px;font-weight:700;color:#d4af37;margin-bottom:14px;letter-spacing:0.04em;">Total Leave</div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -2581,7 +2581,33 @@ function renderAttendancePage(){
         </div>
         ${card('Annual Leave', annE, annT, annB, '#10b981')}
         ${card('Casual Leave', casE, casT, casB, '#3b82f6')}
+        <!-- Leave Chart -->
+        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px;">Leave Distribution</div>
+          <canvas id="leaveDonutChart" width="130" height="130"></canvas>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:5px;width:100%;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);"><div style="width:9px;height:9px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>Annual: ${annE}</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);"><div style="width:9px;height:9px;border-radius:50%;background:#3b82f6;flex-shrink:0;"></div>Casual: ${casE}</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--orange);"><div style="width:9px;height:9px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></div>Taken: ${totT}</div>
+          </div>
+        </div>
       </div>`;
+
+  // Render donut chart
+  setTimeout(()=>{
+    const ctx = document.getElementById('leaveDonutChart');
+    if(ctx){
+      if(window._leaveDonutChart) window._leaveDonutChart.destroy();
+      window._leaveDonutChart = new Chart(ctx,{
+        type:'doughnut',
+        data:{
+          labels:['Annual Remaining','Casual Remaining','Taken'],
+          datasets:[{data:[annB||0,casB||0,totT||0],backgroundColor:['#10b981','#3b82f6','#f59e0b'],borderWidth:0,hoverOffset:4}]
+        },
+        options:{cutout:'65%',responsive:false,plugins:{legend:{display:false}}}
+      });
+    }
+  },300);
   }
 
   const leaves=(emp.leaveRecords||[]).filter(l=>{
