@@ -749,7 +749,10 @@ async function handleLoginSubmit(e) {
     <div class="form-section" style="margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="form-section-title" style="margin:0;"><i class="fa fa-umbrella-beach"></i> Leave Records</div>
-        <button class="btn btn-primary btn-sm" onclick="addLeavePageRecord()"><i class="fa fa-plus"></i> Add Leave</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" id="leaveEditBtn" onclick="toggleLeaveEdit()"><i class="fa fa-pen"></i> Edit</button>
+          <button class="btn btn-primary btn-sm" onclick="addLeavePageRecord()"><i class="fa fa-plus"></i> Add Leave</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;" id="attLeaveBalance"></div>
       <div class="table-wrap">
@@ -2534,148 +2537,9 @@ function renderAttendancePage(){
   }
 
   // Render leave records
-  // Calculate total leave taken from attendance data (leave + half/2)
-  let totalLeaveTaken = 0;
-  for(let mi=0; mi<12; mi++){
-    const md = attData[mi]||{};
-    totalLeaveTaken += parseInt(md.leave)||0;
-    totalLeaveTaken += (parseInt(md.half)||0)/2;
-  }
-  totalLeaveTaken = Math.round(totalLeaveTaken);
-  const totalLeaveEntitled = 27;
-  const totalLeaveRemaining = totalLeaveEntitled - totalLeaveTaken;
-
-  const lb = (emp.leaveBalance||{})[year]||{};
-  const balCards=document.getElementById('attLeaveBalance');
-  if(balCards){
-    const annE=lb.annualEntitled||0, annT=lb.annualTaken||0, annB=lb.annualBalance||(annE-annT);
-    const casE=lb.casualEntitled||0, casT=lb.casualTaken||0, casB=lb.casualBalance||(casE-casT);
-    const totE=lb.totalEntitled||(annE+casE), totT=lb.totalTaken||(annT+casT), totB=lb.totalBalance||(totE-totT);
-
-    const card = (label, entitled, taken, balance, clr) => `
-      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid ${clr};">
-        <div style="font-size:12px;font-weight:700;color:${clr};margin-bottom:14px;letter-spacing:0.04em;">${label}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-            <div style="font-size:22px;font-weight:800;color:var(--text);line-height:1;">${entitled}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Entitled</div>
-          </div>
-          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-            <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;">${taken}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Taken</div>
-          </div>
-          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-            <div style="font-size:22px;font-weight:800;color:${balance>5?'var(--green)':balance>0?'var(--orange)':'var(--red)'};line-height:1;">${balance}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Remaining</div>
-          </div>
-        </div>
-      </div>`;
-
-    balCards.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
-        <!-- Total Leave Card -->
-        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #d4af37;">
-          <div style="font-size:12px;font-weight:700;color:#d4af37;margin-bottom:14px;">Total Leave</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
-            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-              <div style="font-size:22px;font-weight:800;color:var(--text);">${totE||27}</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Total</div>
-            </div>
-            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-              <div style="font-size:22px;font-weight:800;color:var(--orange);">${annE||14}</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Annual</div>
-            </div>
-            <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
-              <div style="font-size:22px;font-weight:800;color:#10b981;">${casE||13}</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px;">Casual</div>
-            </div>
-          </div>
-          <div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:8px;">
-            <div style="flex:1;text-align:center;background:rgba(239,68,68,0.06);border-radius:8px;padding:8px 6px;">
-              <div style="font-size:18px;font-weight:800;color:#ef4444;">${totalLeaveTaken}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:3px;">Total Taken</div>
-            </div>
-            <div style="flex:1;text-align:center;background:rgba(16,185,129,0.06);border-radius:8px;padding:8px 6px;">
-              <div style="font-size:18px;font-weight:800;color:#10b981;">${(totE||27)-totalLeaveTaken}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:3px;">Remaining</div>
-            </div>
-          </div>
-        </div>
-        ${card('Annual Leave', annE||14, annT, annB||(annE||14), '#10b981')}
-        ${card('Casual Leave', casE||13, casT, casB||(casE||13), '#3b82f6')}
-      </div>
-      <!-- Charts Row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
-        <!-- Donut Chart -->
-        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:12px;">Leave Balance Overview</div>
-          <div style="display:flex;align-items:center;justify-content:space-around;gap:16px;">
-            <div style="position:relative;width:140px;height:140px;flex-shrink:0;">
-              <canvas id="leaveDonutChart" width="140" height="140"></canvas>
-              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:90px;">
-                <div style="font-size:13px;font-weight:800;color:var(--text);">${totalLeaveTaken}</div>
-                <div style="font-size:9px;color:var(--text3);">Leave taken</div>
-                <div style="font-size:13px;font-weight:800;color:#10b981;margin-top:2px;">${totalLeaveRemaining>0?totalLeaveRemaining:0}</div>
-                <div style="font-size:9px;color:var(--text3);">Remaining</div>
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;">${totalLeaveTaken} Leave taken</div>
-              <div style="font-size:13px;font-weight:600;color:#10b981;white-space:nowrap;">${totalLeaveRemaining>0?totalLeaveRemaining:0} Leave remaining</div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);margin-top:8px;white-space:nowrap;"><div style="width:10px;height:10px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>Leave remaining</div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);white-space:nowrap;"><div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;flex-shrink:0;"></div>Leave taken</div>
-            </div>
-          </div>
-        </div>
-        <!-- Bar Chart -->
-        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px;">Leave Balances</div>
-          <div style="font-size:10px;color:var(--text3);margin-bottom:12px;display:flex;gap:12px;">
-            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;"></span>Remaining</span>
-            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:4px;"></span>Taken</span>
-          </div>
-          <div style="position:relative;height:160px;"><canvas id="leaveBarChart"></canvas></div>
-        </div>
-      </div>`;
-
-  // Render charts
-  setTimeout(()=>{
-    const dCtx = document.getElementById('leaveDonutChart');
-    if(dCtx){
-      if(window._leaveDonutChart) window._leaveDonutChart.destroy();
-      window._leaveDonutChart = new Chart(dCtx,{
-        type:'doughnut',
-        data:{
-          labels:['Leave Remaining','Leave Taken'],
-          datasets:[{data:[totalLeaveRemaining>0?totalLeaveRemaining:0, totalLeaveTaken],backgroundColor:['#10b981','#3b82f6'],borderWidth:0,hoverOffset:4}]
-        },
-        options:{cutout:'68%',responsive:false,plugins:{legend:{display:false}}}
-      });
-    }
-    const bCtx = document.getElementById('leaveBarChart');
-    if(bCtx){
-      if(window._leaveBarChart) window._leaveBarChart.destroy();
-      window._leaveBarChart = new Chart(bCtx,{
-        type:'bar',
-        data:{
-          labels:['Annual Leave','Casual Leave'],
-          datasets:[
-            {label:'Remaining',data:[annB||(annE||14),casB||(casE||13)],backgroundColor:'#10b981',borderRadius:4},
-            {label:'Taken',data:[annT||0,casT||0],backgroundColor:'#3b82f6',borderRadius:4}
-          ]
-        },
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          plugins:{legend:{display:false}},
-          scales:{
-            x:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{display:false}},
-            y:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
-          }
-        }
-      });
-    }
-  },300);
-  }
+  // Render leave balance cards
+  renderLeaveBalanceCards(emp, year);
+  leaveEditMode = false; // reset edit mode on employee change
 
   const leaves=(emp.leaveRecords||[]).filter(l=>{
     if(!year) return true;
@@ -2700,6 +2564,183 @@ function renderAttendancePage(){
 }
 
 let attPageEditRow = null;
+let leaveEditMode = false;
+
+function toggleLeaveEdit(){
+  leaveEditMode = !leaveEditMode;
+  const btn = document.getElementById('leaveEditBtn');
+  if(btn){
+    btn.innerHTML = leaveEditMode ? '<i class="fa fa-check"></i> Done' : '<i class="fa fa-pen"></i> Edit';
+    btn.style.background = leaveEditMode ? 'rgba(16,185,129,0.15)' : '';
+    btn.style.borderColor = leaveEditMode ? 'var(--green)' : '';
+    btn.style.color = leaveEditMode ? 'var(--green)' : '';
+  }
+  // Re-render to show/hide inputs
+  const empId = parseInt(document.getElementById('attEmpSelect').value)||null;
+  const year = parseInt(document.getElementById('attYear').value)||new Date().getFullYear();
+  const emp = employees.find(e=>e.id===empId);
+  if(emp) renderLeaveBalanceCards(emp, year);
+}
+
+function renderLeaveBalanceCards(emp, year){
+  const attData = (emp.attendance||{})[year]||{};
+  let totalLeaveTaken = 0;
+  for(let mi=0; mi<12; mi++){
+    const md = attData[mi]||{};
+    totalLeaveTaken += parseInt(md.leave)||0;
+    totalLeaveTaken += (parseInt(md.half)||0)/2;
+  }
+  totalLeaveTaken = Math.round(totalLeaveTaken);
+
+  const lb = (emp.leaveBalance||{})[year]||{};
+  const annE = lb.annualEntitled||14, annT = lb.annualTaken||0;
+  const annB = annE - annT;
+  const casE = lb.casualEntitled||13, casT = lb.casualTaken||0;
+  const casB = casE - casT;
+  const totE = lb.totalEntitled||27;
+  const totalLeaveRemaining = Math.max(0, totE - totalLeaveTaken);
+
+  const balCards = document.getElementById('attLeaveBalance');
+  if(!balCards) return;
+
+  const inStyle = 'width:50px;font-size:14px;font-weight:800;text-align:center;background:rgba(255,255,255,0.08);border:1px solid var(--gold);border-radius:6px;color:var(--text);padding:2px 4px;';
+  const roStyle = 'font-size:22px;font-weight:800;';
+
+  const valOrInput = (val, key, color) => leaveEditMode
+    ? `<input type="number" style="${inStyle}color:${color};" value="${val}" onchange="updateLeaveBalance(${emp.id},${year},'${key}',this.value)">`
+    : `<div style="${roStyle}color:${color};">${val}</div>`;
+
+  balCards.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #d4af37;">
+        <div style="font-size:12px;font-weight:700;color:#d4af37;margin-bottom:14px;">Total Leave</div>
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(totE,'totalEntitled','var(--text)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Total</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(annE,'annualEntitled','var(--orange)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Annual</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(casE,'casualEntitled','#10b981')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Casual</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:8px;">
+          <div style="flex:1;text-align:center;background:rgba(239,68,68,0.06);border-radius:8px;padding:8px 6px;">
+            ${valOrInput(totalLeaveTaken,'totalTaken','#ef4444')}
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;">Total Taken</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(16,185,129,0.06);border-radius:8px;padding:8px 6px;">
+            <div style="font-size:18px;font-weight:800;color:#10b981;">${totalLeaveRemaining}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;">Remaining</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #10b981;">
+        <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:14px;">Annual Leave</div>
+        <div style="display:flex;justify-content:space-between;gap:8px;">
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(annE,'annualEntitled','var(--text)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Entitled</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(annT,'annualTaken','var(--orange)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Taken</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(16,185,129,0.06);border-radius:8px;padding:10px 6px;">
+            <div style="font-size:22px;font-weight:800;color:#10b981;">${annB}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Remaining</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #3b82f6;">
+        <div style="font-size:12px;font-weight:700;color:#3b82f6;margin-bottom:14px;">Casual Leave</div>
+        <div style="display:flex;justify-content:space-between;gap:8px;">
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(casE,'casualEntitled','var(--text)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Entitled</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            ${valOrInput(casT,'casualTaken','var(--orange)')}
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Taken</div>
+          </div>
+          <div style="flex:1;text-align:center;background:rgba(59,130,246,0.06);border-radius:8px;padding:10px 6px;">
+            <div style="font-size:22px;font-weight:800;color:#3b82f6;">${casB}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Remaining</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:12px;">Leave Balance Overview</div>
+        <div style="display:flex;align-items:center;justify-content:space-around;gap:16px;">
+          <div style="position:relative;width:140px;height:140px;flex-shrink:0;">
+            <canvas id="leaveDonutChart" width="140" height="140"></canvas>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:90px;">
+              <div style="font-size:13px;font-weight:800;color:var(--text);">${totalLeaveTaken}</div>
+              <div style="font-size:9px;color:var(--text3);">Leave taken</div>
+              <div style="font-size:13px;font-weight:800;color:#10b981;margin-top:2px;">${totalLeaveRemaining}</div>
+              <div style="font-size:9px;color:var(--text3);">Remaining</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;">${totalLeaveTaken} Leave taken</div>
+            <div style="font-size:13px;font-weight:600;color:#10b981;white-space:nowrap;">${totalLeaveRemaining} Leave remaining</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap;"><div style="width:10px;height:10px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>Leave remaining</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);white-space:nowrap;"><div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;flex-shrink:0;"></div>Leave taken</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px;">Leave Balances</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:12px;display:flex;gap:12px;">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;"></span>Remaining</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:4px;"></span>Taken</span>
+        </div>
+        <div style="position:relative;height:160px;"><canvas id="leaveBarChart"></canvas></div>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    const dCtx = document.getElementById('leaveDonutChart');
+    if(dCtx){
+      if(window._leaveDonutChart) window._leaveDonutChart.destroy();
+      window._leaveDonutChart = new Chart(dCtx,{
+        type:'doughnut',
+        data:{labels:['Leave Remaining','Leave Taken'],datasets:[{data:[totalLeaveRemaining,totalLeaveTaken],backgroundColor:['#10b981','#3b82f6'],borderWidth:0,hoverOffset:4}]},
+        options:{cutout:'68%',responsive:false,plugins:{legend:{display:false}}}
+      });
+    }
+    const bCtx = document.getElementById('leaveBarChart');
+    if(bCtx){
+      if(window._leaveBarChart) window._leaveBarChart.destroy();
+      window._leaveBarChart = new Chart(bCtx,{
+        type:'bar',
+        data:{labels:['Annual Leave','Casual Leave'],datasets:[
+          {label:'Remaining',data:[annB,casB],backgroundColor:'#10b981',borderRadius:4},
+          {label:'Taken',data:[annT,casT],backgroundColor:'#3b82f6',borderRadius:4}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}
+      });
+    }
+  },300);
+}
+
+function updateLeaveBalance(empId, year, key, val){
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp) return;
+  if(!emp.leaveBalance) emp.leaveBalance={};
+  if(!emp.leaveBalance[year]) emp.leaveBalance[year]={};
+  emp.leaveBalance[year][key] = parseInt(val)||0;
+  renderLeaveBalanceCards(emp, year);
+}
 
 function renderYearlyAttCalendar(emp, year, attData){
   const section = document.getElementById('attYearlyCalSection');
