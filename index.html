@@ -2524,21 +2524,6 @@ function renderAttendancePage(){
       if(fn && fn.textContent==='Click or drag Excel') fn.textContent='File loaded ✓';
     },50);
   }
-  if(pihrExtractedData){
-    setTimeout(()=>{
-      const fb=document.getElementById('pihrFillBtnKpi');
-      const fn=document.getElementById('pihrFileNameKpi');
-      const st=document.getElementById('pihrStatusKpi');
-      if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
-      if(fn && fn.textContent==='Click or drag file') fn.textContent='File loaded ✓';
-      const empCount=Object.keys(pihrExtractedData).length;
-      const monthSet=new Set();
-      Object.values(pihrExtractedData).forEach(e=>Object.keys(e.months).forEach(m=>monthSet.add(m)));
-      const mNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const monthsFound=[...monthSet].sort().map(m=>mNames[parseInt(m)-1]).join(', ');
-      if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+empCount+' employees · '+monthSet.size+' months ('+monthsFound+')';
-    },50);
-  }
 
   // ── CHARTS ──
   const attChartWrap = document.getElementById('attChartSection');
