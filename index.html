@@ -2420,8 +2420,9 @@ function renderAttendancePage(){
     <div class="kpi-card orange"><div class="kpi-icon">⏰</div><div class="kpi-val">${totalLate}</div><div class="kpi-label">Late Arrivals</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
     <div class="kpi-card" style="border-top:2px solid ${overallClr};"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:${overallClr}">${overallPct}%</div><div class="kpi-label">Overall Attendance</div></div>
-    <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px;"><i class="fa fa-robot"></i> AI Data Import</div>
+    <div style="display:flex;gap:8px;grid-column:span 2;">
+    <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px;"><i class="fa fa-file-excel"></i> Quick Data Import</div>
       <div id="attDropZoneKpi" onclick="document.getElementById('attFileInput').click()" 
         style="border:1.5px dashed var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;flex:1;"
         ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
@@ -2443,6 +2444,34 @@ function renderAttendancePage(){
         <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Select month:</div>
         <div id="attMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
       </div>
+    </div>
+
+    <!-- AI Data Import Card -->
+    <div class="kpi-card" style="border-top:2px solid #3b82f6;padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
+      <div style="font-size:11px;font-weight:700;color:#3b82f6;display:flex;align-items:center;gap:6px;"><i class="fa fa-robot"></i> AI Data Import</div>
+      <div id="aiDropZoneKpi" onclick="document.getElementById('aiFileInput').click()"
+        style="border:1.5px dashed rgba(59,130,246,0.4);border-radius:8px;padding:8px;text-align:center;cursor:pointer;flex:1;"
+        ondragover="event.preventDefault();this.style.borderColor='#3b82f6'"
+        ondragleave="this.style.borderColor='rgba(59,130,246,0.4)'"
+        ondrop="handleAiFileDrop(event)">
+        <i class="fa fa-brain" style="color:#3b82f6;font-size:16px;"></i>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;" id="aiFileNameKpi">Click or drag Excel</div>
+      </div>
+      <input type="file" id="aiFileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleAiFileSelect(event)">
+      <div style="display:flex;gap:6px;">
+        <button id="aiFillBtnKpi" onclick="openAiImportDropdown()" disabled style="flex:1;padding:6px;border-radius:6px;border:1px solid #3b82f6;background:rgba(59,130,246,0.1);color:#3b82f6;font-size:11px;font-weight:600;cursor:pointer;opacity:0.5;font-family:inherit;">
+          <i class="fa fa-wand-magic-sparkles"></i> Fill
+        </button>
+        <button onclick="clearAiFileData()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+      <div id="aiStatusKpi" style="font-size:10px;color:var(--text3);text-align:center;min-height:14px;">Coming soon...</div>
+      <div id="aiImportDropdown" style="display:none;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">Select month:</div>
+        <div id="aiMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+      </div>
+    </div>
     </div>
   `;
   // Sync file input
@@ -2830,6 +2859,21 @@ function renderYearlyAttCalendar(emp, year, attData){
 let attImportedData = null; // Stores AI-extracted data from file
 
 // ── AI FILE IMPORT ──
+// ── AI DATA IMPORT (Coming Soon) ──
+function handleAiFileDrop(e){
+  e.preventDefault();
+  document.getElementById('aiDropZoneKpi').style.borderColor='rgba(59,130,246,0.4)';
+  toast('AI Data Import coming soon!','info');
+}
+function handleAiFileSelect(e){ toast('AI Data Import coming soon!','info'); }
+function openAiImportDropdown(){ toast('AI Data Import coming soon!','info'); }
+function clearAiFileData(){
+  const fi=document.getElementById('aiFileInput'); if(fi) fi.value='';
+  const fn=document.getElementById('aiFileNameKpi'); if(fn) fn.textContent='Click or drag Excel';
+  const st=document.getElementById('aiStatusKpi'); if(st) st.textContent='Coming soon...';
+  const fb=document.getElementById('aiFillBtnKpi'); if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+}
+
 function handleAttFileDrop(e){
   e.preventDefault();
   document.getElementById('attDropZone').style.borderColor='var(--border)';
