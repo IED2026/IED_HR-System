@@ -2534,6 +2534,17 @@ function renderAttendancePage(){
   }
 
   // Render leave records
+  // Calculate total leave taken from attendance data (leave + half/2)
+  let totalLeaveTaken = 0;
+  for(let mi=0; mi<12; mi++){
+    const md = attData[mi]||{};
+    totalLeaveTaken += parseInt(md.leave)||0;
+    totalLeaveTaken += (parseInt(md.half)||0)/2;
+  }
+  totalLeaveTaken = Math.round(totalLeaveTaken);
+  const totalLeaveEntitled = 27;
+  const totalLeaveRemaining = totalLeaveEntitled - totalLeaveTaken;
+
   const lb = (emp.leaveBalance||{})[year]||{};
   const balCards=document.getElementById('attLeaveBalance');
   if(balCards){
@@ -2565,7 +2576,7 @@ function renderAttendancePage(){
         <!-- Total Leave Card -->
         <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid #d4af37;">
           <div style="font-size:12px;font-weight:700;color:#d4af37;margin-bottom:14px;">Total Leave</div>
-          <div style="display:flex;justify-content:space-between;gap:8px;">
+          <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
               <div style="font-size:22px;font-weight:800;color:var(--text);">${totE||27}</div>
               <div style="font-size:11px;color:var(--text3);margin-top:4px;">Total</div>
@@ -2577,6 +2588,16 @@ function renderAttendancePage(){
             <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
               <div style="font-size:22px;font-weight:800;color:#10b981;">${casE||13}</div>
               <div style="font-size:11px;color:var(--text3);margin-top:4px;">Casual</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:8px;">
+            <div style="flex:1;text-align:center;background:rgba(239,68,68,0.06);border-radius:8px;padding:8px 6px;">
+              <div style="font-size:18px;font-weight:800;color:#ef4444;">${totalLeaveTaken}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px;">Total Taken</div>
+            </div>
+            <div style="flex:1;text-align:center;background:rgba(16,185,129,0.06);border-radius:8px;padding:8px 6px;">
+              <div style="font-size:18px;font-weight:800;color:#10b981;">${(totE||27)-totalLeaveTaken}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:3px;">Remaining</div>
             </div>
           </div>
         </div>
@@ -2591,17 +2612,18 @@ function renderAttendancePage(){
           <div style="display:flex;align-items:center;gap:20px;">
             <div style="position:relative;width:140px;height:140px;flex-shrink:0;">
               <canvas id="leaveDonutChart" width="140" height="140"></canvas>
-              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                <div style="font-size:16px;font-weight:800;color:var(--text);">${totT}</div>
-                <div style="font-size:10px;color:var(--text3);">Taken</div>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:90px;">
+                <div style="font-size:13px;font-weight:800;color:var(--text);">${totalLeaveTaken}</div>
+                <div style="font-size:9px;color:var(--text3);">Leave taken</div>
+                <div style="font-size:13px;font-weight:800;color:#10b981;margin-top:2px;">${totalLeaveRemaining>0?totalLeaveRemaining:0}</div>
+                <div style="font-size:9px;color:var(--text3);">Remaining</div>
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="font-size:12px;color:var(--text2);">${totT} Leave taken</div>
-              <div style="font-size:12px;color:#10b981;">${totB||(totE-totT)} Leave remaining</div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);"><div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div>Annual</div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);"><div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;"></div>Casual</div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);"><div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>Taken</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text2);">${totalLeaveTaken} Leave taken</div>
+              <div style="font-size:13px;font-weight:600;color:#10b981;">${totalLeaveRemaining>0?totalLeaveRemaining:0} Leave remaining</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);margin-top:8px;"><div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div>Leave remaining</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);"><div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;"></div>Leave taken</div>
             </div>
           </div>
         </div>
@@ -2624,8 +2646,8 @@ function renderAttendancePage(){
       window._leaveDonutChart = new Chart(dCtx,{
         type:'doughnut',
         data:{
-          labels:['Annual Rem','Casual Rem','Taken'],
-          datasets:[{data:[annB||(annE||14),casB||(casE||13),totT||0],backgroundColor:['#10b981','#3b82f6','#f59e0b'],borderWidth:0,hoverOffset:4}]
+          labels:['Leave Remaining','Leave Taken'],
+          datasets:[{data:[totalLeaveRemaining>0?totalLeaveRemaining:0, totalLeaveTaken],backgroundColor:['#10b981','#3b82f6'],borderWidth:0,hoverOffset:4}]
         },
         options:{cutout:'68%',responsive:false,plugins:{legend:{display:false}}}
       });
