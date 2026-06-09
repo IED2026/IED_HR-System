@@ -3031,6 +3031,12 @@ function openPihrPreviewModal(){
     if(!empGroups[r.pihrCode]){ empGroups[r.pihrCode]=[]; empOrder.push(r.pihrCode); }
     empGroups[r.pihrCode].push({...r, _idx:idx});
   });
+  empOrder.sort((a,b)=>{
+    const na=parseInt((a.match(/(\d+)$/)||[0,0])[1]);
+    const nb=parseInt((b.match(/(\d+)$/)||[0,0])[1]);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return a.localeCompare(b);
+  });
 
   let tableRows='';
   empOrder.forEach(code=>{
