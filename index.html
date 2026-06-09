@@ -2936,9 +2936,12 @@ async function processPihrJobCard(file){
         inDaily=true;
       } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
         const month=r[0].substring(3,5);
+        const dateStr=r[0].substring(0,10);
         const status=r[1];
+        const inTime=r[3]||'';
+        const outTime=r[4]||'';
         const otRaw=r[6];
-        if(!curEmp.months[month]) curEmp.months[month]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0};
+        if(!curEmp.months[month]) curEmp.months[month]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0,daily:[]};
         const m=curEmp.months[month];
         if(status==='W'){ m.weekend++; }
         else if(status==='H'){ m.holiday++; }
@@ -2951,6 +2954,7 @@ async function processPihrJobCard(file){
           const parts=otRaw.split(':');
           if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
         }
+        m.daily.push({date:dateStr, status, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:''});
       }
     }
     if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
@@ -2998,16 +3002,26 @@ function openPihrPreviewModal(){
     Object.keys(pe.months).sort().forEach(mk=>{
       const mi=parseInt(mk)-1;
       const d=pe.months[mk];
-      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d});
+      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk]});
     });
   });
 
-  const tableRows=rows.map(r=>{
+  // Store rows globally for daily detail view
+  window._pihrPreviewRows = rows;
+
+  const STATUS_COLOR={'P':'var(--green)','D':'#f97316','E':'#06b6d4','A':'#ef4444','L':'#8b5cf6','H':'#64748b','W':'var(--text3)'};
+  const STATUS_LABEL={'P':'Present','D':'Late','E':'Early Out','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend'};
+
+  const tableRows=rows.map((r,idx)=>{
     const matchCell=r.matched
       ? '<span style="color:var(--green);font-size:10px;"><i class="fa fa-check"></i> '+r.matched.name+'</span>'
       : '<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
     const rowBg=r.matched?'':'rgba(239,68,68,0.05)';
-    return '<tr style="background:'+rowBg+'"><td style="padding:5px 8px;font-size:10px;color:var(--text2);">'+r.pihrCode+'</td><td style="padding:5px 8px;font-size:10px;">'+r.pihrName+'</td><td style="padding:5px 8px;">'+matchCell+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.monthName+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.data.wd+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:var(--green);">'+r.data.present+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">'+r.data.absent+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;">'+r.data.leave+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;">'+r.data.late+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;">'+r.data.holiday+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">'+r.data.ot+'</td></tr>';
+    const daily=(r.rawMonthData&&r.rawMonthData.daily)||[];
+    const detailBtn=daily.length
+      ? '<button onclick="showPihrDailyDetail('+idx+')" style="padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:9px;cursor:pointer;font-family:inherit;"><i class="fa fa-list"></i> '+daily.length+'</button>'
+      : '<span style="color:var(--text3);font-size:10px;">—</span>';
+    return '<tr style="background:'+rowBg+'"><td style="padding:5px 8px;font-size:10px;color:var(--text2);">'+r.pihrCode+'</td><td style="padding:5px 8px;font-size:10px;">'+r.pihrName+'</td><td style="padding:5px 8px;">'+matchCell+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.monthName+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;">'+r.data.wd+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:var(--green);">'+r.data.present+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">'+r.data.absent+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;">'+r.data.leave+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;">'+r.data.late+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;">'+r.data.holiday+'</td><td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">'+r.data.ot+'</td><td style="padding:5px 6px;text-align:center;">'+detailBtn+'</td></tr>';
   }).join('');
 
   const matched=rows.filter(r=>r.matched).length;
@@ -3044,13 +3058,14 @@ function openPihrPreviewModal(){
               <th style="padding:8px 6px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
               <th style="padding:8px 6px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
               <th style="padding:8px 6px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
+              <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
         </table>
       </div>
       <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0;">
-        <div style="font-size:11px;color:var(--text3);flex:1;">Year <b>${year}</b> এ fill হবে। Existing data overwrite হবে।</div>
+        <div style="font-size:11px;color:var(--text3);flex:1;">Will fill attendance for year <b>${year}</b>. Existing data will be overwritten.</div>
         <button onclick="document.getElementById('pihrPreviewModal').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
         <button onclick="confirmPihrFill(${year})" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
       </div>
@@ -3092,6 +3107,64 @@ function confirmPihrFill(year){
   saveState();
   renderAttendancePage();
   toast('PIHR: '+filled+' month records filled · '+skipped+' not matched','success');
+}
+
+function showPihrDailyDetail(rowIdx){
+  const row=window._pihrPreviewRows[rowIdx];
+  if(!row) return;
+  const daily=(row.rawMonthData&&row.rawMonthData.daily)||[];
+  if(!daily.length){ toast('No daily data available','info'); return; }
+
+  const existing=document.getElementById('pihrDailyModal');
+  if(existing) existing.remove();
+
+  const STATUS_COLOR={'P':'#10b981','D':'#f97316','E':'#06b6d4','A':'#ef4444','L':'#8b5cf6','H':'#94a3b8','W':'#64748b'};
+  const STATUS_LABEL={'P':'Present','D':'Late','E':'Early Out','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend'};
+
+  const trows=daily.map(d=>{
+    const sc=STATUS_COLOR[d.status]||'var(--text2)';
+    const sl=STATUS_LABEL[d.status]||d.status;
+    return `<tr>
+      <td style="padding:5px 10px;font-size:11px;color:var(--text2);">${d.date}</td>
+      <td style="padding:5px 10px;text-align:center;"><span style="font-size:10px;font-weight:700;color:${sc};background:${sc}22;padding:2px 8px;border-radius:10px;">${sl}</span></td>
+      <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.inTime||'—'}</td>
+      <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.outTime||'—'}</td>
+      <td style="padding:5px 10px;font-size:11px;text-align:center;color:#3b82f6;">${d.ot||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const modal=document.createElement('div');
+  modal.id='pihrDailyModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text1);">${row.pihrName} <span style="color:var(--text3);font-weight:400;">— ${row.monthName}</span></div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">${row.pihrCode} · ${daily.length} days · Present: ${row.data.present} · Absent: ${row.data.absent} · Late: ${row.data.late}</div>
+        </div>
+        <button onclick="document.getElementById('pihrDailyModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead style="position:sticky;top:0;background:var(--navy3);">
+            <tr>
+              <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Date</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Status</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--green);border-bottom:1px solid var(--border);">In Time</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Out Time</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT Hours</th>
+            </tr>
+          </thead>
+          <tbody>${trows}</tbody>
+        </table>
+      </div>
+      <div style="padding:10px 18px;border-top:1px solid var(--border);text-align:right;flex-shrink:0;">
+        <button onclick="document.getElementById('pihrDailyModal').remove()" style="padding:7px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 function clearPihrFileData(){
