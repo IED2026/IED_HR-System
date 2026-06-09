@@ -2542,26 +2542,26 @@ function renderAttendancePage(){
     const totE=lb.totalEntitled||(annE+casE), totT=lb.totalTaken||(annT+casT), totB=lb.totalBalance||(totE-totT);
 
     const card = (label, entitled, taken, balance, clr) => `
-      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:12px;border-top:2px solid ${clr};">
-        <div style="font-size:11px;font-weight:700;color:${clr};margin-bottom:8px;">${label}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="text-align:center;">
-            <div style="font-size:18px;font-weight:800;color:var(--text)">${entitled}</div>
-            <div style="font-size:10px;color:var(--text3);">Entitled</div>
+      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px 20px;border-top:3px solid ${clr};">
+        <div style="font-size:12px;font-weight:700;color:${clr};margin-bottom:14px;letter-spacing:0.04em;">${label}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            <div style="font-size:22px;font-weight:800;color:var(--text);line-height:1;">${entitled}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Entitled</div>
           </div>
-          <div style="text-align:center;">
-            <div style="font-size:18px;font-weight:800;color:var(--orange)">${taken}</div>
-            <div style="font-size:10px;color:var(--text3);">Taken</div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            <div style="font-size:22px;font-weight:800;color:var(--orange);line-height:1;">${taken}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Taken</div>
           </div>
-          <div style="text-align:center;">
-            <div style="font-size:18px;font-weight:800;color:${balance>5?'var(--green)':balance>0?'var(--orange)':'var(--red)'}">${balance}</div>
-            <div style="font-size:10px;color:var(--text3);">Remaining</div>
+          <div style="flex:1;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;padding:10px 6px;">
+            <div style="font-size:22px;font-weight:800;color:${balance>5?'var(--green)':balance>0?'var(--orange)':'var(--red)'};line-height:1;">${balance}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Remaining</div>
           </div>
         </div>
       </div>`;
 
     balCards.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;width:100%;">
         ${card('Total Leave', totE, totT, totB, '#d4af37')}
         ${card('Annual Leave', annE, annT, annB, '#10b981')}
         ${card('Casual Leave', casE, casT, casB, '#3b82f6')}
