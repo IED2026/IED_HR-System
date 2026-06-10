@@ -2859,17 +2859,21 @@ function renderYearlyAttCalendar(emp, year, attData){
       if(!isPast){
         dayClr='rgba(255,255,255,0.15)'; bgDay='transparent'; fontW='400';
       } else if(status==='A'){
-        dayClr='#ff2d2d'; bgDay='rgba(239,68,68,0.18)'; fontW='800';
+        dayClr='#fff'; bgDay='rgba(239,68,68,0.75)'; fontW='800';
       } else if(status==='L'){
-        dayClr='#ff2d2d'; bgDay='rgba(239,68,68,0.12)'; fontW='800';
+        dayClr='#fff'; bgDay='rgba(239,68,68,0.55)'; fontW='800';
       } else if(status==='P'){
-        dayClr='rgba(255,255,255,0.6)'; bgDay='transparent'; fontW='500';
+        dayClr='rgba(255,255,255,0.75)'; bgDay='transparent'; fontW='500';
+      } else if(status==='D'){
+        dayClr='#fbbf24'; bgDay='transparent'; fontW='700';
+      } else if(status==='E'){
+        dayClr='#f97316'; bgDay='transparent'; fontW='700';
       } else if(status==='H'){
-        dayClr='#f97316'; bgDay='rgba(249,115,22,0.18)'; fontW='700';
+        dayClr='#ef4444'; bgDay='transparent'; fontW='700';
       } else if(status==='W'){
-        dayClr='#f97316'; bgDay='rgba(249,115,22,0.08)'; fontW='600';
+        dayClr='#ef4444'; bgDay='transparent'; fontW='500';
       } else {
-        dayClr='rgba(255,255,255,0.4)'; bgDay='transparent'; fontW='400';
+        dayClr='rgba(255,255,255,0.25)'; bgDay='transparent'; fontW='400';
       }
       calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};">${d}</div>`;
     }
@@ -3183,11 +3187,13 @@ function pihrDoFillSingle(rowIdx, year){
   const mi=row.monthIdx;
   if(!emp.attendance) emp.attendance={};
   if(!emp.attendance[year]) emp.attendance[year]={};
+  const rawDaily=(row.rawMonthData&&row.rawMonthData.daily)||[];
   emp.attendance[year][mi]={
-    wd: d.wd||22, present: d.present||0, absent: d.absent||0,
+    wd: d.wd||0, present: d.present||0, absent: d.absent||0,
     leave: d.leave||0, late: d.late||0, half: 0,
     ot: d.ot||0, holiday: d.holiday||0,
-    note: emp.attendance[year][mi]?.note||''
+    note: emp.attendance[year][mi]?.note||'',
+    daily: rawDaily.map(r=>r.status)
   };
   saveState();
   renderAttendancePage();
@@ -3243,10 +3249,11 @@ function confirmPihrFill(year){
     Object.entries(pe.months).forEach(([mk,d])=>{
       const mi=parseInt(mk)-1;
       emp.attendance[year][mi]={
-        wd: d.wd||22, present: d.present||0, absent: d.absent||0,
+        wd: d.wd||0, present: d.present||0, absent: d.absent||0,
         leave: d.leave||0, late: d.late||0, half: 0,
         ot: d.ot||0, holiday: d.holiday||0,
-        note: emp.attendance[year][mi]?.note||''
+        note: emp.attendance[year][mi]?.note||'',
+        daily: (d.daily||[]).map(r=>r.status)
       };
       filled++;
     });
