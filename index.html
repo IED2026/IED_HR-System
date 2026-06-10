@@ -2962,7 +2962,7 @@ async function processPihrJobCard(file){
         else if(status==='H'){ m.holiday++; }
         else if(status==='P'){ m.present++; m.wd++; }
         else if(status==='D'){ m.present++; m.wd++; m.late++; }
-        else if(status==='E'){ m.present++; m.wd++; }
+        else if(status==='E'){ m.present++; m.wd++; m.late++; } // Extreme Delay
         else if(status==='A'){ m.absent++; m.wd++; }
         else if(status==='L'){ m.leave++; m.wd++; }
         if(otRaw && otRaw!=='-' && otRaw!==''){
@@ -3132,7 +3132,7 @@ function openPihrPreviewModal(){
       <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0;">
         <div style="font-size:11px;color:var(--text3);flex:1;">Will fill attendance for year <b>${year}</b>. Existing data will be overwritten.</div>
         <button onclick="document.getElementById('pihrPreviewModal').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
-        <button onclick="confirmPihrFill(${year})" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
+        <button onclick="pihrFillAllConfirm1(${year},${matched})" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
       </div>
     </div>
   `;
@@ -3148,6 +3148,88 @@ function pihrMatchEmp(code, name){
   const words=norm(name).split(' ').filter(w=>w.length>2);
   emp=employees.find(e=>{ const en=norm(e.name); return words.filter(w=>en.includes(w)).length>=Math.min(2,words.length); });
   return emp||null;
+}
+
+function pihrFillSingleMonth(rowIdx){
+  const row=window._pihrPreviewRows[rowIdx];
+  if(!row){ toast('Data not found','error'); return; }
+  if(!row.matched){ toast('No system match for this employee','error'); return; }
+
+  const year=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
+
+  // Single confirmation
+  const c=document.createElement('div');
+  c.id='pihrSingleConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10003;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">📋</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:6px;">Fill ${row.monthName} ${year}?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Employee: <b style="color:var(--text1)">${row.matched.name}</b></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">WD: ${row.data.wd} · Present: ${row.data.present} · Absent: ${row.data.absent} · Late: ${row.data.late}</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('pihrSingleConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('pihrSingleConfirm').remove();pihrDoFillSingle(${rowIdx},${year})" style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-check"></i> Fill</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+function pihrDoFillSingle(rowIdx, year){
+  const row=window._pihrPreviewRows[rowIdx];
+  if(!row||!row.matched) return;
+  const emp=row.matched;
+  const d=row.data;
+  const mi=row.monthIdx;
+  if(!emp.attendance) emp.attendance={};
+  if(!emp.attendance[year]) emp.attendance[year]={};
+  emp.attendance[year][mi]={
+    wd: d.wd||22, present: d.present||0, absent: d.absent||0,
+    leave: d.leave||0, late: d.late||0, half: 0,
+    ot: d.ot||0, holiday: d.holiday||0,
+    note: emp.attendance[year][mi]?.note||''
+  };
+  saveState();
+  renderAttendancePage();
+  document.getElementById('pihrDailyModal')?.remove();
+  const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  toast(emp.name+' — '+MSHORT[mi]+' '+year+' filled ✓','success');
+}
+
+function pihrFillAllConfirm1(year, matched){
+  // First confirmation
+  const c1=document.createElement('div');
+  c1.id='pihrConfirm1';
+  c1.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c1.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:380px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text1);margin-bottom:8px;">Fill All Matched?</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:20px;">This will update <b style="color:var(--text1)">${matched} employee(s)</b> attendance for year <b style="color:var(--text1)">${year}</b>.<br>Existing data will be overwritten.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('pihrConfirm1').remove()" style="padding:9px 20px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('pihrConfirm1').remove();pihrFillAllConfirm2(${year},${matched})" style="padding:9px 20px;border-radius:8px;border:none;background:#f59e0b;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Yes, Continue</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c1);
+}
+
+function pihrFillAllConfirm2(year, matched){
+  // Second confirmation
+  const c2=document.createElement('div');
+  c2.id='pihrConfirm2';
+  c2.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c2.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:2px solid #ef4444;width:100%;max-width:380px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(239,68,68,0.3);">
+      <div style="font-size:32px;margin-bottom:12px;">🔴</div>
+      <div style="font-size:14px;font-weight:700;color:#ef4444;margin-bottom:8px;">Final Confirmation</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:20px;">Are you <b>absolutely sure</b>?<br>All <b style="color:#ef4444">${matched}</b> matched employees' attendance for <b style="color:var(--text1)">${year}</b> will be overwritten.<br>This cannot be undone.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('pihrConfirm2').remove()" style="padding:9px 20px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('pihrConfirm2').remove();confirmPihrFill(${year})" style="padding:9px 20px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-check"></i> Fill Now</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c2);
 }
 
 function confirmPihrFill(year){
@@ -3184,7 +3266,7 @@ function showPihrDailyDetail(rowIdx){
   if(existing) existing.remove();
 
   const STATUS_COLOR={'P':'#10b981','D':'#f97316','E':'#06b6d4','A':'#ef4444','L':'#8b5cf6','H':'#94a3b8','W':'#64748b'};
-  const STATUS_LABEL={'P':'Present','D':'Late','E':'Early Out','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend'};
+  const STATUS_LABEL={'P':'Present','D':'Late','E':'Extreme Delay','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend'};
 
   const trows=daily.map(d=>{
     const sc=STATUS_COLOR[d.status]||'var(--text2)';
@@ -3208,7 +3290,10 @@ function showPihrDailyDetail(rowIdx){
           <div style="font-size:13px;font-weight:700;color:var(--text1);">${row.pihrName} <span style="color:var(--text3);font-weight:400;">— ${row.monthName}</span></div>
           <div style="font-size:10px;color:var(--text3);margin-top:2px;">${row.pihrCode} · ${daily.length} days · Present: ${row.data.present} · Absent: ${row.data.absent} · Late: ${row.data.late}</div>
         </div>
-        <button onclick="document.getElementById('pihrDailyModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="pihrFillSingleMonth(${rowIdx})" style="padding:7px 14px;border-radius:8px;border:none;background:#10b981;color:white;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill</button>
+          <button onclick="document.getElementById('pihrDailyModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+        </div>
       </div>
       <div style="overflow-y:auto;flex:1;">
         <table style="width:100%;border-collapse:collapse;">
