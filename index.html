@@ -2946,6 +2946,13 @@ function storePihrFileName(name){
   const st=document.getElementById('pihrStatusKpi');
   const fb=document.getElementById('pihrFillBtnKpi');
   if(fn) fn.textContent=name;
+  // Auto-detect mapping from filename
+  const nl=name.toLowerCase();
+  if(nl.includes('leave') && nl.includes('balance')){
+    window._pihrAutoMappingId='leave_balance';
+  } else {
+    window._pihrAutoMappingId='job_card';
+  }
   if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready — click Fill';
   if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
 }
@@ -3063,8 +3070,10 @@ async function openPihrImportDropdown(){
   if(!mappings.find(m=>m.id==='leave_balance')){
     mappings.push({id:'leave_balance', name:'Employee Leave Balance Report', type:'leave_balance'});
   }
-  // Always open with first mapping pre-selected (right screen)
-  renderPihrMappingGrid(mappings, mappings[0].id);
+  // Auto-select based on detected mapping from filename
+  const autoId = window._pihrAutoMappingId || mappings[0].id;
+  const autoExists = mappings.find(m=>m.id===autoId);
+  renderPihrMappingGrid(mappings, autoExists ? autoId : mappings[0].id);
 }
 
 function renderPihrMappingGrid(mappings, selectedId=null){
@@ -3226,7 +3235,10 @@ function openLeaveBalancePreviewModal(data, year, title){
 
   const matched=empList.filter(e=>pihrMatchEmp(e.code,e.name)).length;
 
-  const tableRows=empList.map((e,i)=>{
+  // Store empList for fill-single use
+  window._leaveBalEmpList = empList;
+
+  const tableRows=empList.map((e,idx)=>{
     const emp=pihrMatchEmp(e.code,e.name);
     const isCurrent=currentEmp&&emp?.id===currentEmp.id;
     const matchCell=emp
@@ -3234,6 +3246,9 @@ function openLeaveBalancePreviewModal(data, year, title){
       :'<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
     const rowBg=isCurrent?'rgba(212,175,55,0.06)':(emp?'':'rgba(239,68,68,0.05)');
     const leftB=isCurrent?'border-left:3px solid var(--gold);':'';
+    const fillBtn=emp
+      ?'<button onclick="fillSingleLeaveBalance('+idx+','+year+')" style="padding:3px 10px;border-radius:6px;border:none;background:#10b981;color:white;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill</button>'
+      :'<span style="color:var(--text3);font-size:10px;">—</span>';
     return `<tr style="background:${rowBg}">
       <td style="padding:5px 8px;font-size:10px;color:${isCurrent?'var(--gold)':'var(--text2)'};font-weight:${isCurrent?700:400};${leftB}">${e.code}</td>
       <td style="padding:5px 8px;font-size:10px;">${e.name}</td>
@@ -3244,6 +3259,7 @@ function openLeaveBalancePreviewModal(data, year, title){
       <td style="padding:5px 6px;text-align:center;font-size:10px;color:#10b981;">${e.casual.allowed||0}</td>
       <td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">${e.casual.taken||0}</td>
       <td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">${e.casual.balance||0}</td>
+      <td style="padding:5px 6px;text-align:center;">${fillBtn}</td>
     </tr>`;
   }).join('');
 
@@ -3261,7 +3277,7 @@ function openLeaveBalancePreviewModal(data, year, title){
       </div>
       <div style="overflow-y:auto;flex:1;">
         <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
-          <colgroup><col style="width:65px"><col style="width:120px"><col style="width:110px"><col style="width:52px"><col style="width:52px"><col style="width:55px"><col style="width:52px"><col style="width:52px"><col style="width:55px"></colgroup>
+          <colgroup><col style="width:65px"><col style="width:115px"><col style="width:100px"><col style="width:48px"><col style="width:44px"><col style="width:50px"><col style="width:48px"><col style="width:44px"><col style="width:50px"><col style="width:48px"></colgroup>
           <thead style="position:sticky;top:0;background:var(--navy3);z-index:1;">
             <tr>
               <th style="padding:7px 6px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Code</th>
@@ -3269,6 +3285,7 @@ function openLeaveBalancePreviewModal(data, year, title){
               <th style="padding:7px 6px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Match</th>
               <th colspan="3" style="padding:7px 6px;text-align:center;font-size:10px;color:#10b981;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Annual Leave</th>
               <th colspan="3" style="padding:7px 6px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Casual Leave</th>
+              <th style="padding:7px 6px;border-bottom:1px solid var(--border);"></th>
             </tr>
             <tr>
               <th colspan="3" style="border-bottom:1px solid var(--border);"></th>
@@ -3278,6 +3295,7 @@ function openLeaveBalancePreviewModal(data, year, title){
               <th style="padding:5px 4px;text-align:center;font-size:9px;color:#10b981;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Allowed</th>
               <th style="padding:5px 4px;text-align:center;font-size:9px;color:#ef4444;border-bottom:1px solid var(--border);">Taken</th>
               <th style="padding:5px 4px;text-align:center;font-size:9px;color:#3b82f6;border-bottom:1px solid var(--border);">Balance</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border);">Fill</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
@@ -3286,11 +3304,72 @@ function openLeaveBalancePreviewModal(data, year, title){
       <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0;">
         <div style="font-size:11px;color:var(--text3);flex:1;">Will update Leave Balance for year <b>${year}</b>. Existing data will be overwritten.</div>
         <button onclick="document.getElementById('leaveBalPreviewModal').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
-        <button onclick="confirmLeaveBalanceFill(window._pihrLeaveBalData, window._pihrLeaveBalYear)" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
+        <button onclick="leaveBalFillAllConfirm()" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
       </div>
     </div>
   `;
   document.body.appendChild(modal);
+}
+
+// ── Leave Balance Fill All Confirmation ──
+function leaveBalFillAllConfirm(){
+  const data=window._pihrLeaveBalData;
+  const year=window._pihrLeaveBalYear;
+  const matched=Object.values(data).filter(e=>pihrMatchEmp(e.code,e.name)).length;
+  const c=document.createElement('div');
+  c.id='leaveBalConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Fill All Leave Balances?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">This will update <b style="color:var(--text1)">${matched} employee(s)</b> leave balance for year <b style="color:var(--text1)">${year}</b>.<br>Existing data will be overwritten.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('leaveBalConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('leaveBalConfirm').remove();confirmLeaveBalanceFill(window._pihrLeaveBalData,window._pihrLeaveBalYear)" style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-check"></i> Fill All</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+// ── Fill Single Employee Leave Balance ──
+function fillSingleLeaveBalance(idx, year){
+  const e=window._leaveBalEmpList[idx];
+  if(!e) return;
+  const emp=pihrMatchEmp(e.code,e.name);
+  if(!emp){ toast('No match found','error'); return; }
+  const c=document.createElement('div');
+  c.id='leaveBalSingleConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">📋</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:6px;">Fill Leave Balance?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Employee: <b style="color:var(--text1)">${emp.name}</b></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">Annual: ${e.annual.allowed||0} allowed / ${e.annual.taken||0} taken<br>Casual: ${e.casual.allowed||0} allowed / ${e.casual.taken||0} taken</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('leaveBalSingleConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('leaveBalSingleConfirm').remove();doFillSingleLeaveBalance(${idx},${year})" style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-check"></i> Fill</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+function doFillSingleLeaveBalance(idx, year){
+  const e=window._leaveBalEmpList[idx];
+  const emp=pihrMatchEmp(e.code,e.name);
+  if(!emp) return;
+  if(!emp.leaveBalance) emp.leaveBalance={};
+  emp.leaveBalance[year]={
+    annualEntitled: e.annual.allowed||0,
+    annualTaken:    e.annual.taken||0,
+    casualEntitled: e.casual.allowed||0,
+    casualTaken:    e.casual.taken||0,
+    totalEntitled:  (e.annual.allowed||0)+(e.casual.allowed||0),
+  };
+  saveState();
+  renderAttendancePage();
+  toast(emp.name+' leave balance updated ✓','success');
 }
 
 // ── Fill Leave Balance ──
