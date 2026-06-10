@@ -2928,17 +2928,26 @@ let attImportedData = null; // Stores AI-extracted data from file
 // ══════════════════════════════════════════════════════════════
 
 let pihrExtractedData = null;
+let pihrRawFile = null; // Store raw file for re-processing with different mappings
 
 function handlePihrFileDrop(e){
   e.preventDefault();
   const dz=document.getElementById('pihrDropZoneKpi');
   if(dz) dz.style.borderColor='rgba(16,185,129,0.4)';
   const file=e.dataTransfer?.files?.[0];
-  if(file) processPihrJobCard(file);
+  if(file){ pihrRawFile=file; storePihrFileName(file.name); }
 }
 function handlePihrFileSelect(e){
   const file=e.target?.files?.[0];
-  if(file) processPihrJobCard(file);
+  if(file){ pihrRawFile=file; storePihrFileName(file.name); }
+}
+function storePihrFileName(name){
+  const fn=document.getElementById('pihrFileNameKpi');
+  const st=document.getElementById('pihrStatusKpi');
+  const fb=document.getElementById('pihrFillBtnKpi');
+  if(fn) fn.textContent=name;
+  if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready — click Fill to select mapping';
+  if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
 }
 
 async function processPihrJobCard(file){
@@ -3023,14 +3032,333 @@ async function processPihrJobCard(file){
   }
 }
 
-function openPihrImportDropdown(){
-  if(!pihrExtractedData){ toast('Upload a file first','error'); return; }
-  openPihrPreviewModal();
+// ── PIHR Mapping Storage ──
+async function loadPihrMappings(){
+  try{
+    const {data}=await _supabase.from('app_data').select('value').eq('key','pihr_mappings').single();
+    return data?.value||[];
+  }catch(e){ return []; }
+}
+async function savePihrMappings(mappings){
+  try{
+    const {data:ex}=await _supabase.from('app_data').select('key').eq('key','pihr_mappings');
+    if(ex&&ex.length>0){
+      await _supabase.from('app_data').update({value:mappings,updated_at:new Date().toISOString(),updated_by:_loggedInUser?.email||'system'}).eq('key','pihr_mappings');
+    } else {
+      await _supabase.from('app_data').insert({key:'pihr_mappings',value:mappings,updated_at:new Date().toISOString(),updated_by:_loggedInUser?.email||'system'});
+    }
+  }catch(e){ console.error('Save pihr mappings failed',e); }
 }
 
-function openPihrPreviewModal(){
+// ── Fill button → show mapping selector grid ──
+let _pihrSelectedMappingId = null;
+
+async function openPihrImportDropdown(){
+  if(!pihrRawFile){ toast('Upload a file first','error'); return; }
+  _pihrSelectedMappingId = null;
+  const mappings = await loadPihrMappings();
+  if(!mappings.find(m=>m.id==='job_card')){
+    mappings.unshift({id:'job_card', name:'Employee Job Card Report', type:'job_card'});
+  }
+  renderPihrMappingGrid(mappings);
+}
+
+function renderPihrMappingGrid(mappings, selectedId=null){
+  const existing=document.getElementById('pihrMappingSelectModal');
+  if(existing) existing.remove();
+
+  const confirmBar = selectedId ? (()=>{
+    const m=mappings.find(x=>x.id===selectedId);
+    const idx=mappings.findIndex(x=>x.id===selectedId);
+    return `
+      <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="font-size:12px;color:var(--text1);">You have selected <b style="color:#10b981;">Mapping ${idx+1}: ${m.name}</b>, Extract Data?</div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="confirmPihrMappingSelect('${selectedId}')" style="padding:6px 18px;border-radius:7px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Yes</button>
+          <button onclick="renderPihrMappingGrid(window._pihrMappings)" style="padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">No</button>
+        </div>
+      </div>`;
+  })() : '';
+
+  const cards = mappings.map((m,i)=>{
+    const isSelected = m.id===selectedId;
+    const border = isSelected ? '2px solid #10b981' : '2px solid var(--gold)';
+    const bg = isSelected ? 'rgba(16,185,129,0.06)' : 'rgba(212,175,55,0.04)';
+    const shadow = isSelected ? '0 0 0 2px rgba(16,185,129,0.2)' : 'none';
+    return `
+      <div onclick="renderPihrMappingGrid(window._pihrMappings,'${m.id}')"
+        style="border:${border};border-radius:12px;background:${bg};box-shadow:${shadow};padding:20px 16px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;text-align:center;gap:6px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text1);">Mapping ${i+1}</div>
+        <div style="font-size:11px;color:${isSelected?'#10b981':'var(--text3)'};">${m.name}</div>
+      </div>`;
+  }).join('');
+
+  const modal=document.createElement('div');
+  modal.id='pihrMappingSelectModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--navy2);border-radius:16px;border:1px solid var(--border);width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--navy2);z-index:1;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text1);"><i class="fa fa-database" style="color:#10b981"></i> PIHR File Import</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Select the mapping that matches your file format</div>
+        </div>
+        <button onclick="document.getElementById('pihrMappingSelectModal').remove()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="padding:16px 20px;">
+        ${confirmBar}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          ${cards}
+          <div onclick="openPihrNewMappingModal()"
+            style="border:2px dashed rgba(212,175,55,0.3);border-radius:12px;background:transparent;padding:20px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;gap:6px;transition:all .2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(212,175,55,0.3)'">
+            <i class="fa fa-plus" style="color:var(--gold);font-size:20px;"></i>
+            <div style="font-size:11px;color:var(--gold);font-weight:600;">Add New Mapping</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  window._pihrMappings = mappings;
+}
+
+async function confirmPihrMappingSelect(mappingId){
+  document.getElementById('pihrMappingSelectModal')?.remove();
+  const mappings = window._pihrMappings||[];
+  const mapping = mappings.find(m=>m.id===mappingId);
+  if(!mapping){ toast('Mapping not found','error'); return; }
+  const idx = mappings.findIndex(m=>m.id===mappingId);
+  const previewTitle = `PIHR Import Preview — Mapping ${idx+1}: ${mapping.name}`;
+
+  if(mapping.type==='job_card'){
+    await processPihrJobCard(pihrRawFile);
+    if(pihrExtractedData) openPihrPreviewModal(previewTitle);
+  } else {
+    await processPihrByColumnMap(pihrRawFile, mapping);
+    if(pihrExtractedData) openPihrPreviewModal(previewTitle);
+  }
+}
+
+// ── New Mapping Modal ──
+async function openPihrNewMappingModal(){
+  document.getElementById('pihrMappingSelectModal')?.remove();
+  if(!pihrRawFile){ toast('Upload a file first','error'); return; }
+
+  // Read file headers
+  const buf=await pihrRawFile.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const sheetNames=wb.SheetNames;
+  const ws=wb.Sheets[sheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  // Find first non-empty row as header
+  let headers=[];
+  for(const row of rows){
+    const r=row.map(v=>String(v||'').trim()).filter(Boolean);
+    if(r.length>2){ headers=row.map(v=>String(v||'').trim()); break; }
+  }
+
+  const existing=document.getElementById('pihrNewMappingModal');
+  if(existing) existing.remove();
+
+  const optionsHtml='<option value="">— Skip —</option>'+headers.filter(h=>h).map(h=>`<option value="${h}">${h}</option>`).join('');
+  const sheetOptHtml=sheetNames.map(s=>`<option value="${s}">${s}</option>`).join('');
+
+  const FIELDS=[
+    {key:'empCol',      label:'Employee Name/ID', required:true,  color:'#10b981'},
+    {key:'monthCol',    label:'Month column',      required:false, color:'#6366f1'},
+    {key:'wdCol',       label:'Working Days',      required:false, color:'#f59e0b'},
+    {key:'presentCol',  label:'Days Present',      required:true,  color:'#10b981'},
+    {key:'absentCol',   label:'Days Absent',       required:false, color:'#ef4444'},
+    {key:'leaveCol',    label:'Leave Days',        required:false, color:'#8b5cf6'},
+    {key:'lateCol',     label:'Late Count',        required:false, color:'#f97316'},
+    {key:'otCol',       label:'OT Hours',          required:false, color:'#3b82f6'},
+    {key:'holidayCol',  label:'Holiday Days',      required:false, color:'#64748b'},
+  ];
+
+  // Auto-guess
+  const guess={};
+  headers.forEach(h=>{
+    const l=h.toLowerCase().replace(/[\s_\-]/g,'');
+    if(!guess.empCol    && (l.includes('name')||l.includes('emp'))) guess.empCol=h;
+    if(!guess.monthCol  && l.includes('month')) guess.monthCol=h;
+    if(!guess.wdCol     && (l.includes('working')||l==='wd')) guess.wdCol=h;
+    if(!guess.presentCol&& l.includes('present')) guess.presentCol=h;
+    if(!guess.absentCol && l.includes('absent')) guess.absentCol=h;
+    if(!guess.leaveCol  && l.includes('leave')) guess.leaveCol=h;
+    if(!guess.lateCol   && l.includes('late')) guess.lateCol=h;
+    if(!guess.otCol     && (l.includes('ot')||l.includes('overtime'))) guess.otCol=h;
+    if(!guess.holidayCol&& l.includes('holiday')) guess.holidayCol=h;
+  });
+
+  const fieldsHtml=FIELDS.map(f=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+      <div style="width:130px;font-size:10px;color:${f.color};font-weight:600;flex-shrink:0;">${f.required?'<span style="color:#ef4444">*</span> ':''}${f.label}</div>
+      <select id="pnm_${f.key}" style="flex:1;padding:4px 6px;border-radius:5px;border:1px solid var(--border);background:var(--navy3);color:var(--text1);font-size:10px;font-family:inherit;">${optionsHtml}</select>
+    </div>
+  `).join('');
+
+  const modal=document.createElement('div');
+  modal.id='pihrNewMappingModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--navy2);z-index:1;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text1);"><i class="fa fa-table-columns" style="color:#10b981"></i> New Column Mapping</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Map once, auto-detect next time</div>
+        </div>
+        <button onclick="document.getElementById('pihrNewMappingModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="padding:14px 18px;">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:10px;color:var(--text2);font-weight:600;">Mapping Name</label>
+          <input id="pnm_name" placeholder="e.g. Monthly Summary Report" style="width:100%;margin-top:4px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text1);font-size:11px;font-family:inherit;">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;">Data Sheet</label>
+            <select id="pnm_sheet" style="width:100%;margin-top:4px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text1);font-size:11px;font-family:inherit;">${sheetOptHtml}</select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;">Fixed Month (if single month file)</label>
+            <select id="pnm_fixedMonth" style="width:100%;margin-top:4px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--navy3);color:var(--text1);font-size:11px;font-family:inherit;">
+              <option value="">— Has month column —</option>
+              ${['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i)=>`<option value="${i}">${m}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px;">Column Mapping</div>
+        ${fieldsHtml}
+        <div style="margin-top:6px;font-size:9px;color:var(--text3);"><span style="color:#ef4444">*</span> Required</div>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--navy2);">
+        <button onclick="document.getElementById('pihrNewMappingModal').remove()" style="padding:7px 16px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="savePihrNewMapping()" style="padding:7px 18px;border-radius:7px;border:none;background:#10b981;color:white;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-floppy-disk"></i> Save & Process</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Apply guesses
+  Object.entries(guess).forEach(([k,v])=>{ const el=document.getElementById('pnm_'+k); if(el) el.value=v; });
+}
+
+async function savePihrNewMapping(){
+  const name=document.getElementById('pnm_name')?.value?.trim();
+  if(!name){ toast('Enter a mapping name','error'); return; }
+  const empCol=document.getElementById('pnm_empCol')?.value;
+  const presentCol=document.getElementById('pnm_presentCol')?.value;
+  if(!empCol){ toast('Employee column is required','error'); return; }
+  if(!presentCol){ toast('Present column is required','error'); return; }
+
+  const mapping={
+    id: 'map_'+Date.now(),
+    name,
+    type: 'column_map',
+    sheet:      document.getElementById('pnm_sheet')?.value||'',
+    fixedMonth: document.getElementById('pnm_fixedMonth')?.value,
+    empCol, presentCol,
+    monthCol:   document.getElementById('pnm_monthCol')?.value||'',
+    wdCol:      document.getElementById('pnm_wdCol')?.value||'',
+    absentCol:  document.getElementById('pnm_absentCol')?.value||'',
+    leaveCol:   document.getElementById('pnm_leaveCol')?.value||'',
+    lateCol:    document.getElementById('pnm_lateCol')?.value||'',
+    otCol:      document.getElementById('pnm_otCol')?.value||'',
+    holidayCol: document.getElementById('pnm_holidayCol')?.value||'',
+  };
+
+  const mappings=await loadPihrMappings();
+  mappings.push(mapping);
+  await savePihrMappings(mappings);
+  toast('Mapping saved: '+name,'success');
+  document.getElementById('pihrNewMappingModal')?.remove();
+
+  // Process with this mapping
+  await processPihrByColumnMap(pihrRawFile, mapping);
+  if(pihrExtractedData) openPihrPreviewModal();
+}
+
+// ── Column Map Parser ──
+async function processPihrByColumnMap(file, mapping){
+  const st=document.getElementById('pihrStatusKpi');
+  const fb=document.getElementById('pihrFillBtnKpi');
+  if(st) st.innerHTML='<i class="fa fa-spinner fa-spin"></i> Processing...';
+
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const sheetName=mapping.sheet||(wb.SheetNames[0]);
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]||wb.Sheets[wb.SheetNames[0]],{defval:''});
+    if(!rows.length){ if(st) st.textContent='No data found'; return; }
+
+    const MONTH_NAMES=['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const result={};
+
+    rows.forEach(row=>{
+      const empRaw=String(row[mapping.empCol]||'').trim();
+      if(!empRaw) return;
+      if(!result[empRaw]) result[empRaw]={code:empRaw, name:empRaw, months:{}};
+
+      // Determine month
+      let mk=null;
+      if(mapping.fixedMonth!==''&&mapping.fixedMonth!==undefined&&mapping.fixedMonth!==null){
+        mk=String(parseInt(mapping.fixedMonth)+1).padStart(2,'0');
+      } else if(mapping.monthCol&&row[mapping.monthCol]){
+        const mv=String(row[mapping.monthCol]).toLowerCase().trim();
+        const mi=MONTH_NAMES.findIndex(m=>mv.startsWith(m));
+        if(mi>=0) mk=String(mi+1).padStart(2,'0');
+        else{ const mn=parseInt(mv); if(!isNaN(mn)&&mn>=1&&mn<=12) mk=String(mn).padStart(2,'0'); }
+      }
+      if(!mk) return;
+
+      if(!result[empRaw].months[mk]) result[empRaw].months[mk]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0,daily:[]};
+      const m=result[empRaw].months[mk];
+      m.present=parseFloat(row[mapping.presentCol])||0;
+      m.wd=mapping.wdCol?(parseFloat(row[mapping.wdCol])||0):m.present+(parseFloat(row[mapping.absentCol])||0)+(parseFloat(row[mapping.leaveCol])||0);
+      m.absent=mapping.absentCol?(parseFloat(row[mapping.absentCol])||0):0;
+      m.leave=mapping.leaveCol?(parseFloat(row[mapping.leaveCol])||0):0;
+      m.late=mapping.lateCol?(parseFloat(row[mapping.lateCol])||0):0;
+      m.holiday=mapping.holidayCol?(parseFloat(row[mapping.holidayCol])||0):0;
+      if(mapping.otCol&&row[mapping.otCol]){
+        const ov=String(row[mapping.otCol]);
+        const parts=ov.split(':');
+        m.otMins=parts.length>=2?(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0):(parseFloat(ov)||0)*60;
+      }
+    });
+
+    Object.values(result).forEach(emp=>{
+      Object.values(emp.months).forEach(m=>{ m.ot=parseFloat((m.otMins/60).toFixed(1)); delete m.otMins; });
+    });
+
+    const empCount=Object.keys(result).length;
+    if(!empCount){ if(st) st.textContent='No data found'; return; }
+    pihrExtractedData=result;
+    const monthSet=new Set(); Object.values(result).forEach(e=>Object.keys(e.months).forEach(m=>monthSet.add(m)));
+    const mNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthsFound=[...monthSet].sort().map(m=>mNames[parseInt(m)-1]).join(', ');
+    if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+empCount+' employees · '+monthSet.size+' months ('+monthsFound+')';
+    if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
+    toast('Extracted: '+empCount+' employees','success');
+  }catch(err){
+    console.error('Column map parse error:',err);
+    if(st) st.textContent='Error: '+err.message;
+    toast('Parse error: '+err.message,'error');
+  }
+}
+
+// ── Delete mapping ──
+async function deletePihrMappingById(id){
+  const mappings=await loadPihrMappings();
+  const updated=mappings.filter(m=>m.id!==id);
+  await savePihrMappings(updated);
+  toast('Mapping deleted','success');
+  document.getElementById('pihrMappingSelectModal')?.remove();
+}
+
+function openPihrPreviewModal(title){
   const existing=document.getElementById('pihrPreviewModal');
   if(existing) existing.remove();
+  const modalTitle = title || 'PIHR Import Preview';
 
   const year=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
   const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3109,7 +3437,7 @@ function openPihrPreviewModal(){
     <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div>
-          <div style="font-size:14px;font-weight:700;color:var(--text1);display:flex;align-items:center;gap:8px;"><i class="fa fa-table" style="color:#10b981"></i> PIHR Import Preview</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text1);display:flex;align-items:center;gap:8px;"><i class="fa fa-table" style="color:#10b981"></i> ${modalTitle}</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">
             <span style="color:var(--green);font-weight:600;">${matched} matched</span>
             ${unmatched>0?'<span style="color:#ef4444;margin-left:6px;">· '+unmatched+' not found</span>':''}
@@ -3346,6 +3674,7 @@ function showPihrDailyDetail(rowIdx){
 
 function clearPihrFileData(){
   pihrExtractedData=null;
+  pihrRawFile=null;
   const fi=document.getElementById('pihrFileInput'); if(fi) fi.value='';
   const fn=document.getElementById('pihrFileNameKpi'); if(fn) fn.textContent='Click or drag file';
   const st=document.getElementById('pihrStatusKpi'); if(st) st.textContent='Ready';
