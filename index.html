@@ -3369,6 +3369,11 @@ function doFillSingleLeaveBalance(idx, year){
   };
   saveState();
   renderAttendancePage();
+  setTimeout(()=>{
+    const empId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+    const curEmp=empId?employees.find(e=>e.id===empId):null;
+    if(curEmp) renderLeaveBalanceCards(curEmp, year);
+  }, 100);
   toast(emp.name+' leave balance updated ✓','success');
 }
 
@@ -3391,6 +3396,12 @@ function confirmLeaveBalanceFill(data, year){
   });
   saveState();
   renderAttendancePage();
+  // Re-render leave balance cards for current employee
+  setTimeout(()=>{
+    const empId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+    const emp=empId?employees.find(e=>e.id===empId):null;
+    if(emp) renderLeaveBalanceCards(emp, year);
+  }, 100);
   toast('Leave Balance: '+filled+' employees updated · '+skipped+' not matched','success');
 }
 
