@@ -2341,9 +2341,11 @@ function renderAttendancePage(){
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
     const absent=parseInt(mData.absent)||0;
-    const wd=parseInt(mData.wd)||0;
+    const wd=parseInt(mData.wd)||22;
     // Attendance % = present / working days * 100
-    const effectiveWD = wd > 0 ? wd : 0;
+    // wd = total days - weekend - holiday (already excludes holiday/weekend)
+    const holiday = parseInt(mData.holiday)||0;
+    const effectiveWD = wd > 0 ? wd : 22;
     const pct2 = effectiveWD>0 ? Math.round(present/effectiveWD*100) : 0;
     const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
     const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
@@ -2403,7 +2405,8 @@ function renderAttendancePage(){
     const md = attData[mi]||{};
     const mwd = parseInt(md.wd)||0;
     const mp = parseInt(md.present)||0;
-    if(mwd>0){ monthPctSum += Math.round(mp/mwd*100); monthPctCount++; }
+    const effWD = mwd > 0 ? mwd : 0;
+    if(effWD>0){ monthPctSum += Math.round(mp/effWD*100); monthPctCount++; }
   }
   const overallPct = monthPctCount>0 ? Math.round(monthPctSum/monthPctCount) : 0;
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
