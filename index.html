@@ -3060,6 +3060,9 @@ async function openPihrImportDropdown(){
   if(!mappings.find(m=>m.id==='job_card')){
     mappings.unshift({id:'job_card', name:'Employee Job Card Report', type:'job_card'});
   }
+  if(!mappings.find(m=>m.id==='leave_balance')){
+    mappings.push({id:'leave_balance', name:'Employee Leave Balance Report', type:'leave_balance'});
+  }
   // Always open with first mapping pre-selected (right screen)
   renderPihrMappingGrid(mappings, mappings[0].id);
 }
@@ -3134,10 +3137,182 @@ async function confirmPihrMappingSelect(mappingId){
   if(mapping.type==='job_card'){
     await processPihrJobCard(pihrRawFile);
     if(pihrExtractedData) openPihrPreviewModal(previewTitle);
+  } else if(mapping.type==='leave_balance'){
+    await processPihrLeaveBalance(pihrRawFile, previewTitle);
   } else {
     await processPihrByColumnMap(pihrRawFile, mapping);
     if(pihrExtractedData) openPihrPreviewModal(previewTitle);
   }
+}
+
+// ── Leave Balance Report Parser ──
+async function processPihrLeaveBalance(file, previewTitle){
+  const st=document.getElementById('pihrStatusKpi');
+  if(st) st.innerHTML='<i class="fa fa-spinner fa-spin"></i> Reading...';
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+    // Extract year from file
+    let fileYear=new Date().getFullYear();
+    for(const row of rows){
+      const txt=row.join(' ');
+      const m=txt.match(/\b(202\d)\b/);
+      if(m){ fileYear=parseInt(m[1]); break; }
+    }
+
+    const result={};
+    let curEmpCode='', curEmpName='';
+
+    rows.forEach(row=>{
+      const r=row.map(v=>String(v||'').trim());
+      // Employee row: IED_XX in col 0
+      if(r[0] && /^IED_\d+/i.test(r[0])){
+        curEmpCode=r[0];
+        curEmpName=r[1];
+        if(!result[curEmpCode]) result[curEmpCode]={code:curEmpCode,name:curEmpName,annual:{},casual:{}};
+      }
+      // Leave type rows
+      if(curEmpCode && r[4]){
+        const lt=r[4].toLowerCase().replace(/\s/g,'');
+        const allowed=parseFloat(r[5])||0;
+        const taken=parseFloat(r[7])||0;
+        const balance=parseFloat(r[8])||0;
+        if(lt.includes('annual')||lt.includes('earned')){
+          result[curEmpCode].annual={allowed,taken,balance};
+        } else if(lt.includes('casual')||lt.includes('sick')){
+          result[curEmpCode].casual={allowed,taken,balance};
+        }
+      }
+    });
+
+    const empCount=Object.keys(result).length;
+    if(!empCount){ if(st) st.textContent='No data found'; return; }
+    if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> '+empCount+' employees found';
+
+    // Show leave balance preview
+    window._pihrLeaveBalData = result;
+    window._pihrLeaveBalYear = fileYear;
+    openLeaveBalancePreviewModal(result, fileYear, previewTitle);
+  }catch(err){
+    console.error('Leave balance parse error:',err);
+    if(st) st.textContent='Error: '+err.message;
+    toast('Parse error','error');
+  }
+}
+
+// ── Leave Balance Preview Modal ──
+function openLeaveBalancePreviewModal(data, year, title){
+  const existing=document.getElementById('leaveBalPreviewModal');
+  if(existing) existing.remove();
+
+  // Get current employee
+  const currentEmpId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  const currentEmp=currentEmpId?employees.find(e=>e.id===currentEmpId):null;
+
+  const empList=Object.values(data);
+  // Sort: current first, then by code
+  empList.sort((a,b)=>{
+    const aM=pihrMatchEmp(a.code,a.name);
+    const bM=pihrMatchEmp(b.code,b.name);
+    if(currentEmp&&aM?.id===currentEmp.id) return -1;
+    if(currentEmp&&bM?.id===currentEmp.id) return 1;
+    const na=parseInt((a.code.match(/(\d+)$/)||[0,0])[1]);
+    const nb=parseInt((b.code.match(/(\d+)$/)||[0,0])[1]);
+    return na-nb;
+  });
+
+  const matched=empList.filter(e=>pihrMatchEmp(e.code,e.name)).length;
+
+  const tableRows=empList.map((e,i)=>{
+    const emp=pihrMatchEmp(e.code,e.name);
+    const isCurrent=currentEmp&&emp?.id===currentEmp.id;
+    const matchCell=emp
+      ?'<span style="color:var(--green);font-size:10px;"><i class="fa fa-check"></i> '+emp.name+'</span>'
+      :'<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
+    const rowBg=isCurrent?'rgba(212,175,55,0.06)':(emp?'':'rgba(239,68,68,0.05)');
+    const leftB=isCurrent?'border-left:3px solid var(--gold);':'';
+    return `<tr style="background:${rowBg}">
+      <td style="padding:5px 8px;font-size:10px;color:${isCurrent?'var(--gold)':'var(--text2)'};font-weight:${isCurrent?700:400};${leftB}">${e.code}</td>
+      <td style="padding:5px 8px;font-size:10px;">${e.name}</td>
+      <td style="padding:5px 8px;">${matchCell}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#10b981;">${e.annual.allowed||0}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">${e.annual.taken||0}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">${e.annual.balance||0}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#10b981;">${e.casual.allowed||0}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#ef4444;">${e.casual.taken||0}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;">${e.casual.balance||0}</td>
+    </tr>`;
+  }).join('');
+
+  const modal=document.createElement('div');
+  modal.id='leaveBalPreviewModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:820px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text1);"><i class="fa fa-umbrella-beach" style="color:#10b981"></i> ${title}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span style="color:var(--green);font-weight:600;">${matched} matched</span> · Year: <b>${year}</b></div>
+        </div>
+        <button onclick="document.getElementById('leaveBalPreviewModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="overflow-y:auto;flex:1;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup><col style="width:65px"><col style="width:120px"><col style="width:110px"><col style="width:52px"><col style="width:52px"><col style="width:55px"><col style="width:52px"><col style="width:52px"><col style="width:55px"></colgroup>
+          <thead style="position:sticky;top:0;background:var(--navy3);z-index:1;">
+            <tr>
+              <th style="padding:7px 6px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Code</th>
+              <th style="padding:7px 6px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Name</th>
+              <th style="padding:7px 6px;text-align:left;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Match</th>
+              <th colspan="3" style="padding:7px 6px;text-align:center;font-size:10px;color:#10b981;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Annual Leave</th>
+              <th colspan="3" style="padding:7px 6px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Casual Leave</th>
+            </tr>
+            <tr>
+              <th colspan="3" style="border-bottom:1px solid var(--border);"></th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#10b981;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Allowed</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#ef4444;border-bottom:1px solid var(--border);">Taken</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#3b82f6;border-bottom:1px solid var(--border);">Balance</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#10b981;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">Allowed</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#ef4444;border-bottom:1px solid var(--border);">Taken</th>
+              <th style="padding:5px 4px;text-align:center;font-size:9px;color:#3b82f6;border-bottom:1px solid var(--border);">Balance</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0;">
+        <div style="font-size:11px;color:var(--text3);flex:1;">Will update Leave Balance for year <b>${year}</b>. Existing data will be overwritten.</div>
+        <button onclick="document.getElementById('leaveBalPreviewModal').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="confirmLeaveBalanceFill(window._pihrLeaveBalData, window._pihrLeaveBalYear)" style="padding:8px 20px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-wand-magic-sparkles"></i> Fill All Matched (${matched})</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// ── Fill Leave Balance ──
+function confirmLeaveBalanceFill(data, year){
+  document.getElementById('leaveBalPreviewModal')?.remove();
+  let filled=0, skipped=0;
+  Object.values(data).forEach(e=>{
+    const emp=pihrMatchEmp(e.code,e.name);
+    if(!emp){ skipped++; return; }
+    if(!emp.leaveBalance) emp.leaveBalance={};
+    emp.leaveBalance[year]={
+      annualEntitled: e.annual.allowed||0,
+      annualTaken:    e.annual.taken||0,
+      casualEntitled: e.casual.allowed||0,
+      casualTaken:    e.casual.taken||0,
+      totalEntitled:  (e.annual.allowed||0)+(e.casual.allowed||0),
+    };
+    filled++;
+  });
+  saveState();
+  renderAttendancePage();
+  toast('Leave Balance: '+filled+' employees updated · '+skipped+' not matched','success');
 }
 
 // ── New Mapping Modal ──
