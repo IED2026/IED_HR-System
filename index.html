@@ -2330,6 +2330,7 @@ function renderAttendancePage(){
   const attData=(emp.attendance||{})[year]||{};
   const nowM = new Date().getFullYear()===year ? new Date().getMonth() : 11;
   let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
+  let totalOnTime=0,totalDelay=0,totalExDelay=0;
   const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
   const rows=MONTHS.map((m,i)=>{
     const isFutureOrCurrent = (year===new Date().getFullYear() && i>=new Date().getMonth()) || year>new Date().getFullYear();
@@ -2341,20 +2342,28 @@ function renderAttendancePage(){
     const leave=parseInt(mData.leave)||0;
     const half=parseInt(mData.half)||0;
     const absent=parseInt(mData.absent)||0;
-    const wd=parseInt(mData.wd)||22;
-    // 2 half days = 1 leave equivalent for attendance %
+    const wd=parseInt(mData.wd)||0;
     const leaveEquiv = leave + (half/2);
-    // Attendance % = present / working days * 100
-    const holiday = parseInt(mData.holiday)||0;
     const effectiveWD = wd > 0 ? wd : 0;
     const pct2 = effectiveWD>0 ? Math.round(present/effectiveWD*100) : 0;
     const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
     const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
+    // Count P/D/E from daily array
+    const daily=mData.daily||[];
+    let mOnTime=0,mDelay=0,mExDelay=0;
+    daily.forEach(s=>{
+      if(s==='P'||s==='P(W)'||s==='P(H)'||s==='P(L)') mOnTime++;
+      else if(s==='D') mDelay++;
+      else if(s==='E') mExDelay++;
+    });
     totalPresent+=present;
     totalLeave+=leave;
     totalAbsent+=absent;
     totalLate+=parseInt(mData.late)||0;
     totalOT+=parseFloat(mData.ot)||0;
+    totalOnTime+=mOnTime;
+    totalDelay+=mDelay;
+    totalExDelay+=mExDelay;
     // Only count months up to current for overall %
     if(i<=nowM){ totalWDSoFar+=wd; }
     // Bar chart - only up to current month
@@ -2400,15 +2409,13 @@ function renderAttendancePage(){
   const tbody=document.getElementById('attTableBody');
   if(tbody) tbody.innerHTML=rows;
 
-  // Overall attendance = average of monthly attendance % (Jan to last completed month)
+  // Overall attendance = average of monthly attendance % (past months only)
   let monthPctSum = 0, monthPctCount = 0;
   for(let mi=0; mi<nowM; mi++){
     const md = attData[mi]||{};
     const mwd = parseInt(md.wd)||0;
     const mp = parseInt(md.present)||0;
-    const mh = parseInt(md.holiday)||0;
-    const effWD = mwd > 0 ? mwd : 0;
-    if(effWD>0){ monthPctSum += Math.round(mp/effWD*100); monthPctCount++; }
+    if(mwd>0){ monthPctSum += Math.round(mp/mwd*100); monthPctCount++; }
   }
   const overallPct = monthPctCount>0 ? Math.round(monthPctSum/monthPctCount) : 0;
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
@@ -2416,9 +2423,11 @@ function renderAttendancePage(){
   if(kpiEl) kpiEl.innerHTML=`
     <div class="kpi-card blue"><div class="kpi-icon">📅</div><div class="kpi-val">${totalWDSoFar}</div><div class="kpi-label">Working Days</div></div>
     <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
-    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent}</div><div class="kpi-label">Days Absent</div></div>
-    <div class="kpi-card orange"><div class="kpi-icon">⏰</div><div class="kpi-val">${totalLate}</div><div class="kpi-label">Late Arrivals</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent+totalLeave}</div><div class="kpi-label">Days Absent/Leave</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
+    <div class="kpi-card green"><div class="kpi-icon">🟢</div><div class="kpi-val">${totalOnTime}</div><div class="kpi-label">Present on Time</div></div>
+    <div class="kpi-card orange"><div class="kpi-icon">🟡</div><div class="kpi-val">${totalDelay}</div><div class="kpi-label">Delay</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">🔴</div><div class="kpi-val">${totalExDelay}</div><div class="kpi-label">Extreme Delay</div></div>
     <div class="kpi-card" style="border-top:2px solid ${overallClr};"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:${overallClr}">${overallPct}%</div><div class="kpi-label">Overall Attendance</div></div>
     <div style="display:flex;gap:8px;grid-column:span 2;">
     <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
