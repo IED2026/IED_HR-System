@@ -2421,32 +2421,14 @@ function renderAttendancePage(){
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
   const kpiEl=document.getElementById('attKpi');
   if(kpiEl) kpiEl.innerHTML=`
-    <div style="display:flex;gap:10px;flex-wrap:nowrap;width:100%;margin-bottom:16px;">
-      <div class="kpi-card blue" style="flex:1;min-width:0;"><div class="kpi-icon">📅</div><div class="kpi-val">${totalWDSoFar}</div><div class="kpi-label">Working Days</div></div>
-      <div class="kpi-card green" style="flex:1;min-width:0;"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
-      <div class="kpi-card red" style="flex:1;min-width:0;"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent+totalLeave}</div><div class="kpi-label">Days Absent/Leave</div></div>
-      <div class="kpi-card blue" style="flex:1;min-width:0;"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
-      <div class="kpi-card orange" style="flex:1.4;min-width:0;padding:12px 14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;"><i class="fa fa-clock"></i> Arrival Status</div>
-        <div style="display:flex;gap:8px;justify-content:space-between;">
-          <div style="text-align:center;">
-            <div style="font-size:16px;font-weight:700;color:#10b981;">${totalOnTime}</div>
-            <div style="font-size:9px;color:var(--text3);">On Time</div>
-          </div>
-          <div style="width:1px;background:var(--border);"></div>
-          <div style="text-align:center;">
-            <div style="font-size:16px;font-weight:700;color:#f59e0b;">${totalDelay}</div>
-            <div style="font-size:9px;color:var(--text3);">Delay</div>
-          </div>
-          <div style="width:1px;background:var(--border);"></div>
-          <div style="text-align:center;">
-            <div style="font-size:16px;font-weight:700;color:#ef4444;">${totalExDelay}</div>
-            <div style="font-size:9px;color:var(--text3);">Extreme</div>
-          </div>
-        </div>
-      </div>
-      <div class="kpi-card" style="flex:1;min-width:0;border-top:2px solid ${overallClr};"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:${overallClr}">${overallPct}%</div><div class="kpi-label">Overall Attendance</div></div>
-    </div>
+    <div class="kpi-card blue"><div class="kpi-icon">📅</div><div class="kpi-val">${totalWDSoFar}</div><div class="kpi-label">Working Days</div></div>
+    <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-val">${totalAbsent+totalLeave}</div><div class="kpi-label">Days Absent/Leave</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">🕐</div><div class="kpi-val">${totalOT.toFixed(1)}</div><div class="kpi-label">OT Hours</div></div>
+    <div class="kpi-card green"><div class="kpi-icon">🟢</div><div class="kpi-val">${totalOnTime}</div><div class="kpi-label">Present on Time</div></div>
+    <div class="kpi-card orange"><div class="kpi-icon">🟡</div><div class="kpi-val">${totalDelay}</div><div class="kpi-label">Delay</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">🔴</div><div class="kpi-val">${totalExDelay}</div><div class="kpi-label">Extreme Delay</div></div>
+    <div class="kpi-card" style="border-top:2px solid ${overallClr};"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:${overallClr}">${overallPct}%</div><div class="kpi-label">Overall Attendance</div></div>
     <div style="display:flex;gap:8px;grid-column:span 2;">
     <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
       <div style="font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px;"><i class="fa fa-file-excel"></i> Quick Data Import</div>
