@@ -3405,9 +3405,10 @@ function openPihrPreviewModal(title){
   empOrder.forEach(code=>{
     const group=empGroups[code];
     const span=group.length;
+    const isCurrent = currentEmp && group[0]?.matched?.id === currentEmp.id;
     group.forEach((r,gi)=>{
-      const rowBg=r.matched?'':(gi%2===0?'rgba(239,68,68,0.06)':'rgba(239,68,68,0.03)');
-      const borderTop=gi===0?'border-top:2px solid var(--border);':'';
+      const rowBg=isCurrent?'rgba(212,175,55,0.05)':(r.matched?'':(gi%2===0?'rgba(239,68,68,0.06)':'rgba(239,68,68,0.03)'));
+      const borderTop=gi===0?(isCurrent?'border-top:2px solid var(--gold);':'border-top:2px solid var(--border);'):'';
       const daily=(r.rawMonthData&&r.rawMonthData.daily)||[];
       const detailBtn=daily.length
         ? '<button onclick="showPihrDailyDetail('+r._idx+')" style="padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:9px;cursor:pointer;font-family:inherit;"><i class="fa fa-list"></i> '+daily.length+'</button>'
@@ -3418,8 +3419,9 @@ function openPihrPreviewModal(title){
         const matchCell=r.matched
           ? '<span style="color:var(--green);font-size:10px;"><i class="fa fa-check"></i> '+r.matched.name+'</span>'
           : '<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
+        const leftBorder=isCurrent?'border-left:3px solid var(--gold);':'';
         firstCols=
-          '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;color:var(--text2);vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+r.pihrCode+'</td>'+
+          '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;color:'+(isCurrent?'var(--gold)':'var(--text2)')+';font-weight:'+(isCurrent?'700':'400')+';vertical-align:middle;border-right:1px solid var(--border);'+borderTop+leftBorder+'">'+r.pihrCode+'</td>'+
           '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+r.pihrName+'</td>'+
           '<td rowspan="'+span+'" style="padding:5px 8px;vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+matchCell+'</td>';
       }
