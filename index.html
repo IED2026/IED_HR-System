@@ -3087,7 +3087,7 @@ function renderPihrMappingGrid(mappings, selectedId=null){
     const bg = isSelected ? 'rgba(16,185,129,0.06)' : 'rgba(212,175,55,0.04)';
     const shadow = isSelected ? '0 0 0 2px rgba(16,185,129,0.2)' : 'none';
     return `
-      <div onclick="renderPihrMappingGrid(window._pihrMappings,'${m.id}')"
+      <div onclick="confirmPihrMappingSelect('${m.id}')"
         style="border:${border};border-radius:12px;background:${bg};box-shadow:${shadow};padding:20px 16px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;text-align:center;gap:6px;">
         <div style="font-size:12px;font-weight:700;color:var(--text1);">Mapping ${i+1}</div>
         <div style="font-size:11px;color:${isSelected?'#10b981':'var(--text3)'};">${m.name}</div>
