@@ -3363,6 +3363,10 @@ function openPihrPreviewModal(title){
   const year=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
   const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+  // Get current selected employee
+  const currentEmpId = parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  const currentEmp = currentEmpId ? employees.find(e=>e.id===currentEmpId) : null;
+
   const rows=[];
   Object.values(pihrExtractedData).forEach(pe=>{
     const matched=pihrMatchEmp(pe.code,pe.name);
@@ -3383,7 +3387,13 @@ function openPihrPreviewModal(title){
     if(!empGroups[r.pihrCode]){ empGroups[r.pihrCode]=[]; empOrder.push(r.pihrCode); }
     empGroups[r.pihrCode].push({...r, _idx:idx});
   });
+
+  // Sort: current employee first, then by code numerically
   empOrder.sort((a,b)=>{
+    const aIsCurrent = currentEmp && empGroups[a]?.[0]?.matched?.id === currentEmp.id;
+    const bIsCurrent = currentEmp && empGroups[b]?.[0]?.matched?.id === currentEmp.id;
+    if(aIsCurrent) return -1;
+    if(bIsCurrent) return 1;
     const na=parseInt((a.match(/(\d+)$/)||[0,0])[1]);
     const nb=parseInt((b.match(/(\d+)$/)||[0,0])[1]);
     if(!isNaN(na)&&!isNaN(nb)) return na-nb;
