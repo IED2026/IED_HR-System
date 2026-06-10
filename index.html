@@ -3757,14 +3757,20 @@ function openPihrPreviewModal(title){
 }
 
 function pihrMatchEmp(code, name){
-  let emp=employees.find(e=>(e.empId||''). trim().toLowerCase()===code.toLowerCase());
+  // 1. Exact empId match
+  let emp=employees.find(e=>(e.empId||'').trim().toLowerCase()===code.toLowerCase());
   if(emp) return emp;
-  const norm=s=>(s||''). toLowerCase().replace(/\s+/g,' ').trim();
+  // 2. Exact name match
+  const norm=s=>(s||'').toLowerCase().replace(/\s+/g,' ').trim();
   emp=employees.find(e=>norm(e.name)===norm(name));
   if(emp) return emp;
+  // 3. All meaningful words must match (strict)
   const words=norm(name).split(' ').filter(w=>w.length>2);
-  emp=employees.find(e=>{ const en=norm(e.name); return words.filter(w=>en.includes(w)).length>=Math.min(2,words.length); });
-  return emp||null;
+  if(words.length>=2){
+    emp=employees.find(e=>{ const en=norm(e.name); return words.every(w=>en.includes(w)); });
+    if(emp) return emp;
+  }
+  return null;
 }
 
 function pihrFillSingleMonth(rowIdx){
