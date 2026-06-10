@@ -3757,14 +3757,21 @@ function openPihrPreviewModal(title){
 }
 
 function pihrMatchEmp(code, name){
-  // 1. Exact empId match
-  let emp=employees.find(e=>(e.empId||'').trim().toLowerCase()===code.toLowerCase());
+  // 1. Exact empId match (IED_01 → empId "01" or "1")
+  const codeNum = code.replace(/^IED_/i,'').replace(/^0+/,''); // "IED_01" → "1"
+  let emp=employees.find(e=>{
+    const eid=(e.empId||'').trim().replace(/^0+/,'');
+    return eid && eid===codeNum;
+  });
   if(emp) return emp;
-  // 2. Exact name match
+  // 2. Full code match (IED_01 → empId "IED_01")
+  emp=employees.find(e=>(e.empId||'').trim().toLowerCase()===code.toLowerCase());
+  if(emp) return emp;
+  // 3. Exact name match
   const norm=s=>(s||'').toLowerCase().replace(/\s+/g,' ').trim();
   emp=employees.find(e=>norm(e.name)===norm(name));
   if(emp) return emp;
-  // 3. All meaningful words must match (strict)
+  // 4. All meaningful words must match (strict)
   const words=norm(name).split(' ').filter(w=>w.length>2);
   if(words.length>=2){
     emp=employees.find(e=>{ const en=norm(e.name); return words.every(w=>en.includes(w)); });
