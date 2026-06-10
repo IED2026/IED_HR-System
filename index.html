@@ -2862,12 +2862,8 @@ function renderYearlyAttCalendar(emp, year, attData){
         dayClr='#fff'; bgDay='rgba(239,68,68,0.75)'; fontW='800';
       } else if(status==='L'){
         dayClr='#fff'; bgDay='rgba(239,68,68,0.55)'; fontW='800';
-      } else if(status==='P'){
+      } else if(status==='P'||status==='D'||status==='E'||status==='P(W)'||status==='P(H)'||status==='P(L)'){
         dayClr='rgba(255,255,255,0.75)'; bgDay='transparent'; fontW='500';
-      } else if(status==='D'){
-        dayClr='rgba(255,255,255,0.75)'; bgDay='transparent'; fontW='600';
-      } else if(status==='E'){
-        dayClr='rgba(255,255,255,0.75)'; bgDay='transparent'; fontW='600';
       } else if(status==='H'){
         dayClr='#ef4444'; bgDay='transparent'; fontW='700';
       } else if(status==='W'){
@@ -2969,6 +2965,9 @@ async function processPihrJobCard(file){
         else if(status==='E'){ m.present++; m.wd++; m.late++; } // Extreme Delay
         else if(status==='A'){ m.absent++; m.wd++; }
         else if(status==='L'){ m.leave++; m.wd++; }
+        else if(status==='P(W)'){ m.present++; m.wd++; } // Present on Weekend — weekend বাদ, WD+1
+        else if(status==='P(H)'){ m.present++; m.wd++; } // Present on Holiday — holiday বাদ, WD+1
+        else if(status==='P(L)'){ m.present++; m.wd++; } // Present on Leave day — leave বাদ, WD+1
         if(otRaw && otRaw!=='-' && otRaw!==''){
           const parts=otRaw.split(':');
           if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
