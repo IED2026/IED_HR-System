@@ -2941,21 +2941,13 @@ function handlePihrFileSelect(e){
   const file=e.target?.files?.[0];
   if(file){ pihrRawFile=file; storePihrFileName(file.name); }
 }
-async function storePihrFileName(name){
+function storePihrFileName(name){
   const fn=document.getElementById('pihrFileNameKpi');
   const st=document.getElementById('pihrStatusKpi');
   const fb=document.getElementById('pihrFillBtnKpi');
   if(fn) fn.textContent=name;
-  if(st) st.innerHTML='<i class="fa fa-spinner fa-spin"></i> Loading mappings...';
-  if(fb){fb.disabled=true;fb.style.opacity='0.5';}
-  const mappings = await loadPihrMappings();
-  if(!mappings.find(m=>m.id==='job_card')){
-    mappings.unshift({id:'job_card', name:'Employee Job Card Report', type:'job_card'});
-  }
-  if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready';
+  if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready — click Fill';
   if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
-  // Auto-open with first mapping pre-selected
-  renderPihrMappingGrid(mappings, mappings[0].id);
 }
 
 async function processPihrJobCard(file){
@@ -3068,7 +3060,8 @@ async function openPihrImportDropdown(){
   if(!mappings.find(m=>m.id==='job_card')){
     mappings.unshift({id:'job_card', name:'Employee Job Card Report', type:'job_card'});
   }
-  renderPihrMappingGrid(mappings);
+  // Always open with first mapping pre-selected (right screen)
+  renderPihrMappingGrid(mappings, mappings[0].id);
 }
 
 function renderPihrMappingGrid(mappings, selectedId=null){
