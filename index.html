@@ -2941,13 +2941,21 @@ function handlePihrFileSelect(e){
   const file=e.target?.files?.[0];
   if(file){ pihrRawFile=file; storePihrFileName(file.name); }
 }
-function storePihrFileName(name){
+async function storePihrFileName(name){
   const fn=document.getElementById('pihrFileNameKpi');
   const st=document.getElementById('pihrStatusKpi');
   const fb=document.getElementById('pihrFillBtnKpi');
   if(fn) fn.textContent=name;
-  if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready — click Fill to select mapping';
+  if(st) st.innerHTML='<i class="fa fa-spinner fa-spin"></i> Loading mappings...';
+  if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+  // Auto-open mapping selector
+  const mappings = await loadPihrMappings();
+  if(!mappings.find(m=>m.id==='job_card')){
+    mappings.unshift({id:'job_card', name:'Employee Job Card Report', type:'job_card'});
+  }
+  if(st) st.innerHTML='<i class="fa fa-check-circle" style="color:var(--green)"></i> File ready';
   if(fb){fb.disabled=false;fb.style.opacity='1';fb.style.cursor='pointer';}
+  renderPihrMappingGrid(mappings);
 }
 
 async function processPihrJobCard(file){
@@ -3072,7 +3080,7 @@ function renderPihrMappingGrid(mappings, selectedId=null){
     const idx=mappings.findIndex(x=>x.id===selectedId);
     return `
       <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:12px;color:var(--text1);">You have selected <b style="color:#10b981;">Mapping ${idx+1}: ${m.name}</b>, Extract Data?</div>
+        <div style="font-size:12px;color:var(--text1);">You have uploaded <b style="color:#10b981;">Mapping ${idx+1}: ${m.name}</b>, Extract Data?</div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           <button onclick="confirmPihrMappingSelect('${selectedId}')" style="padding:6px 18px;border-radius:7px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Yes</button>
           <button onclick="renderPihrMappingGrid(window._pihrMappings)" style="padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">No</button>
@@ -3086,7 +3094,7 @@ function renderPihrMappingGrid(mappings, selectedId=null){
     const bg = isSelected ? 'rgba(16,185,129,0.06)' : 'rgba(212,175,55,0.04)';
     const shadow = isSelected ? '0 0 0 2px rgba(16,185,129,0.2)' : 'none';
     return `
-      <div onclick="renderPihrMappingGrid(window._pihrMappings,'${m.id}')"
+      <div onclick="confirmPihrMappingSelect('${m.id}')"
         style="border:${border};border-radius:12px;background:${bg};box-shadow:${shadow};padding:20px 16px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;text-align:center;gap:6px;">
         <div style="font-size:12px;font-weight:700;color:var(--text1);">Mapping ${i+1}</div>
         <div style="font-size:11px;color:${isSelected?'#10b981':'var(--text3)'};">${m.name}</div>
