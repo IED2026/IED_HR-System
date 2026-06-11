@@ -2444,7 +2444,7 @@ function renderAttendancePage(){
         </div>
         <div style="border-top:1px solid var(--border);padding-top:8px;">
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Extra / Less</div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${emp?.yearSummary?.elOtTotal&&emp.yearSummary.elOtTotal.startsWith('-')?'#ef4444':'#8b5cf6'};">${emp?.yearSummary?.elOtTotal||'—'}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${emp?.yearSummary?.elOtTotal&&emp.yearSummary.elOtTotal.startsWith('-')?'#ef4444':'#8b5cf6'};">${emp?.yearSummary?.elOtTotal?(emp.yearSummary.elOtTotal.startsWith('-')?emp.yearSummary.elOtTotal:'+'+emp.yearSummary.elOtTotal):'—'}</div>
         </div>
       </div>
     </div>
