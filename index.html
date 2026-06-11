@@ -2927,9 +2927,9 @@ function renderYearlyAttCalendar(emp, year, attData){
     const isFuture = mIdx > nowM;
     const mData = attData[mIdx]||{wd:0,present:0,absent:0,leave:0,late:0};
 
-    const borderClr = isPast ? '#2563eb' : 'rgba(255,255,255,0.1)';
-    const titleClr = isPast ? '#60a5fa' : isCurrent ? '#94a3b8' : '#475569';
-    const bgClr = isPast ? 'rgba(37,99,235,0.05)' : 'rgba(255,255,255,0.02)';
+    const borderClr = isPast ? '#2563eb' : isCurrent ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)';
+    const titleClr = isPast ? '#60a5fa' : isCurrent ? 'var(--gold)' : '#475569';
+    const bgClr = isPast ? 'rgba(37,99,235,0.05)' : isCurrent ? 'rgba(212,175,55,0.03)' : 'rgba(255,255,255,0.02)';
 
     // Build mini calendar with daily colors
     const firstDay = new Date(year, mIdx, 1).getDay();
@@ -2945,13 +2945,20 @@ function renderYearlyAttCalendar(emp, year, attData){
       calGrid += `<div></div>`;
     }
 
+    const nowD = new Date().getDate(); // today's date number
     for(let d=1; d<=daysInMonth; d++){
       const _raw = daily[d-1] || '';
       const status = typeof _raw==='object' ? (_raw.s||'') : _raw;
       const _detail = typeof _raw==='object' ? _raw : null;
+      // isPast for this specific day
+      const isDayPast = isPast || (isCurrent && d < nowD);
+      const isDayToday = isCurrent && d === nowD;
+      const isDayFuture = isFuture || (isCurrent && d > nowD);
       let dayClr, bgDay, fontW;
-      if(!isPast){
+      if(isDayFuture){
         dayClr='rgba(255,255,255,0.15)'; bgDay='transparent'; fontW='400';
+      } else if(isDayToday){
+        dayClr='#fff'; bgDay='rgba(212,175,55,0.5)'; fontW='800'; // gold for today
       } else if(status==='A'){
         dayClr='#fff'; bgDay='rgba(239,68,68,0.75)'; fontW='800';
       } else if(status==='L'){
@@ -2970,7 +2977,8 @@ function renderYearlyAttCalendar(emp, year, attData){
       const _do=_detail?(_detail.o||''):'';
       const _dt=_detail?(_detail.t||''):'';
       const _de=_detail?(_detail.e||''):'';
-      calGrid += `<div onclick="showCalDayDetail(event,'${_ds}','${status}','${_di.replace(/'/g,'')}','${_do.replace(/'/g,'')}','${_dt.replace(/'/g,'')}','${_de.replace(/'/g,'')}')" style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};cursor:${isPast?'pointer':'default'};transition:filter .1s;" ${isPast?`onmouseover="this.style.filter='brightness(1.8)'" onmouseout="this.style.filter=''"`:''}>${d}</div>`;
+      const _clickable = isDayPast || isDayToday;
+      calGrid += `<div onclick="${_clickable?`showCalDayDetail(event,'${_ds}','${status}','${_di.replace(/'/g,'')}','${_do.replace(/'/g,'')}','${_dt.replace(/'/g,'')}','${_de.replace(/'/g,'')}')`:'return false'}" style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};cursor:${_clickable?'pointer':'default'};transition:filter .1s;" ${_clickable?`onmouseover="this.style.filter='brightness(1.8)'" onmouseout="this.style.filter=''"`:''}>${d}</div>`;
     }
     calGrid += `</div>`;
 
