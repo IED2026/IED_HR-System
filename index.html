@@ -3668,7 +3668,20 @@ function openPihrPreviewModal(title){
     Object.keys(pe.months).sort().forEach(mk=>{
       const mi=parseInt(mk)-1;
       const d=pe.months[mk];
-      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk],empElOt:pe.elOt||''});
+      // Calculate per-month E/L OT from daily rows
+      let mElOtMins=0;
+      (d.daily||[]).forEach(day=>{
+        if(day.elOt&&day.elOt!=='-'&&day.elOt!==''){
+          const neg=day.elOt.startsWith('-');
+          const clean=day.elOt.replace('-','');
+          const p=clean.split(':');
+          if(p.length>=2){ const mins=(parseInt(p[0])||0)*60+(parseInt(p[1])||0); mElOtMins+=neg?-mins:mins; }
+        }
+      });
+      const mElSign=mElOtMins<0?'-':'+';
+      const mAbsEl=Math.abs(mElOtMins);
+      const mElOtStr=mAbsEl>0?(mElSign+Math.floor(mAbsEl/60)+':'+(mAbsEl%60).toString().padStart(2,'0')):'—';
+      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk],empElOt:mElOtStr});
     });
   });
 
@@ -3782,7 +3795,7 @@ function openPihrPreviewModal(title){
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
-              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(Y)</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
             </tr>
           </thead>
