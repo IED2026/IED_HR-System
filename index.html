@@ -721,7 +721,7 @@ async function handleLoginSubmit(e) {
         <span style="font-size:11px;color:var(--text3);">✏️ click to edit row</span>
       </div>
       <div style="overflow-x:auto;">
-        <table style="width:100%;min-width:980px;border-collapse:collapse;">
+        <table style="width:100%;min-width:1100px;border-collapse:collapse;">
           <thead>
             <tr style="background:rgba(255,255,255,0.04);">
               <th style="padding:6px 12px;text-align:left;font-size:10px;font-weight:700;color:#5b7fa6;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(255,255,255,0.06);border-right:1px solid rgba(255,255,255,0.04);">Month</th>
@@ -2440,7 +2440,7 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.holiday||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'holiday',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.late||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'late',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
-      <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle.replace('width:52px','width:62px')}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
+      <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle.replace('width:52px','width:75px')}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${present>0?(mData.ot/present).toFixed(2):'—'}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span></td>
       <td style="${tdStyle}">
