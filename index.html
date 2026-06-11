@@ -733,6 +733,7 @@ async function handleLoginSubmit(e) {
               <th style="padding:6px 6px;text-align:center;font-size:10px;font-weight:700;color:#f59e0b;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(245,158,11,0.5);border-right:1px solid rgba(255,255,255,0.04);">Late</th>
               <th style="padding:6px 6px;text-align:center;font-size:10px;font-weight:700;color:#a78bfa;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(167,139,250,0.5);border-right:1px solid rgba(255,255,255,0.04);">Half Day</th>
               <th style="padding:6px 6px;text-align:center;font-size:10px;font-weight:700;color:#06b6d4;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(6,182,212,0.5);border-right:1px solid rgba(255,255,255,0.04);">OT Hours</th>
+              <th style="padding:6px 6px;text-align:center;font-size:10px;font-weight:700;color:#8b5cf6;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(139,92,246,0.5);border-right:1px solid rgba(255,255,255,0.04);">E/L OT(h)</th>
               <th style="padding:6px 6px;text-align:center;font-size:10px;font-weight:700;color:#d4af37;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(212,175,55,0.5);border-right:1px solid rgba(255,255,255,0.04);">Attendance %</th>
               <th style="padding:6px 12px;text-align:left;font-size:10px;font-weight:700;color:#5b7fa6;letter-spacing:0.08em;text-transform:uppercase;border-bottom:2px solid rgba(255,255,255,0.06);">Notes</th>
             </tr>
@@ -2396,6 +2397,9 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
       <td style="${tdStyle}">
+        <span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span>
+      </td>
+      <td style="${tdStyle}">
         <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;color:${pctColor2};background:${pctBg};">${pct2}%</span>
       </td>
       <td style="${tdLeft}display:flex;align-items:center;gap:6px;">
@@ -3870,12 +3874,26 @@ function pihrDoFillSingle(rowIdx, year){
   if(!emp.attendance) emp.attendance={};
   if(!emp.attendance[year]) emp.attendance[year]={};
   const rawDaily=(row.rawMonthData&&row.rawMonthData.daily)||[];
+  // Calculate per-month E/L OT
+  let _sElMins=0;
+  rawDaily.forEach(day=>{
+    if(day.elOt&&day.elOt!=='-'&&day.elOt!==''){
+      const neg=day.elOt.startsWith('-');
+      const clean=day.elOt.replace('-','');
+      const p=clean.split(':');
+      if(p.length>=2){const m=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);_sElMins+=neg?-m:m;}
+    }
+  });
+  const _sElSign=_sElMins<0?'-':'+';
+  const _sAbsEl=Math.abs(_sElMins);
+  const _sElOtStr=_sAbsEl>0?(_sElSign+Math.floor(_sAbsEl/60)+':'+(_sAbsEl%60).toString().padStart(2,'0')):'';
   emp.attendance[year][mi]={
     wd: d.wd||0, present: d.present||0, absent: d.absent||0,
     leave: d.leave||0, late: d.late||0, half: 0,
     ot: d.ot||0, holiday: d.holiday||0,
     note: emp.attendance[year][mi]?.note||'',
-    daily: rawDaily.map(r=>r.status)
+    daily: rawDaily.map(r=>r.status),
+    elOt: _sElOtStr
   };
   saveState();
   renderAttendancePage();
@@ -3930,12 +3948,26 @@ function confirmPihrFill(year){
     if(!emp.attendance[year]) emp.attendance[year]={};
     Object.entries(pe.months).forEach(([mk,d])=>{
       const mi=parseInt(mk)-1;
+      // Calculate per-month E/L OT from daily rows
+      let _elMins=0;
+      (d.daily||[]).forEach(day=>{
+        if(day.elOt&&day.elOt!=='-'&&day.elOt!==''){
+          const neg=day.elOt.startsWith('-');
+          const clean=day.elOt.replace('-','');
+          const p=clean.split(':');
+          if(p.length>=2){const m=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);_elMins+=neg?-m:m;}
+        }
+      });
+      const _elSign=_elMins<0?'-':'+';
+      const _absEl=Math.abs(_elMins);
+      const _elOtStr=_absEl>0?(_elSign+Math.floor(_absEl/60)+':'+((_absEl%60)).toString().padStart(2,'0')):'';
       emp.attendance[year][mi]={
         wd: d.wd||0, present: d.present||0, absent: d.absent||0,
         leave: d.leave||0, late: d.late||0, half: 0,
         ot: d.ot||0, holiday: d.holiday||0,
         note: emp.attendance[year][mi]?.note||'',
-        daily: (d.daily||[]).map(r=>r.status)
+        daily: (d.daily||[]).map(r=>r.status),
+        elOt: _elOtStr
       };
       filled++;
     });
