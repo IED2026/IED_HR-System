@@ -2993,6 +2993,7 @@ async function processPihrJobCard(file){
         const inTime=r[3]||'';
         const outTime=r[4]||'';
         const otRaw=r[6];
+        const elOtRaw=r[7]||''; // Extra/Less Duty Hour
         if(!curEmp.months[month]) curEmp.months[month]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0,daily:[]};
         const m=curEmp.months[month];
         if(status==='W'){ m.weekend++; }
@@ -3009,7 +3010,7 @@ async function processPihrJobCard(file){
           const parts=otRaw.split(':');
           if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
         }
-        m.daily.push({date:dateStr, status, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:''});
+        m.daily.push({date:dateStr, status, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:'', elOt:elOtRaw&&elOtRaw!=='-'?elOtRaw:''});
       }
     }
     if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
@@ -3018,7 +3019,15 @@ async function processPihrJobCard(file){
     if(!empCount){ if(st) st.textContent='No employee data found'; return; }
 
     Object.values(result).forEach(emp=>{
-      Object.values(emp.months).forEach(m=>{ m.ot=parseFloat((m.otMins/60).toFixed(1)); delete m.otMins; });
+      Object.values(emp.months).forEach(m=>{
+      m.ot=parseFloat((m.otMins/60).toFixed(1)); delete m.otMins;
+      // Calculate E/L OT from daily
+      if(m.daily&&m.daily.length){
+        // Store last E/L OT as summary (or parse from file summary row)
+        const elVals=m.daily.map(d=>d.elOt).filter(v=>v&&v!=='-'&&v!=='');
+        m.elOt = elVals.length ? elVals[elVals.length-1] : '';
+      }
+    });
     });
 
     pihrExtractedData=result;
@@ -3698,6 +3707,7 @@ function openPihrPreviewModal(title){
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;'+borderTop+'">'+r.data.late+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;'+borderTop+'">'+r.data.holiday+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;'+borderTop+'">'+r.data.ot+'</td>'+
+        '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;'+borderTop+'">'+( r.rawMonthData?.elOt||'—')+'</td>'+
         '<td style="padding:5px 6px;text-align:center;'+borderTop+'">'+detailBtn+'</td>'+
         '</tr>';
     });
@@ -3725,18 +3735,19 @@ function openPihrPreviewModal(title){
       <div style="overflow-y:auto;flex:1;">
         <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
           <colgroup>
-            <col style="width:62px">
-            <col style="width:115px">
+            <col style="width:58px">
             <col style="width:105px">
+            <col style="width:98px">
+            <col style="width:34px">
+            <col style="width:30px">
+            <col style="width:38px">
             <col style="width:38px">
             <col style="width:34px">
-            <col style="width:42px">
-            <col style="width:42px">
+            <col style="width:32px">
+            <col style="width:46px">
+            <col style="width:38px">
+            <col style="width:46px">
             <col style="width:40px">
-            <col style="width:36px">
-            <col style="width:52px">
-            <col style="width:40px">
-            <col style="width:42px">
           </colgroup>
           <thead style="position:sticky;top:0;background:var(--navy3);z-index:1;">
             <tr>
@@ -3751,6 +3762,7 @@ function openPihrPreviewModal(title){
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
             </tr>
           </thead>
@@ -3921,6 +3933,7 @@ function showPihrDailyDetail(rowIdx){
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.inTime||'—'}</td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.outTime||'—'}</td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:#3b82f6;">${d.ot||'—'}</td>
+      <td style="padding:5px 10px;font-size:11px;text-align:center;color:#8b5cf6;">${d.elOt||'—'}</td>
     </tr>`;
   }).join('');
 
@@ -3948,6 +3961,7 @@ function showPihrDailyDetail(rowIdx){
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--green);border-bottom:1px solid var(--border);">In Time</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Out Time</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT Hours</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
             </tr>
           </thead>
           <tbody>${trows}</tbody>
