@@ -3086,6 +3086,34 @@ async function processPihrJobCard(file){
     let curEmp=null;
     let inDaily=false;
 
+    // Detect file year from header row
+    let fileYear=null;
+    for(let i=0;i<Math.min(rows.length,10);i++){
+      const r=rows[i].map(v=>String(v===null||v===undefined?'':''+v).trim());
+      const m=r[0].match(/\b(20\d{2})\b/);
+      if(m){ fileYear=parseInt(m[1]); break; }
+    }
+
+    // Check year mismatch with selected year
+    const selectedYear=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
+    if(fileYear && fileYear!==selectedYear){
+      if(st) st.innerHTML='<i class="fa fa-triangle-exclamation" style="color:#f59e0b"></i> Year mismatch';
+      if(fb){fb.disabled=true;fb.style.opacity='0.5';}
+      // Show error modal
+      const em=document.createElement('div');
+      em.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      em.innerHTML=`
+        <div style="background:var(--navy2);border-radius:14px;border:2px solid #f59e0b;width:100%;max-width:380px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+          <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+          <div style="font-size:14px;font-weight:700;color:#f59e0b;margin-bottom:10px;">Year Mismatch!</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:6px;">Your uploaded file is for <b style="color:#ef4444;">${fileYear}</b></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:18px;">Please upload correct file for <b style="color:#10b981;">${selectedYear}</b></div>
+          <button onclick="this.closest('div').parentElement.remove()" style="padding:8px 24px;border-radius:8px;border:none;background:#f59e0b;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">OK</button>
+        </div>`;
+      document.body.appendChild(em);
+      return;
+    }
+
     for(let i=0;i<rows.length;i++){
       const r=rows[i].map(v=>String(v===null||v===undefined?'':''+v).trim());
 
