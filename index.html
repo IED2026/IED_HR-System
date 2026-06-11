@@ -3844,9 +3844,12 @@ function openPihrPreviewModal(title){
         const matchCell=r.matched
           ? '<span style="color:var(--green);font-size:10px;"><i class="fa fa-check"></i> '+r.matched.name+'</span>'
           : '<span style="color:#ef4444;font-size:10px;"><i class="fa fa-xmark"></i> Not found</span>';
+        const nameCell=r.matched
+          ? '<div onclick="pihrFillAllForEmp(\''+r.pihrCode+'\','+year+')" style="cursor:pointer;font-size:10px;color:var(--text1);font-weight:600;" title="Click to fill all months for this employee">'+r.pihrName+'<div style="font-size:8px;color:#10b981;margin-top:1px;"><i class="fa fa-wand-magic-sparkles"></i> Fill all</div></div>'
+          : '<span style="font-size:10px;color:var(--text3);">'+r.pihrName+'</span>';
         firstCols=
           '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;color:var(--text2);vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+r.pihrCode+'</td>'+
-          '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+r.pihrName+'</td>'+
+          '<td rowspan="'+span+'" style="padding:5px 8px;font-size:10px;vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+nameCell+'</td>'+
           '<td rowspan="'+span+'" style="padding:5px 8px;vertical-align:middle;border-right:1px solid var(--border);'+borderTop+'">'+matchCell+'</td>';
       }
 
@@ -4024,6 +4027,77 @@ function pihrDoFillSingle(rowIdx, year){
   document.getElementById('pihrDailyModal')?.remove();
   const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   toast(emp.name+' — '+MSHORT[mi]+' '+year+' filled ✓','success');
+}
+
+function pihrFillAllForEmp(pihrCode, year){
+  const pe=pihrExtractedData?.[pihrCode];
+  if(!pe){ toast('Data not found','error'); return; }
+  const emp=pihrMatchEmp(pe.code, pe.name);
+  if(!emp){ toast('No system match for this employee','error'); return; }
+  const monthCount=Object.keys(pe.months).length;
+
+  const c=document.createElement('div');
+  c.id='pihrEmpFillConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:380px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">📋</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:6px;">Fill All Months?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px;"><b style="color:#10b981;">${pe.name}</b></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">${monthCount} month(s) will be filled for year <b style="color:var(--text1);">${year}</b></div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('pihrEmpFillConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('pihrEmpFillConfirm').remove();pihrDoFillAllForEmp('${pihrCode}',${year})" style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-check"></i> Fill</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+function pihrDoFillAllForEmp(pihrCode, year){
+  const pe=pihrExtractedData?.[pihrCode];
+  if(!pe) return;
+  const emp=pihrMatchEmp(pe.code, pe.name);
+  if(!emp) return;
+  if(!emp.attendance) emp.attendance={};
+  if(!emp.attendance[year]) emp.attendance[year]={};
+  let filled=0;
+  Object.entries(pe.months).forEach(([mk,d])=>{
+    const mi=parseInt(mk)-1;
+    let _elMins=0;
+    (d.daily||[]).forEach(day=>{
+      if(day.elOt&&day.elOt!=='-'&&day.elOt!==''){
+        const neg=day.elOt.startsWith('-');
+        const clean=day.elOt.replace('-','');
+        const p=clean.split(':');
+        if(p.length>=2){const m=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);_elMins+=neg?-m:m;}
+      }
+    });
+    const _elSign=_elMins<0?'-':'+';
+    const _absEl=Math.abs(_elMins);
+    const _elOtStr=_absEl>0?(_elSign+Math.floor(_absEl/60)+':'+(_absEl%60).toString().padStart(2,'0')):'';
+    emp.attendance[year][mi]={
+      wd:d.wd||0, present:d.present||0, absent:d.absent||0,
+      leave:d.leave||0, late:d.late||0, half:0,
+      ot:d.ot||0, holiday:d.holiday||0,
+      note:emp.attendance[year][mi]?.note||'',
+      daily:(d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
+      elOt:_elOtStr
+    };
+    if(pe.yearSummary) emp.yearSummary=pe.yearSummary;
+    filled++;
+  });
+  saveState();
+  const curEmpId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  const curYear=parseInt(document.getElementById('attYear')?.value)||year;
+  renderAttendancePage();
+  setTimeout(()=>{
+    const sel=document.getElementById('attEmpSelect');
+    const ySel=document.getElementById('attYear');
+    if(sel && curEmpId) sel.value=curEmpId;
+    if(ySel) ySel.value=curYear;
+    renderAttendancePage();
+  },50);
+  toast(pe.name+': '+filled+' months filled ✓','success');
 }
 
 function pihrFillAllConfirm1(year, matched){
