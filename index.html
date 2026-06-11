@@ -2839,6 +2839,50 @@ function updateLeaveBalance(empId, year, key, val){
   renderLeaveBalanceCards(emp, year);
 }
 
+function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, elDuty){
+  document.getElementById('calDayPopup')?.remove();
+  const STATUS_LABEL={'P':'Present','D':'Delay','E':'Extreme Delay','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend','P(W)':'Present (Weekend)','P(H)':'Present (Holiday)','P(L)':'Present (Leave)'};
+  const STATUS_COLOR={'P':'#10b981','D':'#f59e0b','E':'#f97316','A':'#ef4444','L':'#8b5cf6','H':'#64748b','W':'#94a3b8','P(W)':'#06b6d4','P(H)':'#6366f1','P(L)':'#10b981'};
+  const sc=STATUS_COLOR[status]||'var(--text2)';
+  const sl=STATUS_LABEL[status]||status;
+  const row=(label,val,color)=>val?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:11px;color:var(--text3);">${label}</span><span style="font-size:12px;font-weight:600;color:${color};">${val}</span></div>`:'';
+  const elColor=elDuty&&elDuty.startsWith('-')?'#ef4444':'#10b981';
+
+  const popup=document.createElement('div');
+  popup.id='calDayPopup';
+  popup.style.cssText='position:fixed;z-index:9999;';
+  popup.innerHTML=`
+    <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text1);">${dateStr}</div>
+          <span style="font-size:10px;font-weight:700;color:${sc};background:${sc}22;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:3px;">${sl}</span>
+        </div>
+        <button onclick="document.getElementById('calDayPopup').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1;"><i class="fa fa-xmark"></i></button>
+      </div>
+      ${row('In Time', inTime, '#10b981')}
+      ${row('Out Time', outTime, '#ef4444')}
+      ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
+      ${row('Extra/Less Duty (h)', elDuty, elColor)}
+      ${!inTime&&!outTime?'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">No time data</div>':''}
+    </div>`;
+  document.body.appendChild(popup);
+
+  // Position near click, stay within viewport
+  const x=event.clientX, y=event.clientY;
+  const pw=240, ph=200;
+  popup.style.left=Math.min(x+12, window.innerWidth-pw-10)+'px';
+  popup.style.top=(y+12+ph>window.innerHeight?y-ph-10:y+12)+'px';
+
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',function h(e){
+    if(!document.getElementById('calDayPopup')?.contains(e.target)){
+      document.getElementById('calDayPopup')?.remove();
+      document.removeEventListener('click',h);
+    }
+  }),100);
+}
+
 function renderYearlyAttCalendar(emp, year, attData){
   const section = document.getElementById('attYearlyCalSection');
   if(!section) return;
@@ -2879,7 +2923,9 @@ function renderYearlyAttCalendar(emp, year, attData){
     }
 
     for(let d=1; d<=daysInMonth; d++){
-      const status = daily[d-1] || '';
+      const _raw = daily[d-1] || '';
+      const status = typeof _raw==='object' ? (_raw.s||'') : _raw;
+      const _detail = typeof _raw==='object' ? _raw : null;
       let dayClr, bgDay, fontW;
       if(!isPast){
         dayClr='rgba(255,255,255,0.15)'; bgDay='transparent'; fontW='400';
@@ -2896,7 +2942,12 @@ function renderYearlyAttCalendar(emp, year, attData){
       } else {
         dayClr='rgba(255,255,255,0.25)'; bgDay='transparent'; fontW='400';
       }
-      calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};">${d}</div>`;
+      const _ds=`${String(d).padStart(2,'0')}-${String(mIdx+1).padStart(2,'0')}-${year}`;
+      if(_detail){
+        calGrid += `<div onclick="showCalDayDetail(event,'${_ds}','${status}','${(_detail.i||'').replace(/'/g,'')}','${(_detail.o||'').replace(/'/g,'')}','${(_detail.t||'').replace(/'/g,'')}','${(_detail.e||'').replace(/'/g,'')}')" style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};cursor:pointer;transition:filter .1s;" onmouseover="this.style.filter='brightness(1.6)'" onmouseout="this.style.filter=''">${d}</div>`;
+      } else {
+        calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};">${d}</div>`;
+      }
     }
     calGrid += `</div>`;
 
@@ -3892,7 +3943,7 @@ function pihrDoFillSingle(rowIdx, year){
     leave: d.leave||0, late: d.late||0, half: 0,
     ot: d.ot||0, holiday: d.holiday||0,
     note: emp.attendance[year][mi]?.note||'',
-    daily: rawDaily.map(r=>r.status),
+    daily: rawDaily.map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
     elOt: _sElOtStr
   };
   saveState();
@@ -3966,7 +4017,7 @@ function confirmPihrFill(year){
         leave: d.leave||0, late: d.late||0, half: 0,
         ot: d.ot||0, holiday: d.holiday||0,
         note: emp.attendance[year][mi]?.note||'',
-        daily: (d.daily||[]).map(r=>r.status),
+        daily: (d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
         elOt: _elOtStr
       };
       filled++;
