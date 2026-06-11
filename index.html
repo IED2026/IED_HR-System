@@ -2986,6 +2986,57 @@ async function processPihrJobCard(file){
         curEmp.name=r[2];
       } else if(curEmp && r[0]==='Attendance Date'){
         inDaily=true;
+      } else if(inDaily && curEmp && r[0]==='Present'){
+        // Summary row: Present, Absent counts
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.present=r[2];
+          curEmp.months[lastMk].summary.absent=r[7];
+        }
+      } else if(inDaily && curEmp && r[0]==='Delay'){
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.delay=r[2];
+          curEmp.months[lastMk].summary.extremeDelay=r[7];
+        }
+      } else if(inDaily && curEmp && r[0]==='Leave'){
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.leave=r[2];
+        }
+      } else if(inDaily && curEmp && r[0]==='Weekend'){
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.weekend=r[2];
+          curEmp.months[lastMk].summary.holiday=r[7];
+        }
+      } else if(inDaily && curEmp && r[0]==='Expected Duty Hour'){
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.expectedDuty=r[2];
+          curEmp.months[lastMk].summary.actualDuty=r[7];
+        }
+      } else if(inDaily && curEmp && r[0]==='Total Days (Available in office)'){
+        const mKeys=Object.keys(curEmp.months);
+        const lastMk=mKeys[mKeys.length-1];
+        if(lastMk&&curEmp.months[lastMk]){
+          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
+          curEmp.months[lastMk].summary.totalDays=r[2];
+          curEmp.months[lastMk].summary.elOtTotal=r[7]; // Extra/Less Duty Hours total
+          // Use this as the E/L OT for the month
+          curEmp.months[lastMk].elOt=r[7];
+        }
+        inDaily=false;
       } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
         const month=r[0].substring(3,5);
         const dateStr=r[0].substring(0,10);
@@ -3937,6 +3988,26 @@ function showPihrDailyDetail(rowIdx){
     </tr>`;
   }).join('');
 
+  // Summary row from file
+  const summary=row.rawMonthData?.summary||{};
+  const summaryRow=Object.keys(summary).length?`
+    <tr style="background:rgba(212,175,55,0.08);border-top:2px solid var(--gold);">
+      <td colspan="6" style="padding:0;">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;align-items:center;">
+          <span style="font-size:9px;font-weight:700;color:var(--gold);margin-right:4px;">SUMMARY</span>
+          ${summary.present?'<span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:10px;">Present: <b>'+summary.present+'</b></span>':''}
+          ${summary.absent?'<span style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;padding:2px 8px;border-radius:10px;">Absent: <b>'+summary.absent+'</b></span>':''}
+          ${summary.delay?'<span style="font-size:10px;background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 8px;border-radius:10px;">Delay: <b>'+summary.delay+'</b></span>':''}
+          ${summary.extremeDelay?'<span style="font-size:10px;background:rgba(249,115,22,0.15);color:#f97316;padding:2px 8px;border-radius:10px;">Extreme Delay: <b>'+summary.extremeDelay+'</b></span>':''}
+          ${summary.leave?'<span style="font-size:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;padding:2px 8px;border-radius:10px;">Leave: <b>'+summary.leave+'</b></span>':''}
+          ${summary.weekend?'<span style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:10px;">Weekend: <b>'+summary.weekend+'</b></span>':''}
+          ${summary.holiday?'<span style="font-size:10px;background:rgba(100,116,139,0.15);color:#64748b;padding:2px 8px;border-radius:10px;">Holiday: <b>'+summary.holiday+'</b></span>':''}
+          ${summary.actualDuty?'<span style="font-size:10px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 8px;border-radius:10px;">Total Working: <b>'+summary.actualDuty+'h</b></span>':''}
+          ${summary.elOtTotal?'<span style="font-size:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;padding:2px 8px;border-radius:10px;">E/L OT Total: <b>'+summary.elOtTotal+'h</b></span>':''}
+        </div>
+      </td>
+    </tr>`:'';
+
   const modal=document.createElement('div');
   modal.id='pihrDailyModal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -3964,7 +4035,7 @@ function showPihrDailyDetail(rowIdx){
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
             </tr>
           </thead>
-          <tbody>${trows}</tbody>
+          <tbody>${trows}${summaryRow}</tbody>
         </table>
       </div>
       <div style="padding:10px 18px;border-top:1px solid var(--border);text-align:right;flex-shrink:0;">
