@@ -627,7 +627,7 @@ async function handleLoginSubmit(e) {
       <option value="viewer">Viewer (Read-Only)</option>
     </select>
     <button class="btn btn-secondary btn-sm" onclick="exportAllData()"><i class="fa-solid fa-download"></i> Backup</button>
-    <button class="btn btn-primary btn-sm" onclick="saveState()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+    <button class="btn btn-primary btn-sm" onclick="saveAllConfirm()"><i class="fa-solid fa-floppy-disk"></i> Save All</button>
   </div>
 </div>
 
@@ -2165,6 +2165,23 @@ async function loadState(){
 }
 
 // ── SAVE STATE (Supabase + localStorage) ──
+function saveAllConfirm(){
+  const c=document.createElement('div');
+  c.id='saveAllConfirmModal';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">💾</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Save All Data?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">All employees data will be saved to the server.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('saveAllConfirmModal').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('saveAllConfirmModal').remove();saveState();toast('All data saved ✓','success')" style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fa fa-floppy-disk"></i> Save All</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
 async function saveState(){
   // Always save to localStorage immediately
   try{
@@ -7986,10 +8003,10 @@ function updateAttend(year, month, field, val){
 }
 
 function saveAttendanceData(){
-  const empId=parseInt(document.getElementById('empEditId').value)||null;
-  if(!empId){toast('Save employee first','error');return;}
+  const empId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  if(!empId){toast('Select an employee first','error');return;}
   saveState();
-  toast('Attendance data saved!','success');
+  toast('Saved ✓','success');
 }
 
 // ─── LEAVE MODULE ────────────────────────────────────────
