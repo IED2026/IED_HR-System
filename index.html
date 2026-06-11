@@ -2875,12 +2875,16 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
   popup.style.top=(y+12+ph>window.innerHeight?y-ph-10:y+12)+'px';
 
   // Close on outside click
-  setTimeout(()=>document.addEventListener('click',function h(e){
-    if(!document.getElementById('calDayPopup')?.contains(e.target)){
-      document.getElementById('calDayPopup')?.remove();
-      document.removeEventListener('click',h);
+  setTimeout(()=>{
+    function closeHandler(e){
+      const popup=document.getElementById('calDayPopup');
+      if(popup && !popup.contains(e.target)){
+        popup.remove();
+      }
+      document.removeEventListener('click', closeHandler);
     }
-  }),100);
+    document.addEventListener('click', closeHandler);
+  },100);
 }
 
 function renderYearlyAttCalendar(emp, year, attData){
