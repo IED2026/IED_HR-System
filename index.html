@@ -2461,15 +2461,15 @@ function renderAttendancePage(){
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Expected</div>
-          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${emp?.yearSummary?.expectedDuty||'—'}</div>
+          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${(emp?.yearSummary?.[year]||emp?.yearSummary)?.expectedDuty||'—'}</div>
         </div>
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Actual</div>
-          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${emp?.yearSummary?.actualDuty||'—'}</div>
+          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${(emp?.yearSummary?.[year]||emp?.yearSummary)?.actualDuty||'—'}</div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:8px;">
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Extra / Less</div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${emp?.yearSummary?.elOtTotal&&emp.yearSummary.elOtTotal.startsWith('-')?'#ef4444':'#8b5cf6'};">${emp?.yearSummary?.elOtTotal?(emp.yearSummary.elOtTotal.startsWith('-')?emp.yearSummary.elOtTotal:'+'+emp.yearSummary.elOtTotal):'—'}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${((emp?.yearSummary?.[year]||emp?.yearSummary)?.elOtTotal||'').startsWith('-')?'#ef4444':'#8b5cf6'};">${ (()=>{ const v=(emp?.yearSummary?.[year]||emp?.yearSummary)?.elOtTotal; return v?(v.startsWith('-')?v:'+'+v):'—'; })() }</div>
         </div>
       </div>
     </div>
@@ -4112,7 +4112,7 @@ function pihrDoFillAllForEmp(pihrCode, year){
       daily:(d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
       elOt:_elOtStr
     };
-    if(pe.yearSummary) emp.yearSummary=pe.yearSummary;
+    if(pe.yearSummary){ if(!emp.yearSummary) emp.yearSummary={}; emp.yearSummary[year]=pe.yearSummary; }
     filled++;
   });
   saveState();
@@ -4199,7 +4199,7 @@ function confirmPihrFill(year){
         elOt: _elOtStr
       };
       // Store yearSummary at emp level
-      if(pe.yearSummary) emp.yearSummary=pe.yearSummary;
+      if(pe.yearSummary){ if(!emp.yearSummary) emp.yearSummary={}; emp.yearSummary[year]=pe.yearSummary; }
       filled++;
     });
   });
