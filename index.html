@@ -2943,11 +2943,11 @@ function renderYearlyAttCalendar(emp, year, attData){
         dayClr='rgba(255,255,255,0.25)'; bgDay='transparent'; fontW='400';
       }
       const _ds=`${String(d).padStart(2,'0')}-${String(mIdx+1).padStart(2,'0')}-${year}`;
-      if(_detail){
-        calGrid += `<div onclick="showCalDayDetail(event,'${_ds}','${status}','${(_detail.i||'').replace(/'/g,'')}','${(_detail.o||'').replace(/'/g,'')}','${(_detail.t||'').replace(/'/g,'')}','${(_detail.e||'').replace(/'/g,'')}')" style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};cursor:pointer;transition:filter .1s;" onmouseover="this.style.filter='brightness(1.6)'" onmouseout="this.style.filter=''">${d}</div>`;
-      } else {
-        calGrid += `<div style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};">${d}</div>`;
-      }
+      const _di=_detail?(_detail.i||''):'';
+      const _do=_detail?(_detail.o||''):'';
+      const _dt=_detail?(_detail.t||''):'';
+      const _de=_detail?(_detail.e||''):'';
+      calGrid += `<div onclick="showCalDayDetail(event,'${_ds}','${status}','${_di.replace(/'/g,'')}','${_do.replace(/'/g,'')}','${_dt.replace(/'/g,'')}','${_de.replace(/'/g,'')}')" style="text-align:center;font-size:8px;color:${dayClr};background:${bgDay};border-radius:3px;padding:2px 1px;font-weight:${fontW};cursor:${isPast?'pointer':'default'};transition:filter .1s;" ${isPast?`onmouseover="this.style.filter='brightness(1.8)'" onmouseout="this.style.filter=''"`:''}>${d}</div>`;
     }
     calGrid += `</div>`;
 
