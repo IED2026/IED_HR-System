@@ -3782,7 +3782,7 @@ function openPihrPreviewModal(title){
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
-              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(Y)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
             </tr>
           </thead>
@@ -3958,26 +3958,60 @@ function showPihrDailyDetail(rowIdx){
   }).join('');
 
   // Summary row from file
-  // Get yearSummary from pihrExtractedData
-  const empData=pihrExtractedData?.[row.pihrCode];
-  const summary=empData?.yearSummary||{};
-  const summaryRow=Object.keys(summary).length?`
+  // Calculate per-month summary from daily rows
+  let sPresent=0,sAbsent=0,sDelay=0,sExDelay=0,sLeave=0,sWeekend=0,sHoliday=0,sPW=0,sPH=0;
+  let totalOtMins=0,totalElOtMins=0;
+  const STATUS_LABEL2={'P':'Present','D':'Delay','E':'Extreme Delay','A':'Absent','L':'Leave','H':'Holiday','W':'Weekend','P(W)':'P(W)','P(H)':'P(H)','P(L)':'P(L)'};
+  daily.forEach(d=>{
+    const s=d.status;
+    if(s==='P'||s==='P(L)') sPresent++;
+    else if(s==='D'){ sPresent++; sDelay++; }
+    else if(s==='E'){ sPresent++; sExDelay++; }
+    else if(s==='A') sAbsent++;
+    else if(s==='L') sLeave++;
+    else if(s==='H') sHoliday++;
+    else if(s==='W') sWeekend++;
+    else if(s==='P(W)'){ sPresent++; sPW++; }
+    else if(s==='P(H)'){ sPresent++; sPH++; }
+    // OT hours
+    if(d.ot&&d.ot!=='-'&&d.ot!==''){
+      const p=d.ot.split(':'); if(p.length>=2) totalOtMins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);
+    }
+    // E/L OT
+    if(d.elOt&&d.elOt!=='-'&&d.elOt!==''){
+      const neg=d.elOt.startsWith('-');
+      const clean=d.elOt.replace('-','');
+      const p=clean.split(':'); if(p.length>=2){
+        const mins=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);
+        totalElOtMins+=neg?-mins:mins;
+      }
+    }
+  });
+  const totalOtH=totalOtMins>=0?Math.floor(totalOtMins/60)+':'+(totalOtMins%60).toString().padStart(2,'0'):'0:00';
+  const elSign=totalElOtMins<0?'-':'+';
+  const absElMins=Math.abs(totalElOtMins);
+  const totalElOtH=elSign+Math.floor(absElMins/60)+':'+(absElMins%60).toString().padStart(2,'0');
+
+  const chip=(label,val,color,bg)=>val?'<span style="font-size:10px;background:'+bg+';color:'+color+';padding:2px 8px;border-radius:10px;">'+label+': <b>'+val+'</b></span>':'';
+  const summaryRow=`
     <tr style="background:rgba(212,175,55,0.08);border-top:2px solid var(--gold);">
       <td colspan="6" style="padding:0;">
-        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;align-items:center;">
-          <span style="font-size:9px;font-weight:700;color:var(--gold);margin-right:4px;">SUMMARY</span>
-          ${summary.present?'<span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:2px 8px;border-radius:10px;">Present: <b>'+summary.present+'</b></span>':''}
-          ${summary.absent?'<span style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;padding:2px 8px;border-radius:10px;">Absent: <b>'+summary.absent+'</b></span>':''}
-          ${summary.delay?'<span style="font-size:10px;background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 8px;border-radius:10px;">Delay: <b>'+summary.delay+'</b></span>':''}
-          ${summary.extremeDelay?'<span style="font-size:10px;background:rgba(249,115,22,0.15);color:#f97316;padding:2px 8px;border-radius:10px;">Extreme Delay: <b>'+summary.extremeDelay+'</b></span>':''}
-          ${summary.leave?'<span style="font-size:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;padding:2px 8px;border-radius:10px;">Leave: <b>'+summary.leave+'</b></span>':''}
-          ${summary.weekend?'<span style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:10px;">Weekend: <b>'+summary.weekend+'</b></span>':''}
-          ${summary.holiday?'<span style="font-size:10px;background:rgba(100,116,139,0.15);color:#64748b;padding:2px 8px;border-radius:10px;">Holiday: <b>'+summary.holiday+'</b></span>':''}
-          ${summary.actualDuty?'<span style="font-size:10px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 8px;border-radius:10px;">Total Working: <b>'+summary.actualDuty+'h</b></span>':''}
-          ${summary.elOtTotal?'<span style="font-size:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;padding:2px 8px;border-radius:10px;">E/L OT Total: <b>'+summary.elOtTotal+'h</b></span>':''}
+        <div style="display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;align-items:center;">
+          <span style="font-size:9px;font-weight:700;color:var(--gold);margin-right:2px;">SUMMARY</span>
+          ${chip('Present',sPresent,'#10b981','rgba(16,185,129,0.15)')}
+          ${chip('Absent',sAbsent,'#ef4444','rgba(239,68,68,0.15)')}
+          ${chip('Delay',sDelay,'#f59e0b','rgba(245,158,11,0.15)')}
+          ${chip('Extreme Delay',sExDelay,'#f97316','rgba(249,115,22,0.15)')}
+          ${chip('Leave',sLeave,'#8b5cf6','rgba(139,92,246,0.15)')}
+          ${sPW?chip('P(W)',sPW,'#06b6d4','rgba(6,182,212,0.15)'):''}
+          ${sPH?chip('P(H)',sPH,'#6366f1','rgba(99,102,241,0.15)'):''}
+          ${chip('Weekend',sWeekend,'#94a3b8','rgba(100,116,139,0.15)')}
+          ${chip('Holiday',sHoliday,'#64748b','rgba(100,116,139,0.15)')}
+          <span style="font-size:10px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 8px;border-radius:10px;">Total Working: <b>${totalOtH}h</b></span>
+          <span style="font-size:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;padding:2px 8px;border-radius:10px;">E/L OT: <b>${totalElOtH}h</b></span>
         </div>
       </td>
-    </tr>`:'';
+    </tr>`;
 
   const modal=document.createElement('div');
   modal.id='pihrDailyModal';
