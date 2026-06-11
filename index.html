@@ -2440,7 +2440,7 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.holiday||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'holiday',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.late||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'late',this.value)"></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
-      <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
+      <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle.replace('width:52px','width:62px')}" step="0.5" value="${mData.ot||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'ot',this.value)"></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${present>0?(mData.ot/present).toFixed(2):'—'}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span></td>
       <td style="${tdStyle}">
