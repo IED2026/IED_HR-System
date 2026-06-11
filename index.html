@@ -2951,9 +2951,9 @@ function renderYearlyAttCalendar(emp, year, attData){
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;background:var(--navy2);">`;
 
   mNames.forEach((mName, mIdx) => {
-    const isPast = mIdx < nowM;
-    const isCurrent = mIdx === nowM;
-    const isFuture = mIdx > nowM;
+    const isPast = isFutureYear3 ? false : (mIdx < nowM);
+    const isCurrent = isFutureYear3 ? false : (mIdx === nowM && new Date().getFullYear()===year);
+    const isFuture = isFutureYear3 ? true : (mIdx > nowM);
     const mData = attData[mIdx]||{wd:0,present:0,absent:0,leave:0,late:0};
 
     const borderClr = isPast ? '#2563eb' : isCurrent ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)';
