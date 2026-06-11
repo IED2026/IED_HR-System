@@ -2713,8 +2713,9 @@ function renderLeaveBalanceCards(emp, year){
   const annB = annE - annT;
   const casE = lb.casualEntitled||13, casT = lb.casualTaken||0;
   const casB = casE - casT;
-  const totE = lb.totalEntitled||27;
-  const totalLeaveRemaining = Math.max(0, totE - totalLeaveTaken);
+  const totE = lb.totalEntitled||(annE+casE);
+  const totalTaken = annT + casT;
+  const totalLeaveRemaining = Math.max(0, totE - totalTaken);
 
   const balCards = document.getElementById('attLeaveBalance');
   if(!balCards) return;
@@ -2746,7 +2747,7 @@ function renderLeaveBalanceCards(emp, year){
         </div>
         <div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:8px;">
           <div style="flex:1;text-align:center;background:rgba(239,68,68,0.06);border-radius:8px;padding:8px 6px;">
-            ${valOrInput(totalLeaveTaken,'totalTaken','#ef4444')}
+            ${valOrInput(totalTaken,'totalTaken','#ef4444')}
             <div style="font-size:10px;color:var(--text3);margin-top:3px;">Total Taken</div>
           </div>
           <div style="flex:1;text-align:center;background:rgba(16,185,129,0.06);border-radius:8px;padding:8px 6px;">
