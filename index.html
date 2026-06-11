@@ -2329,7 +2329,9 @@ function renderAttendancePage(){
 
   // Render attendance table
   const attData=(emp.attendance||{})[year]||{};
-  const nowM = new Date().getFullYear()===year ? new Date().getMonth() : 11;
+  const nowYear2=new Date().getFullYear();
+  const isFutureYear = year > nowYear2;
+  const nowM = nowYear2===year ? new Date().getMonth() : (isFutureYear ? -1 : 11);
   let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
   let totalOnTime=0,totalDelay=0,totalExDelay=0;
   const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
@@ -2935,7 +2937,9 @@ function renderYearlyAttCalendar(emp, year, attData){
   const section = document.getElementById('attYearlyCalSection');
   if(!section) return;
 
-  const nowM = new Date().getFullYear()===year ? new Date().getMonth() : 11;
+  const nowYear3=new Date().getFullYear();
+  const isFutureYear3 = year > nowYear3;
+  const nowM = nowYear3===year ? new Date().getMonth() : (isFutureYear3 ? -1 : 11);
   const mNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const dayLabels = ['S','M','T','W','T','F','S'];
 
