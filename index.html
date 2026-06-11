@@ -3969,7 +3969,16 @@ function pihrDoFillSingle(rowIdx, year){
     elOt: _sElOtStr
   };
   saveState();
+  const _cEmpId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  const _cYear=parseInt(document.getElementById('attYear')?.value)||year;
   renderAttendancePage();
+  setTimeout(()=>{
+    const _sel=document.getElementById('attEmpSelect');
+    const _ySel=document.getElementById('attYear');
+    if(_sel && _cEmpId) _sel.value=_cEmpId;
+    if(_ySel) _ySel.value=_cYear;
+    renderAttendancePage();
+  },50);
   document.getElementById('pihrDailyModal')?.remove();
   const MSHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   toast(emp.name+' — '+MSHORT[mi]+' '+year+' filled ✓','success');
@@ -4014,11 +4023,13 @@ function pihrFillAllConfirm2(year, matched){
 function confirmPihrFill(year){
   document.getElementById('pihrPreviewModal')?.remove();
   let filled=0, skipped=0;
+  const empIds=[];
   Object.values(pihrExtractedData).forEach(pe=>{
     const emp=pihrMatchEmp(pe.code,pe.name);
     if(!emp){ skipped++; return; }
     if(!emp.attendance) emp.attendance={};
     if(!emp.attendance[year]) emp.attendance[year]={};
+    empIds.push(emp.id);
     Object.entries(pe.months).forEach(([mk,d])=>{
       const mi=parseInt(mk)-1;
       // Calculate per-month E/L OT from daily rows
@@ -4048,7 +4059,18 @@ function confirmPihrFill(year){
     });
   });
   saveState();
+  // Force re-render with current employee selection preserved
+  const curEmpId=parseInt(document.getElementById('attEmpSelect')?.value)||null;
+  const curYear=parseInt(document.getElementById('attYear')?.value)||year;
   renderAttendancePage();
+  // Restore selection after render
+  setTimeout(()=>{
+    const sel=document.getElementById('attEmpSelect');
+    const ySel=document.getElementById('attYear');
+    if(sel && curEmpId) sel.value=curEmpId;
+    if(ySel) ySel.value=curYear;
+    renderAttendancePage();
+  },50);
   toast('PIHR: '+filled+' month records filled · '+skipped+' not matched','success');
 }
 
