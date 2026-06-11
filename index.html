@@ -3118,9 +3118,18 @@ async function processPihrJobCard(file){
       } else if(inDaily && curEmp && r[0]==='Total Days (Available in office)'){
         if(!curEmp.yearSummary) curEmp.yearSummary={};
         curEmp.yearSummary.totalDays=r[2];
-        curEmp.yearSummary.elOtTotal=r[7];
-        // Store elOt at employee level for preview table
-        curEmp.elOt=r[7];
+        // Determine sign: if Expected > Actual → Less (negative), else Extra (positive)
+        const parseHM=s=>{const p=(s||'').replace('-','').split(':');return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);};
+        const expMins=parseHM(curEmp.yearSummary.expectedDuty||'');
+        const actMins=parseHM(curEmp.yearSummary.actualDuty||'');
+        const elRaw=r[7]||'';
+        const elMins=parseHM(elRaw);
+        if(expMins>0 && actMins>0){
+          curEmp.yearSummary.elOtTotal = actMins>=expMins ? '+'+elRaw : '-'+elRaw;
+        } else {
+          curEmp.yearSummary.elOtTotal = elRaw;
+        }
+        curEmp.elOt=curEmp.yearSummary.elOtTotal;
         inDaily=false;
       } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
         const month=r[0].substring(3,5);
