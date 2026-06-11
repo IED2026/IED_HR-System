@@ -2987,55 +2987,30 @@ async function processPihrJobCard(file){
       } else if(curEmp && r[0]==='Attendance Date'){
         inDaily=true;
       } else if(inDaily && curEmp && r[0]==='Present'){
-        // Summary row: Present, Absent counts
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.present=r[2];
-          curEmp.months[lastMk].summary.absent=r[7];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.present=r[2];
+        curEmp.yearSummary.absent=r[7];
       } else if(inDaily && curEmp && r[0]==='Delay'){
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.delay=r[2];
-          curEmp.months[lastMk].summary.extremeDelay=r[7];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.delay=r[2];
+        curEmp.yearSummary.extremeDelay=r[7];
       } else if(inDaily && curEmp && r[0]==='Leave'){
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.leave=r[2];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.leave=r[2];
       } else if(inDaily && curEmp && r[0]==='Weekend'){
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.weekend=r[2];
-          curEmp.months[lastMk].summary.holiday=r[7];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.weekend=r[2];
+        curEmp.yearSummary.holiday=r[7];
       } else if(inDaily && curEmp && r[0]==='Expected Duty Hour'){
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.expectedDuty=r[2];
-          curEmp.months[lastMk].summary.actualDuty=r[7];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.expectedDuty=r[2];
+        curEmp.yearSummary.actualDuty=r[7];
       } else if(inDaily && curEmp && r[0]==='Total Days (Available in office)'){
-        const mKeys=Object.keys(curEmp.months);
-        const lastMk=mKeys[mKeys.length-1];
-        if(lastMk&&curEmp.months[lastMk]){
-          curEmp.months[lastMk].summary=curEmp.months[lastMk].summary||{};
-          curEmp.months[lastMk].summary.totalDays=r[2];
-          curEmp.months[lastMk].summary.elOtTotal=r[7]; // Extra/Less Duty Hours total
-          // Use this as the E/L OT for the month
-          curEmp.months[lastMk].elOt=r[7];
-        }
+        if(!curEmp.yearSummary) curEmp.yearSummary={};
+        curEmp.yearSummary.totalDays=r[2];
+        curEmp.yearSummary.elOtTotal=r[7];
+        // Store elOt at employee level for preview table
+        curEmp.elOt=r[7];
         inDaily=false;
       } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
         const month=r[0].substring(3,5);
@@ -3072,12 +3047,6 @@ async function processPihrJobCard(file){
     Object.values(result).forEach(emp=>{
       Object.values(emp.months).forEach(m=>{
       m.ot=parseFloat((m.otMins/60).toFixed(1)); delete m.otMins;
-      // Calculate E/L OT from daily
-      if(m.daily&&m.daily.length){
-        // Store last E/L OT as summary (or parse from file summary row)
-        const elVals=m.daily.map(d=>d.elOt).filter(v=>v&&v!=='-'&&v!=='');
-        m.elOt = elVals.length ? elVals[elVals.length-1] : '';
-      }
     });
     });
 
@@ -3699,7 +3668,7 @@ function openPihrPreviewModal(title){
     Object.keys(pe.months).sort().forEach(mk=>{
       const mi=parseInt(mk)-1;
       const d=pe.months[mk];
-      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk]});
+      rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk],empElOt:pe.elOt||''});
     });
   });
 
@@ -3758,7 +3727,7 @@ function openPihrPreviewModal(title){
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;'+borderTop+'">'+r.data.late+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;'+borderTop+'">'+r.data.holiday+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;'+borderTop+'">'+r.data.ot+'</td>'+
-        '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;'+borderTop+'">'+( r.rawMonthData?.elOt||'—')+'</td>'+
+        '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;'+borderTop+'">'+( r.empElOt||'—')+'</td>'+
         '<td style="padding:5px 6px;text-align:center;'+borderTop+'">'+detailBtn+'</td>'+
         '</tr>';
     });
@@ -3989,7 +3958,9 @@ function showPihrDailyDetail(rowIdx){
   }).join('');
 
   // Summary row from file
-  const summary=row.rawMonthData?.summary||{};
+  // Get yearSummary from pihrExtractedData
+  const empData=pihrExtractedData?.[row.pihrCode];
+  const summary=empData?.yearSummary||{};
   const summaryRow=Object.keys(summary).length?`
     <tr style="background:rgba(212,175,55,0.08);border-top:2px solid var(--gold);">
       <td colspan="6" style="padding:0;">
