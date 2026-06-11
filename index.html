@@ -2376,7 +2376,8 @@ function renderAttendancePage(){
     // Count P/D/E from daily array
     const daily=mData.daily||[];
     let mOnTime=0,mDelay=0,mExDelay=0;
-    daily.forEach(s=>{
+    daily.forEach(d=>{
+      const s=typeof d==='object'?(d.s||''):d;
       if(s==='P'||s==='P(W)'||s==='P(H)'||s==='P(L)') mOnTime++;
       else if(s==='D') mDelay++;
       else if(s==='E') mExDelay++;
