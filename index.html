@@ -2262,7 +2262,7 @@ async function saveState(){
     const { data: existing } = await _supabase.from('app_data').select('key');
     const existingKeys = (existing||[]).map(r=>r.key);
 
-    for(const s of saves){
+    await Promise.all(saves.map(async s=>{
       if(existingKeys.includes(s.key)){
         const { error: ue } = await _supabase.from('app_data')
           .update({ value: s.value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' })
@@ -2273,7 +2273,7 @@ async function saveState(){
           .insert({ key: s.key, value: s.value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' });
         if(ie) throw ie;
       }
-    }
+    }));
     toast('Data saved ✓','success');
   }catch(err){
     console.error('Supabase save failed:', err.message, err.code, err.status);
