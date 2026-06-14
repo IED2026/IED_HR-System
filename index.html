@@ -6042,6 +6042,8 @@ function generateEmpStatement(){
   });
 
   const score=getEmpScore(emp);const level=calcStarLevel(score);
+  const curYear=new Date().getFullYear();
+  const curMonth=new Date().getMonth();
   const photo=emp.photo?`<img src="${emp.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);">`:
     `<div style="width:60px;height:60px;border-radius:50%;background:#1a2f48;display:flex;align-items:center;justify-content:center;font-size:24px;">👤</div>`;
 
@@ -6098,10 +6100,248 @@ function generateEmpStatement(){
           <td></td>
         </tr></tfoot>
       </table>
-      <div style="font-size:11px;color:var(--text3);text-align:center;">Generated: ${new Date().toLocaleString()} | IED HR System</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:24px;">Generated: ${new Date().toLocaleString()} | IED HR System</div>
+
+      <!-- ══════ ANALYTICS SECTION ══════ -->
+      <div style="border-top:2px solid var(--gold);padding-top:18px;margin-top:8px;">
+        <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px;letter-spacing:.5px;"><i class="fa fa-chart-line"></i> Career & Attendance Analytics</div>
+
+        <!-- Row 1: Promotional Timeframe + Salary Increment -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-stairs" style="color:#a3e635"></i> Promotional Timeframe</div>
+            <div style="position:relative;height:180px;"><canvas id="stmtPromoChart"></canvas></div>
+          </div>
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-arrow-trend-up" style="color:#10b981"></i> Salary Increment</div>
+            <div style="position:relative;height:180px;"><canvas id="stmtSalaryChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Attendance Ratio + Attendance Record -->
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:16px;">
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-circle-notch" style="color:#3b82f6"></i> Attendance Ratio (${fromY}–${toY})</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+              <div style="position:relative;width:130px;height:130px;flex-shrink:0;">
+                <canvas id="stmtAttRatioChart" width="130" height="130"></canvas>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                  <div id="stmtAttRatioPct" style="font-size:18px;font-weight:800;color:var(--text1);"></div>
+                  <div style="font-size:8px;color:var(--text3);">Attendance</div>
+                </div>
+              </div>
+              <div id="stmtAttRatioLegend" style="display:flex;flex-direction:column;gap:6px;font-size:11px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-calendar-check" style="color:#22d3ee"></i> Attendance Record (${curYear} — Jan to ${MONTH_SHORT[curMonth]})</div>
+            <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:380px;" id="stmtAttRecordTable"></table></div>
+          </div>
+        </div>
+
+        <!-- Row 3: Leave Records + Leave Balances -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;">
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-umbrella-beach" style="color:#f59e0b"></i> Leave Records (${fromY}–${toY})</div>
+            <div id="stmtLeaveRecords"></div>
+          </div>
+          <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-chart-column" style="color:#a855f7"></i> Leave Balances (${fromY}–${toY})</div>
+            <div style="position:relative;height:200px;"><canvas id="stmtLeaveBalChart"></canvas></div>
+          </div>
+        </div>
+      </div>
     </div>`;
   document.getElementById('empStmtOut').innerHTML=html;
+  renderEmpStmtAnalytics(emp, fromY, toY);
   toast('Statement generated','success');
+}
+
+// ══════════════ EMPLOYEE STATEMENT ANALYTICS (Figures 1-6) ══════════════
+function renderEmpStmtAnalytics(emp, fromY, toY){
+  setTimeout(()=>{
+    // ── Figure 1: Promotional Timeframe (placeholder dummy) ──
+    const promoCtx=document.getElementById('stmtPromoChart');
+    if(promoCtx){
+      if(window._stmtPromoChart) window._stmtPromoChart.destroy();
+      window._stmtPromoChart=new Chart(promoCtx,{
+        type:'line',
+        data:{
+          labels:['2021','2022','2023','2024','2025','2026'],
+          datasets:[{
+            label:'Designation Level',
+            data:[1,1,2,2,2,3],
+            borderColor:'#a3e635',
+            backgroundColor:'rgba(163,230,53,0.1)',
+            stepped:true, fill:true, tension:0, pointRadius:4, pointBackgroundColor:'#a3e635'
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{display:false}},
+            y:{ticks:{color:'#a0b0c8',font:{size:10},stepSize:1,callback:v=>['','Officer','Sr. Officer','Manager'][v]||''},min:0,max:3,grid:{color:'rgba(255,255,255,0.04)'}}
+          }
+        }
+      });
+    }
+
+    // ── Figure 2: Salary Increment (placeholder dummy) ──
+    const salCtx=document.getElementById('stmtSalaryChart');
+    if(salCtx){
+      if(window._stmtSalaryChart) window._stmtSalaryChart.destroy();
+      window._stmtSalaryChart=new Chart(salCtx,{
+        type:'line',
+        data:{
+          labels:['2020(Apr)','2021(Jul)','2024(Apr)','2026(Jan)'],
+          datasets:[{
+            label:'Gross Salary',
+            data:[25000,28000,40000,45000],
+            borderColor:'#10b981',
+            backgroundColor:'rgba(16,185,129,0.1)',
+            fill:true, tension:.3, pointRadius:4, pointBackgroundColor:'#10b981'
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{ticks:{color:'#a0b0c8',font:{size:9}},grid:{display:false}},
+            y:{ticks:{color:'#a0b0c8',font:{size:10},callback:v=>'৳'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}
+          }
+        }
+      });
+    }
+
+    // ── Figure 3: Attendance Ratio (real data, fromY-toY aggregate) ──
+    let totP=0,totA=0,totL=0,totWD=0;
+    for(let y=fromY;y<=toY;y++){
+      const att=(emp.attendance||{})[y]||{};
+      Object.values(att).forEach(m=>{
+        totP+=parseInt(m.present)||0;
+        totA+=parseInt(m.absent)||0;
+        totL+=parseInt(m.leave)||0;
+        totWD+=parseInt(m.wd)||0;
+      });
+    }
+    const attPct = totWD>0 ? Math.round(totP/totWD*100) : 0;
+    const ratioCtx=document.getElementById('stmtAttRatioChart');
+    if(ratioCtx){
+      if(window._stmtAttRatioChart) window._stmtAttRatioChart.destroy();
+      window._stmtAttRatioChart=new Chart(ratioCtx,{
+        type:'doughnut',
+        data:{labels:['Present','Absent','Leave'],datasets:[{data:[totP,totA,totL],backgroundColor:['#10b981','#ef4444','#8b5cf6'],borderWidth:0,hoverOffset:4}]},
+        options:{cutout:'68%',responsive:false,plugins:{legend:{display:false}}}
+      });
+    }
+    const pctEl=document.getElementById('stmtAttRatioPct');
+    if(pctEl) pctEl.textContent=attPct+'%';
+    const legendEl=document.getElementById('stmtAttRatioLegend');
+    if(legendEl){
+      const lg=(label,val,color)=>`<div style="display:flex;align-items:center;gap:6px;"><div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;"></div><span style="color:var(--text2);">${label}: <b style="color:var(--text1);">${val}</b></span></div>`;
+      legendEl.innerHTML = lg('Present',totP,'#10b981') + lg('Absent',totA,'#ef4444') + lg('Leave',totL,'#8b5cf6');
+    }
+
+    // ── Figure 4: Attendance Record table (current year, Jan-current month) ──
+    const curYear=new Date().getFullYear();
+    const curMonth=new Date().getMonth();
+    const attTable=document.getElementById('stmtAttRecordTable');
+    if(attTable){
+      const att=(emp.attendance||{})[curYear]||{};
+      let rowsHtml='';
+      for(let mi=0; mi<=curMonth; mi++){
+        const m=att[mi]||{};
+        const wd=parseInt(m.wd)||0, p=parseInt(m.present)||0, l=parseInt(m.leave)||0, a=parseInt(m.absent)||0;
+        const pct = wd>0 ? Math.round(p/wd*100) : 0;
+        const pctClr = pct>=90?'#10b981':pct>=75?'#f59e0b':'#ef4444';
+        rowsHtml += `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:5px 8px;color:var(--text2);">${MONTH_SHORT[mi]}</td>
+          <td style="padding:5px 8px;text-align:center;">${wd}</td>
+          <td style="padding:5px 8px;text-align:center;color:#10b981;">${p}</td>
+          <td style="padding:5px 8px;text-align:center;color:#8b5cf6;">${l}</td>
+          <td style="padding:5px 8px;text-align:center;color:#ef4444;">${a}</td>
+          <td style="padding:5px 8px;text-align:right;font-weight:700;color:${pctClr};">${pct}%</td>
+        </tr>`;
+      }
+      attTable.innerHTML = `
+        <thead><tr style="background:rgba(255,255,255,0.04);">
+          <th style="padding:6px 8px;text-align:left;font-size:10px;color:var(--text3);border-bottom:2px solid var(--border);">Month</th>
+          <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--text3);border-bottom:2px solid var(--border);">WD</th>
+          <th style="padding:6px 8px;text-align:center;font-size:10px;color:#10b981;border-bottom:2px solid var(--border);">P</th>
+          <th style="padding:6px 8px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:2px solid var(--border);">L</th>
+          <th style="padding:6px 8px;text-align:center;font-size:10px;color:#ef4444;border-bottom:2px solid var(--border);">A</th>
+          <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);border-bottom:2px solid var(--border);">Attendance %</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>`;
+    }
+
+    // ── Figure 5: Leave Records (aggregate fromY-toY) ──
+    let sAnnE=0,sAnnT=0,sCasE=0,sCasT=0;
+    for(let y=fromY;y<=toY;y++){
+      const lb=(emp.leaveBalance||{})[y]||{};
+      sAnnE+=lb.annualEntitled||0; sAnnT+=lb.annualTaken||0;
+      sCasE+=lb.casualEntitled||0; sCasT+=lb.casualTaken||0;
+    }
+    const sAnnB=Math.max(0,sAnnE-sAnnT), sCasB=Math.max(0,sCasE-sCasT);
+    const sTotE=sAnnE+sCasE, sTotT=sAnnT+sCasT, sTotB=Math.max(0,sTotE-sTotT);
+    const lrEl=document.getElementById('stmtLeaveRecords');
+    if(lrEl){
+      const box=(label,val,color)=>`<div style="flex:1;text-align:center;padding:10px 6px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--border);"><div style="font-size:18px;font-weight:800;color:${color};">${val}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;">${label}</div></div>`;
+      lrEl.innerHTML = `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:6px;">Total Leave</div>
+          <div style="display:flex;gap:8px;">
+            ${box('Entitled',sTotE,'var(--text1)')}
+            ${box('Taken',sTotT,'#ef4444')}
+            ${box('Remaining',sTotB,'#10b981')}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#3b82f6;margin-bottom:6px;">Annual Leave</div>
+            <div style="display:flex;gap:6px;">
+              ${box('Entitled',sAnnE,'var(--text1)')}
+              ${box('Taken',sAnnT,'#ef4444')}
+              ${box('Remain',sAnnB,'#10b981')}
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#8b5cf6;margin-bottom:6px;">Casual Leave</div>
+            <div style="display:flex;gap:6px;">
+              ${box('Entitled',sCasE,'var(--text1)')}
+              ${box('Taken',sCasT,'#ef4444')}
+              ${box('Remain',sCasB,'#10b981')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── Figure 6: Leave Balances bar chart ──
+    const lbCtx=document.getElementById('stmtLeaveBalChart');
+    if(lbCtx){
+      if(window._stmtLeaveBalChart) window._stmtLeaveBalChart.destroy();
+      window._stmtLeaveBalChart=new Chart(lbCtx,{
+        type:'bar',
+        data:{
+          labels:['Total Taken','Total Remain','Annual Taken','Annual Remain','Casual Taken','Casual Remain'],
+          datasets:[{
+            data:[sTotT,sTotB,sAnnT,sAnnB,sCasT,sCasB],
+            backgroundColor:['#ef4444','#f59e0b','#3b82f6','#06b6d4','#8b5cf6','#c4b5fd'],
+            borderRadius:4
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{ticks:{color:'#a0b0c8',font:{size:9}},grid:{display:false}},
+            y:{ticks:{color:'#a0b0c8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+          }
+        }
+      });
+    }
+  },200);
 }
 </script><script>
 // ══════════════ PROJECT STATEMENT ══════════════
