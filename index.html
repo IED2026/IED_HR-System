@@ -7998,6 +7998,19 @@ function renderSalaryHistoryTable(){
         📋 SALARY EVENT HISTORY — ${salEvents.length} event(s) recorded
       </td></tr>`;
 
+    // Ensure a Joining row always shows first if no 'join' type event exists
+    if(!salEvents.find(e=>e.type==='join')){
+      const joinGross = emp?.originalGross || salEvents[0]?.newGross || emp?.gross || 0;
+      rows += `<tr>
+        <td style="font-size:11px;white-space:nowrap">${emp?.join||'—'}</td>
+        <td>🏢 <span style="font-size:11px;font-weight:600">Join</span></td>
+        <td style="font-size:11px">${emp?.desig||'—'}</td>
+        <td style="font-weight:600">—</td>
+        <td style="font-weight:700;color:var(--gold)">৳${bdt(joinGross)}</td>
+        <td colspan="5" style="font-size:11px;color:var(--text2)">Initial joining salary</td>
+      </tr>`;
+    }
+
     // Table headers row (already in thead)
     salEvents.forEach((ev,i)=>{
       const prevSalary = i===0 ? (emp?.originalGross||prevGross) : (salEvents[i-1].newGross||prevGross);
@@ -8032,9 +8045,28 @@ function renderSalaryHistoryTable(){
       <td colspan="5" style="font-size:11px;color:var(--text2)">Active salary as of today</td>
     </tr>`;
   } else {
-    rows = `<tr><td colspan="10" style="text-align:center;font-size:12px;color:var(--text2);padding:12px;">
-      No salary history recorded. Add career events above to track salary changes.
-    </td></tr>`;
+    // No salary events recorded — show only Joining + Current baseline rows
+    const joinGross = emp?.originalGross || emp?.gross || 0;
+    rows = `<tr style="background:rgba(39,174,96,.05);">
+      <td colspan="10" style="font-weight:700;color:var(--gold);font-size:11px;padding:5px 8px;">
+        📋 SALARY EVENT HISTORY — 0 event(s) recorded
+      </td></tr>`;
+    rows += `<tr>
+      <td style="font-size:11px;white-space:nowrap">${emp?.join||'—'}</td>
+      <td>🏢 <span style="font-size:11px;font-weight:600">Join</span></td>
+      <td style="font-size:11px">${emp?.desig||'—'}</td>
+      <td style="font-weight:600">—</td>
+      <td style="font-weight:700;color:var(--gold)">৳${bdt(joinGross)}</td>
+      <td colspan="5" style="font-size:11px;color:var(--text2)">Initial joining salary</td>
+    </tr>`;
+    rows += `<tr style="background:rgba(212,175,55,.08);font-weight:700;">
+      <td style="font-size:11px">Current</td>
+      <td>📍 Current</td>
+      <td style="font-size:11px">${emp?.desig||'—'}</td>
+      <td>—</td>
+      <td style="color:var(--gold)">৳${bdt(emp?.gross||0)}</td>
+      <td colspan="5" style="font-size:11px;color:var(--text2)">Active salary as of today</td>
+    </tr>`;
   }
 
   el.innerHTML=`<table>
