@@ -420,7 +420,7 @@ window.addEventListener('load', async function(){
   _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth: {
       persistSession: false,
-      autoRefreshToken: false,
+      autoRefreshToken: true,
       detectSessionInUrl: false
     }
   });
@@ -2226,9 +2226,26 @@ async function saveState(){
   // Save to Supabase
   try{
     // Re-authenticate if session expired
-    const { data: { session } } = await _supabase.auth.getSession();
+    let { data: { session } } = await _supabase.auth.getSession();
     if(!session){
-      // Try to sign in again using stored credentials
+      // Try refreshing session using stored refresh token before giving up
+      try{
+        const s=sessionStorage.getItem('ied_session');
+        if(s){
+          const u=JSON.parse(s);
+          if(u.refresh_token){
+            const {data:refreshed}=await _supabase.auth.refreshSession({refresh_token:u.refresh_token});
+            session=refreshed?.session;
+            if(session){
+              // Update stored tokens
+              u.access_token=session.access_token; u.refresh_token=session.refresh_token;
+              sessionStorage.setItem('ied_session',JSON.stringify(u));
+            }
+          }
+        }
+      }catch(e){ console.warn('Session refresh failed',e); }
+    }
+    if(!session){
       console.warn('No active session, attempting re-auth...');
       toast('Session expired, please login again','error');
       doLogout();
@@ -5268,7 +5285,7 @@ function clearEmpForm(){
   document.getElementById('salPreview').innerHTML='';
 }
 
-function saveEmployee(){
+async function saveEmployee(){
   if(!canEdit()){toast('No permission','error');return;}
   const name=getVal('empName').trim();
   if(!name){toast('Employee name is required','error');return;}
@@ -5313,7 +5330,7 @@ function saveEmployee(){
     }
     employees.push(empData);
   }
-  saveState();closeModal('empModal');renderEmployees();
+  await saveState();closeModal('empModal');renderEmployees();
   toast((_editEmpId?'Employee updated':'New employee added')+' successfully','success');
 }
 function empData_originalGross(){
