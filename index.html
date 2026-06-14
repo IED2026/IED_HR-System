@@ -6121,7 +6121,7 @@ function generateEmpStatement(){
         <!-- Row 2: Attendance Ratio + Attendance Record -->
         <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:16px;">
           <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-circle-notch" style="color:#3b82f6"></i> Attendance Ratio (${fromY}–${toY})</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-circle-notch" style="color:#3b82f6"></i> Attendance Ratio (${MONTH_SHORT[fromM]} ${fromY} – ${MONTH_SHORT[toM]} ${toY})</div>
             <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
               <div style="position:relative;width:130px;height:130px;flex-shrink:0;">
                 <canvas id="stmtAttRatioChart" width="130" height="130"></canvas>
@@ -6142,23 +6142,23 @@ function generateEmpStatement(){
         <!-- Row 3: Leave Records + Leave Balances -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;">
           <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-umbrella-beach" style="color:#f59e0b"></i> Leave Records (${fromY}–${toY})</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-umbrella-beach" style="color:#f59e0b"></i> Leave Records (${MONTH_SHORT[fromM]} ${fromY} – ${MONTH_SHORT[toM]} ${toY})</div>
             <div id="stmtLeaveRecords"></div>
           </div>
           <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-chart-column" style="color:#a855f7"></i> Leave Balances (${fromY}–${toY})</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-chart-column" style="color:#a855f7"></i> Leave Balances (${MONTH_SHORT[fromM]} ${fromY} – ${MONTH_SHORT[toM]} ${toY})</div>
             <div style="position:relative;height:200px;"><canvas id="stmtLeaveBalChart"></canvas></div>
           </div>
         </div>
       </div>
     </div>`;
   document.getElementById('empStmtOut').innerHTML=html;
-  renderEmpStmtAnalytics(emp, fromY, toY);
+  renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM);
   toast('Statement generated','success');
 }
 
 // ══════════════ EMPLOYEE STATEMENT ANALYTICS (Figures 1-6) ══════════════
-function renderEmpStmtAnalytics(emp, fromY, toY){
+function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
   setTimeout(()=>{
     // ── Figure 1: Promotional Timeframe (placeholder dummy) ──
     const promoCtx=document.getElementById('stmtPromoChart');
@@ -6214,16 +6214,20 @@ function renderEmpStmtAnalytics(emp, fromY, toY){
       });
     }
 
-    // ── Figure 3: Attendance Ratio (real data, fromY-toY aggregate) ──
+    // ── Figure 3: Attendance Ratio (real data, From Month/Year - To Month/Year) ──
     let totP=0,totA=0,totL=0,totWD=0;
-    for(let y=fromY;y<=toY;y++){
-      const att=(emp.attendance||{})[y]||{};
-      Object.values(att).forEach(m=>{
+    {
+      let cy=fromY, cm=fromM;
+      while(cy<toY||(cy===toY&&cm<=toM)){
+        const att=(emp.attendance||{})[cy]||{};
+        const m=att[cm]||{};
         totP+=parseInt(m.present)||0;
         totA+=parseInt(m.absent)||0;
         totL+=parseInt(m.leave)||0;
         totWD+=parseInt(m.wd)||0;
-      });
+        cm++; if(cm>11){cm=0;cy++;}
+        if(cy>toY+1) break; // safety
+      }
     }
     const attPct = totWD>0 ? Math.round(totP/totWD*100) : 0;
     const ratioCtx=document.getElementById('stmtAttRatioChart');
