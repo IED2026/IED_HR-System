@@ -192,6 +192,26 @@ table tr.inactive-row td.no-strike{text-decoration:none;}
 .emp-hist-header{background:var(--navy3);border-radius:10px;padding:14px;margin-bottom:12px;}
 /* ── PRINT ── */
 @media print{.sidebar,.topbar,.no-print{display:none!important;}.main{margin-left:0!important;}.page{padding:0!important;}}
+
+/* ── MOBILE RESPONSIVE (≤768px) ── */
+@media (max-width: 768px){
+  .sidebar{transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,0.4);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  #menuBtn{display:inline-flex!important;}
+  .topbar{padding:10px 12px;gap:8px;flex-wrap:wrap;}
+  .topbar h2{font-size:15px;margin:0;}
+  .topbar-actions{gap:6px;flex-wrap:wrap;}
+  .topbar-actions select, .topbar-actions .btn{font-size:11px;padding:6px 10px;}
+  .topbar-actions .btn span, .topbar-actions select{display:none;}
+  #roleSelector{display:none;}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;}
+  .sidebar-overlay.show{display:block;}
+}
+@media (max-width: 480px){
+  .topbar-actions .btn span{display:none;}
+  .topbar-actions .btn{padding:6px 8px;}
+}
 /* ── TOAST ── */
 .toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
 .toast{background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;}
@@ -623,6 +643,7 @@ async function handleLoginSubmit(e) {
 <div class="main">
 <div class="topbar">
   <button class="btn btn-secondary btn-sm" onclick="toggleSidebar()" style="display:none" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
   <h2 id="pageTitle">Dashboard</h2>
   <div class="topbar-actions">
     <select class="form-control" id="roleSelector" onchange="changeRole()" style="width:140px;font-size:12px;pointer-events:none;opacity:0.85;cursor:default;" disabled>
@@ -4838,10 +4859,22 @@ function showAdminOnly(){
   if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent='Access Restricted';
 }
 
+function toggleSidebar(){
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  if(sb) sb.classList.toggle('open');
+  if(ov) ov.classList.toggle('show');
+}
+
 function nav(page){
   if(currentRole==='viewer'){ showAdminOnly(); return; }
   try{ const s=sessionStorage.getItem('ied_session'); if(s){ const u=JSON.parse(s); u.page=page; sessionStorage.setItem('ied_session',JSON.stringify(u)); }}catch(e){}
 
+  // Close mobile sidebar on navigation
+  if(window.innerWidth<=768){
+    document.querySelector('.sidebar')?.classList.remove('open');
+    document.getElementById('sidebarOverlay')?.classList.remove('show');
+  }
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
