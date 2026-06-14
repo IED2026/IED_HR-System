@@ -7978,7 +7978,12 @@ function renderSalaryHistoryTable(){
   const joinDate = emp?.join ? new Date(emp.join) : null;
 
   // Build salary-change events only (join, increment, promotion, demotion)
-  const salEvents = hist.filter(e=>['join','increment','promotion','demotion'].includes(e.type)&&e.newGross);
+  let salEvents = hist.filter(e=>['join','increment','promotion','demotion'].includes(e.type)&&e.newGross);
+
+  // If no events at all (e.g. after Clear), synthesize a Join event from emp.join/originalGross
+  if(!salEvents.length && emp){
+    salEvents = [{type:'join', date:emp.join||'', desig:emp.desig||'', newGross: emp.originalGross||emp.gross||0, remark:'Initial joining (auto-generated)', approver:'HR'}];
+  }
 
   if(!salEvents.length && !emp){
     el.innerHTML='<p style="font-size:12px;color:var(--text2);padding:8px;">Save employee first to see salary history.</p>';
