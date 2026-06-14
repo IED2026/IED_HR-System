@@ -491,7 +491,7 @@ async function handleLoginSubmit(e) {
     const overlay = document.getElementById('loginOverlay');
     overlay.style.opacity = '0';
     overlay.style.pointerEvents = 'none';
-    setTimeout(function () {
+    setTimeout(async function () {
       overlay.style.display = 'none';
       // Set role selector in HR system
 
@@ -513,6 +513,11 @@ async function handleLoginSubmit(e) {
       }));
       // Set user info in sidebar & panel
       if (window.setUserInfo) setUserInfo(profile.full_name || email, email, profile.role);
+      // Re-load data now that we have an authenticated session (fixes stale/empty data on new devices)
+      const main2 = document.querySelector('.main');
+      if(main2) main2.style.opacity='0.6';
+      await loadState();
+      if(main2) main2.style.opacity='1';
       // Show correct page based on role
       if(currentRole === 'viewer'){
         showAdminOnly();
