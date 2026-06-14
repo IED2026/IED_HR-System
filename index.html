@@ -6031,14 +6031,15 @@ function generateEmpStatement(){
     const key=`${y}_${m}`;
     const active=isEmpActiveInMonth(emp,y,m);
     const savedGross=monthlySalary[key]?.data?.[`e${emp.id}`]?.gross;
-    const gross=savedGross!=null?savedGross:(active?getEmpGrossForMonth(emp,y,m):0);
+    const hasData = savedGross!=null && savedGross!==0;
+    const gross = hasData ? savedGross : 0;
     const s=calcSalary(gross);
-    const eid=m===3&&active?getEidBonus(emp):0;
-    if(active){totalGross+=s.gross;totalNet+=s.net;totalPF+=s.pf;totalEid+=eid;}
+    const eid=m===3&&active&&hasData?getEidBonus(emp):0;
+    if(active&&hasData){totalGross+=s.gross;totalNet+=s.net;totalPF+=s.pf;totalEid+=eid;}
     // Find project at this time
     const projAtTime=emp.project; // simplified
     return {y,m,gross:s.gross,basic:s.basic,houseRent:s.houseRent,medical:s.medical,
-      conveyance:s.conveyance,pf:s.pf,ait:s.ait,net:s.net,eid,active,project:projAtTime};
+      conveyance:s.conveyance,pf:s.pf,ait:s.ait,net:s.net,eid,active,project:projAtTime,hasData};
   });
 
   const score=getEmpScore(emp);const level=calcStarLevel(score);
@@ -6080,11 +6081,11 @@ function generateEmpStatement(){
           ${rows.map(r=>`<tr style="${r.active?'':'opacity:.5;text-decoration:line-through;'}">
             <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);">${MONTH_SHORT[r.m]} ${r.y}</td>
             <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);">${r.project}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;">৳${bdt(r.gross)}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;">৳${bdt(r.basic)}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#f39c12;">৳${bdt(r.pf)}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#f39c12;">৳${bdt(r.ait)}</td>
-            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#27ae60;font-weight:600;">৳${bdt(r.net)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;">${r.hasData?'৳'+bdt(r.gross):'—'}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;">${r.hasData?'৳'+bdt(r.basic):'—'}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#f39c12;">${r.hasData?'৳'+bdt(r.pf):'—'}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#f39c12;">${r.hasData?'৳'+bdt(r.ait):'—'}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:#27ae60;font-weight:600;">${r.hasData?'৳'+bdt(r.net):'—'}</td>
             <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;color:var(--gold);">${r.eid?'৳'+bdt(r.eid):'-'}</td>
             <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:center;">${r.active?'✅':'❌'}</td>
           </tr>`).join('')}
