@@ -6520,6 +6520,7 @@ function renderManning2(){
   document.getElementById('manRejectBtn').style.display=canApprove()&&submitted?'inline-flex':'none';
 
   let filtered=employees.filter(e=>{
+    if(!isEmpActive(e)) return false;
     if(projF && e.project!==projF) return false;
     if(deptF && e.dept!==deptF) return false;
     return true;
@@ -6617,7 +6618,7 @@ function updateManAlloc2(empId,proj,days,y,m){
   }
   // Re-render summary only
   const wd=parseInt(document.getElementById('workDays').value)||26;
-  const filtered=employees.filter(e=>e.project===document.getElementById('manProjFilter').value||!document.getElementById('manProjFilter').value);
+  const filtered=employees.filter(e=>isEmpActive(e) && (e.project===document.getElementById('manProjFilter').value||!document.getElementById('manProjFilter').value));
   const projTotals={};const projDays={};
   filtered.forEach(e=>{
     const alloc=data.allocs[e.id]||[];
