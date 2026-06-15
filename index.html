@@ -6371,7 +6371,7 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
       window._stmtLeaveBalChart=new Chart(lbCtx,{
         type:'bar',
         data:{
-          labels:[['Total','Entitled'],['Total','Taken'],['Total','Remain'],['Annual','Entitled'],['Annual','Taken'],['Annual','Remain'],['Casual','Entitled'],['Casual','Taken'],['Casual','Remain']],
+          labels:[['Total','Total'],['Total','Taken'],['Total','Remain'],['Annual','Total'],['Annual','Taken'],['Annual','Remain'],['Casual','Total'],['Casual','Taken'],['Casual','Remain']],
           datasets:[{
             data:[sTotE,sTotT,sTotB, sAnnE,sAnnT,sAnnB, sCasE,sCasT,sCasB],
             backgroundColor:[
