@@ -6371,7 +6371,7 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
       window._stmtLeaveBalChart=new Chart(lbCtx,{
         type:'bar',
         data:{
-          labels:[['Total','Total'],['Total','Taken'],['Total','Remain'],['Annual','Total'],['Annual','Taken'],['Annual','Remain'],['Casual','Total'],['Casual','Taken'],['Casual','Remain']],
+          labels:['Total','Taken','Remain','Annual','Taken','Remain','Casual','Taken','Remain'],
           datasets:[{
             data:[sTotE,sTotT,sTotB, sAnnE,sAnnT,sAnnB, sCasE,sCasT,sCasB],
             backgroundColor:[
@@ -6380,8 +6380,8 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
               '#a855f7','#fb7185','#c4b5fd'
             ],
             borderRadius:4,
-            barPercentage:0.6,
-            categoryPercentage:0.9
+            barPercentage:1.0,
+            categoryPercentage:0.98
           }]
         },
         options:{
