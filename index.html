@@ -6149,8 +6149,8 @@ function generateEmpStatement(){
       <div style="border-top:2px solid var(--gold);padding-top:18px;margin-top:8px;">
         <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px;letter-spacing:.5px;"><i class="fa fa-chart-line"></i> Career & Attendance Analytics</div>
 
-        <!-- Row 1: Promotional Timeframe + Salary Increment -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <!-- Row 1: Promotional Timeframe + Salary Increment + Achievement Report -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
           <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
             <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-stairs" style="color:#a3e635"></i> Promotional Timeframe</div>
             <div style="position:relative;height:180px;"><canvas id="stmtPromoChart"></canvas></div>
@@ -6158,6 +6158,10 @@ function generateEmpStatement(){
           <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;">
             <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:10px;"><i class="fa fa-arrow-trend-up" style="color:#10b981"></i> Salary Increment</div>
             <div style="position:relative;height:180px;"><canvas id="stmtSalaryChart"></canvas></div>
+          </div>
+          <div style="background:linear-gradient(135deg,var(--navy3),rgba(212,175,55,0.06));border:1px solid rgba(212,175,55,0.25);border-radius:12px;padding:16px;display:flex;flex-direction:column;">
+            <div style="font-size:11px;font-weight:700;color:var(--text1);margin-bottom:12px;"><i class="fa fa-medal" style="color:var(--gold)"></i> Achievement Report</div>
+            <div id="stmtAchievementReport" style="display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center;"></div>
           </div>
         </div>
 
@@ -6288,6 +6292,46 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
     if(legendEl){
       const lg=(label,val,color)=>`<div style="display:flex;align-items:center;gap:6px;"><div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0;"></div><span style="color:var(--text2);">${label}: <b style="color:var(--text1);">${val}</b></span></div>`;
       legendEl.innerHTML = lg('Present',totP,'#10b981') + lg('Absent',totA,'#ef4444') + lg('Leave',totL,'#8b5cf6');
+    }
+
+    // ── Achievement Report (Punctuality / Projects Handled / KPI / Overall Score) ──
+    const achEl=document.getElementById('stmtAchievementReport');
+    if(achEl){
+      // Punctuality = attendance %
+      const punctuality = attPct;
+      // Number of projects handled = unique projects from transfer history + current project
+      const projSet = new Set();
+      if(emp.project) projSet.add(emp.project);
+      (emp.careerHistory||[]).forEach(ev=>{ if(ev.type==='transfer'&&ev.toProject) projSet.add(ev.toProject); });
+      const totalProjects = projSet.size;
+      const completedProjects = isEmpActive(emp) ? Math.max(0,totalProjects-1) : totalProjects; // simplistic: current one ongoing
+      const projHandled = isEmpActive(emp) ? `${Math.max(0,totalProjects)}/${totalProjects}` : `${totalProjects}/${totalProjects}`;
+      // KPI = star score out of 5
+      const score = getEmpScore(emp);
+      const starLevel = calcStarLevel(score);
+      const kpiDisplay = `${starLevel}/5`;
+      // Overall Achievement Score /100 = weighted: punctuality(40%) + project ratio(30%) + kpi(30%)
+      const projRatio = totalProjects>0 ? 100 : 0;
+      const kpiRatio = (starLevel/5)*100;
+      const overall = Math.round(punctuality*0.4 + projRatio*0.3 + kpiRatio*0.3);
+
+      const row=(label,val)=>`
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;padding:7px 12px;border:1.5px solid #3b82f6;border-radius:7px;background:rgba(59,130,246,0.06);">
+            <span style="font-size:11px;font-weight:600;color:var(--text1);">${label}</span>
+          </div>
+          <div style="padding:7px 14px;border:1.5px solid var(--gold);border-radius:7px;background:rgba(212,175,55,0.08);min-width:48px;text-align:center;">
+            <span style="font-size:12px;font-weight:700;color:var(--gold);">${val}</span>
+          </div>
+        </div>`;
+
+      achEl.innerHTML = `
+        ${row('Punctuality', punctuality+'%')}
+        ${row('Projects Handled', projHandled)}
+        ${row('KPI', kpiDisplay)}
+        <div style="margin-top:6px;padding:9px 12px;border:2px solid #6366f1;border-radius:8px;background:rgba(99,102,241,0.08);text-align:center;">
+          <span style="font-size:12px;font-weight:700;color:#a5b4fc;">Overall Achievement Score: ${overall}/100</span>
+        </div>`;
     }
 
     // ── Figure 4: Attendance Record table (current year, Jan-current month) ──
