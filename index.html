@@ -5936,6 +5936,7 @@ function renderSalaryTable(){
 
   let filtered=employees.filter(e=>{
     if(projF && e.project!==projF) return false;
+    if(!isEmpActiveInMonth(e,y,m)) return false;
     return true;
   });
 
