@@ -5610,9 +5610,27 @@ function renderAchievementsInModal(){
       <div class="ach-icon ${cat.cls}">${cat.icon}</div>
       <div class="ach-info"><h5>${a.title}</h5><p>${a.desc||''} ${a.date?'| '+a.date:''} ${a.verifier?'| '+a.verifier:''}</p></div>
       <div class="ach-pts">+${a.points}</div>
-      <button class="btn btn-danger btn-xs" onclick="removeAchievement(${i})">×</button>
+      <button class="btn btn-danger btn-xs" onclick="removeAchievementConfirm(${i})">×</button>
     </div>`;
   }).join('');
+}
+function removeAchievementConfirm(i){
+  const a=_editEmpAchievements[i];
+  if(!a) return;
+  const c=document.createElement('div');
+  c.id='removeAchConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Remove this achievement?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">"${a.title}" (+${a.points} pts) will be removed. This takes effect only after you click Save/Update.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('removeAchConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('removeAchConfirm').remove();removeAchievement(${i})" style="padding:8px 18px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
 }
 function removeAchievement(i){_editEmpAchievements.splice(i,1);renderAchievementsInModal();}
 
