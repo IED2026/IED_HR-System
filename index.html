@@ -6345,6 +6345,7 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
       const score = getEmpScore(emp);
       const starLevel = calcStarLevel(score);
       const kpiDisplay = `${starLevel}/5`;
+      const achievementCount = (emp.achievements||[]).length;
       // Overall Achievement Score /100 = weighted: punctuality(40%) + project ratio(30%) + kpi(30%)
       const projRatio = totalProjects>0 ? 100 : 0;
       const kpiRatio = (starLevel/5)*100;
@@ -6362,6 +6363,7 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
 
       achEl.innerHTML = `
         ${row('Punctuality', punctuality+'%')}
+        ${row('Achievement Number', achievementCount)}
         ${row('Projects Handled', projHandled)}
         ${row('KPI', kpiDisplay)}
         <div style="margin-top:6px;padding:9px 12px;border:2px solid #6366f1;border-radius:8px;background:rgba(99,102,241,0.08);text-align:center;">
