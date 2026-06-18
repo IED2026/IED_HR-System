@@ -6351,9 +6351,10 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
       const kpiRatio = (starLevel/5)*100;
       const overall = Math.round(punctuality*0.4 + projRatio*0.3 + kpiRatio*0.3);
 
-      const row=(label,val)=>`
+      const row=(icon,label,val)=>`
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;padding:7px 12px;border:1.5px solid #3b82f6;border-radius:7px;background:rgba(59,130,246,0.06);">
+          <div style="flex:1;display:flex;align-items:center;gap:8px;padding:7px 12px;border:1.5px solid #3b82f6;border-radius:7px;background:rgba(59,130,246,0.06);">
+            <span style="font-size:13px;">${icon}</span>
             <span style="font-size:11px;font-weight:600;color:var(--text1);">${label}</span>
           </div>
           <div style="padding:7px 14px;border:1.5px solid var(--gold);border-radius:7px;background:rgba(212,175,55,0.08);min-width:48px;text-align:center;">
@@ -6362,10 +6363,10 @@ function renderEmpStmtAnalytics(emp, fromY, toY, fromM, toM){
         </div>`;
 
       achEl.innerHTML = `
-        ${row('Punctuality', punctuality+'%')}
-        ${row('Achievement Number', achievementCount)}
-        ${row('Projects Handled', projHandled)}
-        ${row('KPI', kpiDisplay)}
+        ${row('⏱️','Punctuality', punctuality+'%')}
+        ${row('🏆','Achievement Number', achievementCount)}
+        ${row('📁','Projects Handled', projHandled)}
+        ${row('⭐','KPI', kpiDisplay)}
         <div style="margin-top:6px;padding:9px 12px;border:2px solid #6366f1;border-radius:8px;background:rgba(99,102,241,0.08);text-align:center;">
           <span style="font-size:12px;font-weight:700;color:#a5b4fc;">Overall Achievement Score: ${overall}/100</span>
         </div>`;
