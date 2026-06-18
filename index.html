@@ -6499,13 +6499,6 @@ function generateProjStatement(){
         <div class="kpi-card blue" style="flex:1;min-width:140px;"><div class="kpi-icon">📋</div><div class="kpi-val">৳${bdt(grandTotal)}</div><div class="kpi-label">Period Total</div></div>
         <div class="kpi-card orange" style="flex:1;min-width:140px;"><div class="kpi-icon">🎁</div><div class="kpi-val">৳${bdt(projEmps.reduce((s,e)=>s+getEidBonus(e),0))}</div><div class="kpi-label">Eid Bonus</div></div>
       </div>
-      <div style="background:var(--navy3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;"><i class="fa fa-chart-pie"></i> Payroll Distribution — All Projects (${MONTH_SHORT[fromM]} ${fromY} – ${MONTH_SHORT[toM]} ${toY})</div>
-        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-          <div style="position:relative;width:200px;height:200px;flex-shrink:0;"><canvas id="projStmtAllPieChart" width="200" height="200"></canvas></div>
-          <div id="projStmtAllPieLegend" style="display:flex;flex-direction:column;gap:8px;font-size:12px;flex:1;min-width:160px;"></div>
-        </div>
-      </div>
       <div class="table-wrap"><table style="font-size:12px;">
         <thead><tr style="background:var(--navy3);">
           <th style="padding:8px;color:var(--gold);">#</th>
@@ -6533,51 +6526,7 @@ function generateProjStatement(){
       <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px;">Generated: ${new Date().toLocaleString()} | IED HR System</div>
     </div>`;
   document.getElementById('projStmtOut').innerHTML=html;
-  renderProjStmtAllPie(months);
   toast('Project statement generated','success');
-}
-
-function renderProjStmtAllPie(months){
-  setTimeout(()=>{
-    const ALL_PROJECTS=['IED','BIWTA','NBR','PGCL','BCIC'];
-    const PROJ_COLORS={IED:'#3b82f6',BIWTA:'#22d3ee',NBR:'#10b981',PGCL:'#a855f7',BCIC:'#f97316'};
-    const totals=ALL_PROJECTS.map(p=>{
-      const emps=employees.filter(e=>e.project===p);
-      let total=0;
-      months.forEach(({y,m})=>{
-        emps.forEach(emp=>{
-          const key=`${y}_${m}`;
-          const sg=monthlySalary[key]?.data?.[`e${emp.id}`]?.gross;
-          const gross=sg!=null?sg:(isEmpActiveInMonth(emp,y,m)?getEmpGrossForMonth(emp,y,m):0);
-          total+=gross;
-        });
-      });
-      return total;
-    });
-    const grandSum=totals.reduce((a,b)=>a+b,0);
-
-    const ctx=document.getElementById('projStmtAllPieChart');
-    if(ctx){
-      if(window._projStmtAllPieChart) window._projStmtAllPieChart.destroy();
-      window._projStmtAllPieChart=new Chart(ctx,{
-        type:'doughnut',
-        data:{labels:ALL_PROJECTS,datasets:[{data:totals,backgroundColor:ALL_PROJECTS.map(p=>PROJ_COLORS[p]),borderWidth:0,hoverOffset:4}]},
-        options:{cutout:'60%',responsive:false,plugins:{legend:{display:false}}}
-      });
-    }
-    const legendEl=document.getElementById('projStmtAllPieLegend');
-    if(legendEl){
-      legendEl.innerHTML = ALL_PROJECTS.map((p,i)=>{
-        const pct = grandSum>0 ? Math.round(totals[i]/grandSum*100) : 0;
-        return `<div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:10px;height:10px;border-radius:50%;background:${PROJ_COLORS[p]};flex-shrink:0;"></div>
-          <span style="color:var(--text2);flex:1;">${p}</span>
-          <span style="color:var(--text1);font-weight:700;">৳${bdt(totals[i])}</span>
-          <span style="color:var(--text3);font-size:10px;width:36px;text-align:right;">${pct}%</span>
-        </div>`;
-      }).join('');
-    }
-  },150);
 }
 
 // ══════════════ MANNING SCHEDULE v2 ══════════════
