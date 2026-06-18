@@ -6512,6 +6512,7 @@ function generateProjStatement(){
           <th style="padding:8px;color:var(--gold);">#</th>
           <th style="padding:8px;color:var(--gold);">Employee</th>
           <th style="padding:8px;color:var(--gold);">Designation</th>
+          ${proj==='ALL'?'<th style="padding:8px;color:var(--gold);">Project</th>':''}
           ${months.map(({y,m})=>`<th style="padding:8px;text-align:right;color:var(--gold);">${MONTH_SHORT[m]} ${y}</th>`).join('')}
           <th style="padding:8px;text-align:right;color:var(--gold);">Total</th>
         </tr></thead>
@@ -6521,12 +6522,13 @@ function generateProjStatement(){
               <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);">${i+1}</td>
               <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);font-weight:600;">${emp.name}</td>
               <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);">${emp.desig}</td>
+              ${proj==='ALL'?`<td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);"><span class="badge badge-${(emp.project||'').toLowerCase()}">${emp.project}</span></td>`:''}
               ${cells.map(c=>`<td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;${!c.active?'opacity:.4;':''}">${c.gross?'৳'+bdt(c.gross):'-'}</td>`).join('')}
               <td style="padding:7px 8px;border-bottom:1px solid rgba(30,53,80,.5);text-align:right;font-weight:700;color:var(--gold);">৳${bdt(empTotal)}</td>
             </tr>`).join('')}
         </tbody>
         <tfoot><tr style="background:var(--navy3);font-weight:700;">
-          <td colspan="3" style="padding:9px 8px;">GRAND TOTAL</td>
+          <td colspan="${proj==='ALL'?4:3}" style="padding:9px 8px;">GRAND TOTAL</td>
           ${months.map(({y,m})=>{const key=`${y}_${m}`;const t=projEmps.reduce((s,emp)=>{const sg=monthlySalary[key]?.data?.[`e${emp.id}`]?.gross;return s+(sg!=null?sg:(isEmpActiveInMonth(emp,y,m)?getEmpGrossForMonth(emp,y,m):0));},0);return `<td style="padding:9px 8px;text-align:right;color:var(--gold);">৳${bdt(t)}</td>`;}).join('')}
           <td style="padding:9px 8px;text-align:right;color:var(--gold);">৳${bdt(grandTotal)}</td>
         </tr></tfoot>
