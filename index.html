@@ -2523,15 +2523,15 @@ function renderAttendancePage(){
   const overallClr = overallPct>=90?'#10b981':overallPct>=75?'#f59e0b':'#ef4444';
   const kpiEl=document.getElementById('attKpi');
   if(kpiEl) kpiEl.innerHTML=`
-    <div class="kpi-card blue" style="flex:1;min-width:110px;padding:0;overflow:hidden;">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);">
+    <div class="kpi-card blue" style="flex:1;min-width:110px;padding:0;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);">
         <div style="font-size:18px;opacity:.85;">📅</div>
         <div style="flex:1;text-align:center;">
           <div style="font-size:20px;font-weight:800;color:var(--text1);">${totalWDSoFar}</div>
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;">Working Days</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+      <div style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;">
         <div style="font-size:18px;opacity:.85;">✅</div>
         <div style="flex:1;text-align:center;">
           <div style="font-size:20px;font-weight:800;color:#10b981;">${totalPresent}</div>
@@ -2539,15 +2539,15 @@ function renderAttendancePage(){
         </div>
       </div>
     </div>
-    <div class="kpi-card red" style="flex:1;min-width:110px;padding:0;overflow:hidden;">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);">
+    <div class="kpi-card red" style="flex:1;min-width:110px;padding:0;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.08);">
         <div style="font-size:18px;opacity:.85;">🌴</div>
         <div style="flex:1;text-align:center;">
           <div style="font-size:20px;font-weight:800;color:#f59e0b;">${totalLeave}</div>
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;">Days Leave</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+      <div style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;">
         <div style="font-size:18px;opacity:.85;">❌</div>
         <div style="flex:1;text-align:center;">
           <div style="font-size:20px;font-weight:800;color:#ef4444;">${totalAbsent}</div>
