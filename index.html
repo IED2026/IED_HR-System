@@ -1726,14 +1726,20 @@ async function handleLoginSubmit(e) {
           </table>
         </div>
       </div>
-      <!-- Leave Management -->
+      <!-- Leave Records (synced with Attendance & Leave page) -->
       <div class="form-section" style="margin-bottom:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div class="form-section-title" style="margin:0;"><i class="fa fa-umbrella-beach"></i> Leave Records</div>
+          <button class="btn btn-secondary btn-sm" id="attendTabLeaveEditBtn" onclick="toggleAttendTabLeaveEdit()"><i class="fa fa-pen"></i> Edit</button>
+        </div>
+        <div id="attLeaveBalance"></div>
+      </div>
+      <!-- Leave Applications -->
+      <div class="form-section" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="form-section-title" style="margin:0;"><i class="fa fa-file-pen"></i> Leave Applications</div>
           <button class="btn btn-primary btn-sm" onclick="addLeaveRecord()"><i class="fa fa-plus"></i> Add Leave</button>
         </div>
-        <!-- Leave Balance Cards -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;" id="leaveBalanceCards"></div>
         <div class="table-wrap">
           <table>
             <thead><tr>
@@ -8490,10 +8496,13 @@ function renderAttendanceTab(){
 
   // Populate attendance rows
   let totalPresent=0,totalAbsent=0,totalLate=0,totalOT=0;
+  const nowYear=new Date().getFullYear(), nowMonth=new Date().getMonth();
   const rows=MONTHS.map((m,i)=>{
+    const isFuture = (year===nowYear && i>nowMonth) || year>nowYear;
     const rawData = attData[i]||{};
-    const mData = {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:'',...rawData};
-    const sVal = (v)=> typeof v==='object' ? (v.s||0) : v; // handle PIHR daily-object format safety (not used here but kept consistent)
+    const mData = isFuture
+      ? {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:rawData.note||''}
+      : {wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,note:'',...rawData};
     totalPresent+=parseInt(mData.present)||0;
     totalAbsent+=parseInt(mData.absent)||0;
     totalLate+=parseInt(mData.late)||0;
@@ -8532,7 +8541,7 @@ function renderAttendanceTab(){
     <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-val">${annPct}%</div><div class="kpi-label">Annual Attendance</div></div>
   `;
 
-  renderLeaveRecords(year, empId);
+  if(emp) renderLeaveBalanceCards(emp, year);
 }
 function unlockAttendTab(year){ window._attendTabUnlockedYear=year; renderAttendanceTab(); }
 function lockAttendTab(){ window._attendTabUnlockedYear=null; renderAttendanceTab(); }
@@ -8543,6 +8552,22 @@ async function saveAttendTab(year){
   // Also refresh main Attendance & Leave page if it's showing the same employee/year so data stays in sync
   if(typeof renderAttendancePage==='function') renderAttendancePage();
   toast('Attendance saved ✓','success');
+}
+
+function toggleAttendTabLeaveEdit(){
+  leaveEditMode = !leaveEditMode;
+  const btn = document.getElementById('attendTabLeaveEditBtn');
+  if(btn){
+    btn.innerHTML = leaveEditMode ? '<i class="fa fa-check"></i> Done' : '<i class="fa fa-pen"></i> Edit';
+    btn.style.background = leaveEditMode ? 'rgba(16,185,129,0.15)' : '';
+    btn.style.borderColor = leaveEditMode ? 'var(--green)' : '';
+    btn.style.color = leaveEditMode ? 'var(--green)' : '';
+  }
+  const empId = parseInt(document.getElementById('empEditId').value)||null;
+  const year = parseInt(document.getElementById('attendYear').value)||new Date().getFullYear();
+  const emp = employees.find(e=>e.id===empId);
+  if(emp) renderLeaveBalanceCards(emp, year);
+  if(!leaveEditMode){ saveState(); toast('Leave balance saved ✓','success'); }
 }
 
 function updateAttend(year, month, field, val){
