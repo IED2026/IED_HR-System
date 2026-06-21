@@ -109,6 +109,7 @@ table tr.inactive-row td.no-strike{text-decoration:none;}
 .form-group{margin-bottom:12px;}
 .form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
 .form-control{width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;}
+input[type="date"].form-control,input[type="number"].form-control{color-scheme:dark;}
 .form-control:focus{border-color:var(--gold);}
 .form-control:disabled{opacity:.5;cursor:not-allowed;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -1605,8 +1606,8 @@ async function handleLoginSubmit(e) {
             </select>
           </div>
           <div class="form-group"><label>Title</label><input class="form-control" id="achTitle" placeholder="Achievement title..."></div>
-          <div class="form-group"><label>Date</label><input class="form-control" id="achDate" type="date"></div>
-          <div class="form-group"><label>Points (1-50)</label><input class="form-control" id="achPoints" type="number" min="1" max="50" value="10"></div>
+          <div class="form-group"><label>Date</label><input class="form-control" id="achDate" type="date" style="color:#111;"></div>
+          <div class="form-group"><label>Points (1-50)</label><input class="form-control" id="achPoints" type="number" min="1" max="50" value="10" style="color:#111;"></div>
           <div class="form-group"><label>Description</label><input class="form-control" id="achDesc" placeholder="Details..."></div>
           <div class="form-group"><label>Verified By</label><input class="form-control" id="achVerifier" placeholder="HR/Manager name"></div>
         </div>
@@ -8348,11 +8349,11 @@ function renderKpiTab(){
   // KPI Items table
   const rows=(kpiData.items||[]).map((k,i)=>`<tr>
     <td>${i+1}</td>
-    <td><input class="form-control" style="width:180px;font-size:11px;" value="${k.desc||''}" onchange="updateKpiItem(${i},'desc',this.value)"></td>
-    <td><input class="form-control" style="width:55px;font-size:11px;" type="number" value="${k.weight||0}" onchange="updateKpiItem(${i},'weight',this.value)"></td>
+    <td><input class="form-control" style="width:180px;font-size:11px;color:#111;" value="${k.desc||''}" onchange="updateKpiItem(${i},'desc',this.value)"></td>
+    <td><input class="form-control" style="width:55px;font-size:11px;color:#111;" type="number" value="${k.weight||0}" onchange="updateKpiItem(${i},'weight',this.value)"></td>
     ${[1,2,3,4].map(q=>`
-    <td><input class="form-control" style="width:55px;font-size:11px;" type="number" value="${k['q'+q+'t']||''}" placeholder="Target" onchange="updateKpiItem(${i},'q${q}t',this.value)"></td>
-    <td><input class="form-control" style="width:55px;font-size:11px;" type="number" value="${k['q'+q+'a']||''}" placeholder="Actual" onchange="updateKpiItem(${i},'q${q}a',this.value)"></td>`).join('')}
+    <td><input class="form-control" style="width:55px;font-size:11px;color:#111;" type="number" value="${k['q'+q+'t']||''}" placeholder="Target" onchange="updateKpiItem(${i},'q${q}t',this.value)"></td>
+    <td><input class="form-control" style="width:55px;font-size:11px;color:#111;" type="number" value="${k['q'+q+'a']||''}" placeholder="Actual" onchange="updateKpiItem(${i},'q${q}a',this.value)"></td>`).join('')}
     <td style="font-weight:700;color:var(--gold)">${calcKpiScore(k)}%</td>
     <td><button class="btn btn-danger btn-xs" onclick="removeKpiItem(${i})"><i class="fa fa-trash"></i></button></td>
   </tr>`).join('');
