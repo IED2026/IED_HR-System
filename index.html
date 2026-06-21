@@ -6118,9 +6118,10 @@ function openCreateTeamModal(teamId){
 
       <div class="form-group">
         <label>Team Leader</label>
+        <input class="form-control" placeholder="Type to filter..." style="margin-bottom:6px;" oninput="filterTeamLeaderSelect(this.value)">
         <select class="form-control" id="teamLeaderSelect">
           <option value="">-- Select Leader --</option>
-          ${empOptions.map(e=>`<option value="${e.id}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
+          ${empOptions.map(e=>`<option value="${e.id}" data-name="${(e.name||'').toLowerCase()}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
         </select>
       </div>
 
@@ -6141,6 +6142,15 @@ function openCreateTeamModal(teamId){
       </div>
     </div>`;
   document.body.appendChild(c);
+}
+
+function filterTeamLeaderSelect(query){
+  const sel = document.getElementById('teamLeaderSelect');
+  const q = (query||'').toLowerCase().trim();
+  [...sel.options].forEach(opt=>{
+    if(!opt.value){ opt.hidden=false; return; }
+    opt.hidden = q ? !(opt.dataset.name||'').includes(q) : false;
+  });
 }
 
 async function saveTeam(){
