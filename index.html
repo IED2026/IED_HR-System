@@ -969,6 +969,21 @@ async function handleLoginSubmit(e) {
   <div class="kpi-grid" id="starKpi"></div>
   <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
     <input type="text" class="form-control" id="starSearch" placeholder="🔍 Search employee..." oninput="renderStarboard()" style="flex:1;min-width:180px;">
+    <!-- Sort Dropdown -->
+    <div style="position:relative;display:inline-block;">
+      <button class="btn btn-secondary btn-sm" onclick="toggleStarSortDropdown()" id="starSortBtn" title="Sort employees">
+        <i class="fa fa-sort"></i> Sort
+      </button>
+      <div id="starSortDropdown" style="display:none;position:absolute;top:110%;left:0;z-index:999;background:var(--navy2);border:1px solid var(--border);border-radius:10px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);overflow:hidden;">
+        <div style="padding:8px 12px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);">Sort By</div>
+        <div onclick="setSortStar('rank')" class="sort-opt" id="starsort-rank">Rank (Score)</div>
+        <div onclick="setSortStar('id')" class="sort-opt" id="starsort-id">Employee ID</div>
+        <div onclick="setSortStar('name')" class="sort-opt" id="starsort-name">Name</div>
+        <div onclick="setSortStar('dept')" class="sort-opt" id="starsort-dept">Department</div>
+        <div onclick="setSortStar('gross')" class="sort-opt" id="starsort-gross">Salary</div>
+        <div onclick="setSortStar('status')" class="sort-opt" id="starsort-status">Status (Active First)</div>
+      </div>
+    </div>
     <select class="form-control" id="starProjFilter" onchange="renderStarboard()" style="width:130px;">
       <option value="">All Projects</option>
       <option>IED</option><option>BIWTA</option><option>NBR</option><option>PGCL</option><option>BCIC</option>
@@ -984,7 +999,7 @@ async function handleLoginSubmit(e) {
   </div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>Rank</th><th>Employee</th><th>Designation</th><th>Project</th>
+      <th>Rank</th><th>Emp ID</th><th>Employee</th><th>Designation</th><th>Project</th>
       <th>Score</th><th>Star Level</th><th>Achievements</th><th>Actions</th>
     </tr></thead>
     <tbody id="starTableBody"></tbody>
@@ -5815,6 +5830,33 @@ function handlePhotoUpload(e){
 }
 
 // ══════════════ STAR BOARD ══════════════
+// ── SORT STARBOARD ──
+let _starSort = 'rank';
+
+function toggleStarSortDropdown(){
+  const dd = document.getElementById('starSortDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function setSortStar(val){
+  _starSort = val;
+  ['rank','id','name','dept','gross','status'].forEach(k=>{
+    const el = document.getElementById('starsort-'+k);
+    if(el) el.classList.toggle('active', val===k);
+  });
+  const labels = {rank:'Sort: Rank',id:'Sort: ID',name:'Sort: Name',dept:'Sort: Dept',gross:'Sort: Salary',status:'Sort: Status'};
+  document.getElementById('starSortBtn').innerHTML = '<i class="fa fa-sort"></i> '+(labels[val]||'Sort');
+  document.getElementById('starSortDropdown').style.display = 'none';
+  renderStarboard();
+}
+
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#starSortBtn') && !e.target.closest('#starSortDropdown')){
+    const dd = document.getElementById('starSortDropdown');
+    if(dd) dd.style.display = 'none';
+  }
+});
+
 function renderStarboard(){
   const search=(document.getElementById('starSearch').value||'').toLowerCase();
   const proj=document.getElementById('starProjFilter').value;
@@ -5824,10 +5866,17 @@ function renderStarboard(){
     .filter(e=>{
       if(proj && e.project!==proj) return false;
       if(lvlF && e.level!==lvlF) return false;
-      if(search && !`${e.name}${e.desig}`.toLowerCase().includes(search)) return false;
+      if(search && !`${e.name}${e.desig}${e.empId||''}`.toLowerCase().includes(search)) return false;
       return true;
-    })
-    .sort((a,b)=>b.score-a.score||b.gross-a.gross);
+    });
+
+  const sortById = (a,b)=>{ const ai=a.empId&&a.empId!=='-'&&a.empId!==''?0:1; const bi=b.empId&&b.empId!=='-'&&b.empId!==''?0:1; if(ai!==bi) return ai-bi; return String(a.empId||'').localeCompare(String(b.empId||''), undefined, {numeric:true}); };
+  if(_starSort==='id') ranked.sort(sortById);
+  else if(_starSort==='name') ranked.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else if(_starSort==='dept') ranked.sort((a,b)=>(a.dept||'').localeCompare(b.dept||''));
+  else if(_starSort==='gross') ranked.sort((a,b)=>(b.gross||0)-(a.gross||0));
+  else if(_starSort==='status') ranked.sort((a,b)=>{ const aa=isEmpActive(a)?0:1; const bb=isEmpActive(b)?0:1; return aa-bb; });
+  else ranked.sort((a,b)=>b.score-a.score||b.gross-a.gross); // default: rank
 
   // KPIs
   const avg=ranked.length?Math.round(ranked.reduce((s,e)=>s+e.score,0)/ranked.length):0;
@@ -5846,6 +5895,7 @@ function renderStarboard(){
     const achCount=(e.achievements||[]).length;
     return `<tr>
       <td><b>#${i+1}</b></td>
+      <td style="font-weight:600;color:var(--text2);">${e.empId||'—'}</td>
       <td style="font-weight:600">${e.name}</td>
       <td>${e.desig}</td>
       <td><span class="badge badge-${(e.project||'').toLowerCase()}">${e.project||'-'}</span></td>
