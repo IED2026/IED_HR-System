@@ -6119,19 +6119,20 @@ function openCreateTeamModal(teamId){
       <div class="form-group">
         <label>Team Leader</label>
         <div style="display:flex;gap:8px;">
-          <input class="form-control" placeholder="Type to filter..." style="flex:1;" oninput="filterTeamLeaderSelect(this.value)">
           <select class="form-control" id="teamLeaderSelect" style="flex:1;">
             <option value="">-- Select Leader --</option>
             ${empOptions.map(e=>`<option value="${e.id}" data-name="${(e.name||'').toLowerCase()}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
           </select>
+          <input class="form-control" placeholder="Type to filter..." style="flex:1;" oninput="filterTeamLeaderSelect(this.value)">
         </div>
       </div>
 
       <div class="form-group">
         <label>Team Members</label>
+        <input class="form-control" placeholder="Type to filter..." style="margin-bottom:6px;" oninput="filterTeamMemberList(this.value)">
         <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;">
           ${empOptions.map(e=>`
-            <label style="display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12px;cursor:pointer;">
+            <label class="team-member-row" data-name="${(e.name||'').toLowerCase()}" style="display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12px;cursor:pointer;">
               <input type="checkbox" value="${e.id}" class="team-member-cb" ${team&&(team.memberIds||[]).includes(e.id)?'checked':''}>
               <span>${e.name} <span style="color:var(--text3);">(${e.desig||''})</span></span>
             </label>`).join('')}
@@ -6152,6 +6153,13 @@ function filterTeamLeaderSelect(query){
   [...sel.options].forEach(opt=>{
     if(!opt.value){ opt.hidden=false; return; }
     opt.hidden = q ? !(opt.dataset.name||'').includes(q) : false;
+  });
+}
+
+function filterTeamMemberList(query){
+  const q = (query||'').toLowerCase().trim();
+  document.querySelectorAll('.team-member-row').forEach(row=>{
+    row.style.display = q ? ((row.dataset.name||'').includes(q) ? 'flex' : 'none') : 'flex';
   });
 }
 
