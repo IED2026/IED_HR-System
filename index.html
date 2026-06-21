@@ -6118,11 +6118,13 @@ function openCreateTeamModal(teamId){
 
       <div class="form-group">
         <label>Team Leader</label>
-        <input class="form-control" placeholder="Type to filter..." style="margin-bottom:6px;" oninput="filterTeamLeaderSelect(this.value)">
-        <select class="form-control" id="teamLeaderSelect">
-          <option value="">-- Select Leader --</option>
-          ${empOptions.map(e=>`<option value="${e.id}" data-name="${(e.name||'').toLowerCase()}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
-        </select>
+        <div style="display:flex;gap:8px;">
+          <input class="form-control" placeholder="Type to filter..." style="flex:1;" oninput="filterTeamLeaderSelect(this.value)">
+          <select class="form-control" id="teamLeaderSelect" style="flex:1;">
+            <option value="">-- Select Leader --</option>
+            ${empOptions.map(e=>`<option value="${e.id}" data-name="${(e.name||'').toLowerCase()}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       <div class="form-group">
