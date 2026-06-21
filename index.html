@@ -2265,6 +2265,7 @@ async function saveState(){
     localStorage.setItem('ied_proj_v7',JSON.stringify(projects));
     localStorage.setItem('ied_monthly_v7',JSON.stringify(monthlySalary));
     localStorage.setItem('ied_manning_v7',JSON.stringify(manningSched2));
+    localStorage.setItem('ied_kpiteams_v7',JSON.stringify(kpiTeams));
   }catch(e){}
 
   // Save to Supabase
@@ -5969,9 +5970,15 @@ async function saveTeam(){
     kpiTeams.push({ id: Date.now(), name, leaderId, memberIds, createdAt: new Date().toISOString() });
   }
   document.getElementById('teamModal').remove();
-  await saveState();
   renderKpiPanel();
-  toast('Team saved ✓','success');
+  toast('Saving team...','success');
+  try{
+    await saveState();
+    toast('Team saved ✓','success');
+  }catch(e){
+    console.error('Team save failed',e);
+    toast('Failed to save team — check connection and try again','error');
+  }
 }
 
 function deleteTeamConfirm(teamId){
