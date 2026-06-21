@@ -5937,6 +5937,8 @@ function renderKpiPanel(){
       const overall = items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
       const scoreColor = overall===null ? 'var(--text3)' : overall>=80?'#10b981':overall>=60?'#f59e0b':'#ef4444';
       const deadline = items.find(k=>k.endDate)?.endDate;
+      const satCount = (m.satRegretRecords||[]).filter(r=>r.type==='satisfactory').length;
+      const regretCount = (m.satRegretRecords||[]).filter(r=>r.type==='regret').length;
       const level = calcStarLevel(getEmpScore(m));
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;">
@@ -5950,7 +5952,9 @@ function renderKpiPanel(){
             <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">KPI Score</div>
           </div>
           ${deadline?`<div style="text-align:center;min-width:64px;"><div style="font-size:10px;font-weight:600;color:var(--orange);"><i class="fa fa-clock"></i> ${deadline}</div><div style="font-size:8px;color:var(--text3);text-transform:uppercase;">Deadline</div></div>`:''}
+          ${(satCount||regretCount)?`<div style="display:flex;gap:6px;font-size:11px;">${satCount?`<span style="color:#10b981;">👍 ${satCount}</span>`:''}${regretCount?`<span style="color:#ef4444;">👎 ${regretCount}</span>`:''}</div>`:''}
           <button class="btn btn-secondary btn-xs" onclick="openAssignKpiModal(${m.id},${team.id})"><i class="fa fa-bullseye"></i> Assign KPI</button>
+          <button class="btn btn-secondary btn-xs" onclick="openSatRegretModal(${m.id},${team.id})"><i class="fa fa-comment-dots"></i> Satisfactory & Regret</button>
         </div>`;
     }).join('');
 
@@ -5996,6 +6000,122 @@ function toggleTeamCard(teamId){
   if(!window._kpiTeamOpen) window._kpiTeamOpen={};
   window._kpiTeamOpen[teamId] = !window._kpiTeamOpen[teamId];
   renderKpiPanel();
+}
+
+// ── SATISFACTORY & REGRET ──
+function openSatRegretModal(empId, teamId){
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp) return;
+  window._satRegretEmpId = empId;
+  window._satRegretTeamId = teamId;
+
+  const c=document.createElement('div');
+  c.id='satRegretModal';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:520px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--gold);"><i class="fa fa-comment-dots"></i> Satisfactory & Regret — ${emp.name}</div>
+        <button class="btn btn-secondary btn-xs" onclick="document.getElementById('satRegretModal').remove()"><i class="fa fa-times"></i></button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-success btn-sm" style="flex:1;" onclick="showSatRegretForm('satisfactory')"><i class="fa fa-thumbs-up"></i> Add Satisfactory Letter</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="showSatRegretForm('regret')"><i class="fa fa-thumbs-down"></i> Add Regret Letter</button>
+      </div>
+
+      <div id="satRegretFormArea"></div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;">History</div>
+      <div id="satRegretHistory"></div>
+    </div>`;
+  document.body.appendChild(c);
+  renderSatRegretHistory();
+}
+
+function showSatRegretForm(type){
+  const isOk = type==='satisfactory';
+  const el = document.getElementById('satRegretFormArea');
+  el.innerHTML = `
+    <div style="background:rgba(255,255,255,0.02);border:1px solid ${isOk?'#10b981':'#ef4444'};border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:${isOk?'#10b981':'#ef4444'};margin-bottom:10px;">
+        <i class="fa fa-${isOk?'thumbs-up':'thumbs-down'}"></i> ${isOk?'Satisfactory':'Regret'} Letter
+      </div>
+      <div class="form-group"><label>Date</label><input class="form-control" id="srDate" type="date" style="color:#111;" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="form-group"><label>Related Project (optional)</label>
+        <select class="form-control" id="srProject">
+          <option value="">-- None --</option>
+          <option>IED</option><option>BIWTA</option><option>NBR</option><option>PGCL</option><option>BCIC</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Note / Details</label><textarea class="form-control" id="srNote" rows="3" placeholder="Describe the ${isOk?'satisfactory feedback':'regret/issue'}..."></textarea></div>
+      <button class="btn btn-${isOk?'success':'danger'} btn-sm" onclick="saveSatRegretEntry('${type}')"><i class="fa fa-check"></i> Save Entry</button>
+    </div>`;
+}
+
+async function saveSatRegretEntry(type){
+  const emp = employees.find(e=>e.id===window._satRegretEmpId);
+  if(!emp) return;
+  const date = document.getElementById('srDate').value;
+  const project = document.getElementById('srProject').value;
+  const note = document.getElementById('srNote').value.trim();
+  if(!date){ toast('Date required','error'); return; }
+  if(!emp.satRegretRecords) emp.satRegretRecords=[];
+  emp.satRegretRecords.push({ id: Date.now(), type, date, project, note, addedBy: _loggedInUser.name||_loggedInUser.email||'HR' });
+  document.getElementById('satRegretFormArea').innerHTML='';
+  renderSatRegretHistory();
+  renderKpiPanel();
+  const ok = await saveSingleKey('employees', employees);
+  if(ok) toast('Saved ✓','success');
+}
+
+function renderSatRegretHistory(){
+  const emp = employees.find(e=>e.id===window._satRegretEmpId);
+  const el = document.getElementById('satRegretHistory');
+  if(!el || !emp) return;
+  const records = [...(emp.satRegretRecords||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!records.length){
+    el.innerHTML = `<p style="font-size:12px;color:var(--text3);text-align:center;padding:10px;">No entries yet.</p>`;
+    return;
+  }
+  el.innerHTML = records.map(r=>{
+    const isOk = r.type==='satisfactory';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-left:3px solid ${isOk?'#10b981':'#ef4444'};border-radius:8px;margin-bottom:8px;">
+      <div style="font-size:16px;">${isOk?'👍':'👎'}</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;color:${isOk?'#10b981':'#ef4444'};">${isOk?'Satisfactory':'Regret'} ${r.project?'— '+r.project:''}</div>
+        <div style="font-size:11px;color:var(--text2);margin:3px 0;">${r.note||'—'}</div>
+        <div style="font-size:10px;color:var(--text3);">${r.date} • by ${r.addedBy||'HR'}</div>
+      </div>
+      <button class="btn btn-danger btn-xs" onclick="removeSatRegretConfirm(${r.id})"><i class="fa fa-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function removeSatRegretConfirm(recordId){
+  const c=document.createElement('div');
+  c.id='removeSatRegretConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Remove this entry?</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('removeSatRegretConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('removeSatRegretConfirm').remove();doRemoveSatRegret(${recordId})" style="padding:8px 18px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+async function doRemoveSatRegret(recordId){
+  const emp = employees.find(e=>e.id===window._satRegretEmpId);
+  if(!emp) return;
+  emp.satRegretRecords = (emp.satRegretRecords||[]).filter(r=>r.id!==recordId);
+  renderSatRegretHistory();
+  renderKpiPanel();
+  const ok = await saveSingleKey('employees', employees);
+  if(ok) toast('Removed ✓','success');
 }
 
 function openAssignKpiModal(empId, teamId){
