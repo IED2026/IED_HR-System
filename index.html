@@ -593,6 +593,7 @@ async function handleLoginSubmit(e) {
     <div class="nav-item" onclick="nav('yearsummary')"><i class="fa-solid fa-table-list"></i> Yearly Summary</div>
     <div class="nav-item" onclick="nav('empstmt')"><i class="fa-solid fa-file-invoice"></i> Employee Statement</div>
     <div class="nav-item" onclick="nav('projstmt')"><i class="fa-solid fa-chart-pie"></i> Project Statement</div>
+    <div class="nav-item" onclick="nav('kpipanel')"><i class="fa-solid fa-users-gear"></i> KPI Panel</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Scheduling</div>
@@ -703,6 +704,16 @@ async function handleLoginSubmit(e) {
     <div class="card-title"><i class="fa fa-bell"></i> Recent Activity & Alerts</div>
     <div id="dashAlerts"></div>
   </div>
+</div>
+
+<!-- KPI PANEL -->
+<div class="page" id="page-kpipanel">
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+    <div style="font-size:13px;font-weight:700;color:var(--gold);"><i class="fa-solid fa-users-gear"></i> Team KPI Panel</div>
+    <button class="btn btn-primary btn-sm" onclick="openCreateTeamModal()"><i class="fa fa-plus"></i> Create Team</button>
+  </div>
+  <div class="kpi-grid" id="kpiPanelKpi" style="margin-bottom:14px;"></div>
+  <div id="kpiPanelTeamsList"></div>
 </div>
 
 <!-- EMPLOYEES -->
@@ -2160,7 +2171,7 @@ const PROJ_10YR={
 };
 
 // ── STATE ──
-let employees=[], projects={}, monthlySalary={}, manningSched2={}, currentRole='hr';
+let employees=[], projects={}, monthlySalary={}, manningSched2={}, kpiTeams=[], currentRole='hr';
 let _editEmpCareerHistory=[], _editEmpAchievements=[], _editEmpId=null;
 let _charts={};
 
@@ -2199,6 +2210,7 @@ async function loadState(){
       projects = map['projects'] || JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
       monthlySalary = map['monthlySalary'] || {};
       manningSched2 = map['manningSched2'] || {};
+      kpiTeams = map['kpiTeams'] || [];
       // Also sync to localStorage as backup
       localStorage.setItem('ied_emp_v7', JSON.stringify(employees));
       localStorage.setItem('ied_proj_v7', JSON.stringify(projects));
@@ -2219,10 +2231,12 @@ async function loadState(){
     monthlySalary=ms?JSON.parse(ms):{};
     const mn=localStorage.getItem('ied_manning_v7');
     manningSched2=mn?JSON.parse(mn):{};
+    const kt=localStorage.getItem('ied_kpiteams_v7');
+    kpiTeams=kt?JSON.parse(kt):[];
   }catch(e){
     employees=migrateEmployees(JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)));
     projects=JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
-    monthlySalary={};manningSched2={};
+    monthlySalary={};manningSched2={};kpiTeams=[];
   }
 }
 
@@ -2285,7 +2299,8 @@ async function saveState(){
       { key:'employees',     value: employees },
       { key:'projects',      value: projects },
       { key:'monthlySalary', value: monthlySalary },
-      { key:'manningSched2', value: manningSched2 }
+      { key:'manningSched2', value: manningSched2 },
+      { key:'kpiTeams',      value: kpiTeams }
     ];
     // Check existing keys
     const { data: existing } = await _supabase.from('app_data').select('key');
@@ -2376,7 +2391,7 @@ function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 // ── NAVIGATION ──
 
-const PAGE_TITLES={dashboard:'Dashboard',attendance:'Attendance & Leave',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
+const PAGE_TITLES={dashboard:'Dashboard',attendance:'Attendance & Leave',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',kpipanel:'KPI Panel',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
 // ══════════════ ATTENDANCE & LEAVE PAGE ══════════════
 function renderAttendancePage(){
   // Init employee dropdown
@@ -4973,6 +4988,7 @@ function nav(page){
   else if(page==='salary') initSalaryPage();
   else if(page==='empstmt') initEmpStmt();
   else if(page==='projstmt') initProjStmt();
+  else if(page==='kpipanel') renderKpiPanel();
   else if(page==='manning') initManning2();
   else if(page==='mandayreport') renderManDayReport();
   else if(page==='ledger10') initLedger10();
@@ -5856,6 +5872,133 @@ document.addEventListener('click', function(e){
     if(dd) dd.style.display = 'none';
   }
 });
+
+// ══════════════ KPI PANEL ══════════════
+function renderKpiPanel(){
+  const totalTeams=kpiTeams.length;
+  const totalMembers=kpiTeams.reduce((s,t)=>s+(t.memberIds||[]).length,0);
+  document.getElementById('kpiPanelKpi').innerHTML=`
+    <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-val">${totalTeams}</div><div class="kpi-label">Teams</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">🧑‍🤝‍🧑</div><div class="kpi-val">${totalMembers}</div><div class="kpi-label">Total Members</div></div>
+  `;
+
+  const listEl=document.getElementById('kpiPanelTeamsList');
+  if(!kpiTeams.length){
+    listEl.innerHTML=`<div class="card" style="text-align:center;padding:30px;color:var(--text2);">
+      <i class="fa fa-users-gear" style="font-size:32px;opacity:.4;margin-bottom:10px;"></i>
+      <p>No teams created yet. Click "Create Team" to get started.</p>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = kpiTeams.map(team=>{
+    const leader = employees.find(e=>e.id===team.leaderId);
+    const members = (team.memberIds||[]).map(id=>employees.find(e=>e.id===id)).filter(Boolean);
+    return `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text1);">${team.name}</div>
+          <div style="font-size:11px;color:var(--text3);">Team Leader: <b style="color:var(--gold);">${leader?leader.name:'—'}</b> | ${members.length} member(s)</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-xs" onclick="openCreateTeamModal(${team.id})"><i class="fa fa-pen"></i> Edit</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteTeamConfirm(${team.id})"><i class="fa fa-trash"></i></button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${members.map(m=>`<span class="badge" style="background:rgba(255,255,255,0.05);">${m.name}</span>`).join('')||'<span style="font-size:11px;color:var(--text3);">No members assigned</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCreateTeamModal(teamId){
+  const team = teamId ? kpiTeams.find(t=>t.id===teamId) : null;
+  window._editTeamId = teamId || null;
+
+  const empOptions = employees.filter(e=>isEmpActive(e)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const c=document.createElement('div');
+  c.id='teamModal';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px;">${team?'Edit Team':'Create Team'}</div>
+
+      <div class="form-group">
+        <label>Team Name</label>
+        <input class="form-control" id="teamNameInput" value="${team?team.name:''}" placeholder="e.g. Field Engineering Team">
+      </div>
+
+      <div class="form-group">
+        <label>Team Leader</label>
+        <select class="form-control" id="teamLeaderSelect">
+          <option value="">-- Select Leader --</option>
+          ${empOptions.map(e=>`<option value="${e.id}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Team Members</label>
+        <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;">
+          ${empOptions.map(e=>`
+            <label style="display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:12px;cursor:pointer;">
+              <input type="checkbox" value="${e.id}" class="team-member-cb" ${team&&(team.memberIds||[]).includes(e.id)?'checked':''}>
+              <span>${e.name} <span style="color:var(--text3);">(${e.desig||''})</span></span>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('teamModal').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveTeam()"><i class="fa fa-check"></i> ${team?'Update':'Create'} Team</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+async function saveTeam(){
+  const name = document.getElementById('teamNameInput').value.trim();
+  if(!name){ toast('Team name required','error'); return; }
+  const leaderId = parseInt(document.getElementById('teamLeaderSelect').value)||null;
+  const memberIds = [...document.querySelectorAll('.team-member-cb:checked')].map(cb=>parseInt(cb.value));
+
+  if(window._editTeamId){
+    const t = kpiTeams.find(t=>t.id===window._editTeamId);
+    if(t){ t.name=name; t.leaderId=leaderId; t.memberIds=memberIds; }
+  } else {
+    kpiTeams.push({ id: Date.now(), name, leaderId, memberIds, createdAt: new Date().toISOString() });
+  }
+  document.getElementById('teamModal').remove();
+  await saveState();
+  renderKpiPanel();
+  toast('Team saved ✓','success');
+}
+
+function deleteTeamConfirm(teamId){
+  const team = kpiTeams.find(t=>t.id===teamId);
+  if(!team) return;
+  const c=document.createElement('div');
+  c.id='deleteTeamConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Delete "${team.name}"?</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:18px;">This will permanently remove this team.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('deleteTeamConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('deleteTeamConfirm').remove();doDeleteTeam(${teamId})" style="padding:8px 18px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+
+async function doDeleteTeam(teamId){
+  kpiTeams = kpiTeams.filter(t=>t.id!==teamId);
+  await saveState();
+  renderKpiPanel();
+  toast('Team deleted','success');
+}
 
 function renderStarboard(){
   const search=(document.getElementById('starSearch').value||'').toLowerCase();
