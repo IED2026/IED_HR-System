@@ -8349,7 +8349,7 @@ function renderKpiTab(){
   // KPI Items table
   const rows=(kpiData.items||[]).map((k,i)=>`<tr>
     <td>${i+1}</td>
-    <td><input class="form-control" style="width:180px;font-size:11px;color:#111;" value="${k.desc||''}" onchange="updateKpiItem(${i},'desc',this.value)"></td>
+    <td><input class="form-control" style="width:180px;font-size:11px;" value="${k.desc||''}" onchange="updateKpiItem(${i},'desc',this.value)"></td>
     <td><input class="form-control" style="width:55px;font-size:11px;color:#111;" type="number" value="${k.weight||0}" onchange="updateKpiItem(${i},'weight',this.value)"></td>
     ${[1,2,3,4].map(q=>`
     <td><input class="form-control" style="width:55px;font-size:11px;color:#111;" type="number" value="${k['q'+q+'t']||''}" placeholder="Target" onchange="updateKpiItem(${i},'q${q}t',this.value)"></td>
