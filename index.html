@@ -1732,7 +1732,7 @@ async function handleLoginSubmit(e) {
           <div class="form-section-title" style="margin:0;"><i class="fa fa-umbrella-beach"></i> Leave Records</div>
           <button class="btn btn-secondary btn-sm" id="attendTabLeaveEditBtn" onclick="toggleAttendTabLeaveEdit()"><i class="fa fa-pen"></i> Edit</button>
         </div>
-        <div id="attLeaveBalance"></div>
+        <div id="attLeaveBalanceTab"></div>
       </div>
       <!-- Leave Applications -->
       <div class="form-section" style="margin-bottom:12px;">
@@ -2832,7 +2832,8 @@ function toggleLeaveEdit(){
   if(emp) renderLeaveBalanceCards(emp, year);
 }
 
-function renderLeaveBalanceCards(emp, year){
+function renderLeaveBalanceCards(emp, year, targetId){
+  targetId = targetId || 'attLeaveBalance';
   const attData = (emp.attendance||{})[year]||{};
   let totalLeaveTaken = 0;
   for(let mi=0; mi<12; mi++){
@@ -2851,14 +2852,14 @@ function renderLeaveBalanceCards(emp, year){
   const totalTaken = annT + casT;
   const totalLeaveRemaining = Math.max(0, totE - totalTaken);
 
-  const balCards = document.getElementById('attLeaveBalance');
+  const balCards = document.getElementById(targetId);
   if(!balCards) return;
 
   const inStyle = 'width:50px;font-size:14px;font-weight:800;text-align:center;background:rgba(255,255,255,0.08);border:1px solid var(--gold);border-radius:6px;color:var(--text);padding:2px 4px;';
   const roStyle = 'font-size:22px;font-weight:800;';
 
   const valOrInput = (val, key, color) => leaveEditMode
-    ? `<input type="number" style="${inStyle}color:${color};" value="${val}" onchange="updateLeaveBalance(${emp.id},${year},'${key}',this.value)">`
+    ? `<input type="number" style="${inStyle}color:${color};" value="${val}" onchange="updateLeaveBalance(${emp.id},${year},'${key}',this.value,'${targetId}')">`
     : `<div style="${roStyle}color:${color};">${val}</div>`;
 
   balCards.innerHTML = `
@@ -2984,13 +2985,13 @@ function renderLeaveBalanceCards(emp, year){
   },300);
 }
 
-function updateLeaveBalance(empId, year, key, val){
+function updateLeaveBalance(empId, year, key, val, targetId){
   const emp = employees.find(e=>e.id===empId);
   if(!emp) return;
   if(!emp.leaveBalance) emp.leaveBalance={};
   if(!emp.leaveBalance[year]) emp.leaveBalance[year]={};
   emp.leaveBalance[year][key] = parseInt(val)||0;
-  renderLeaveBalanceCards(emp, year);
+  renderLeaveBalanceCards(emp, year, targetId);
 }
 
 function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, elDuty){
@@ -5271,6 +5272,7 @@ function editEmployee(id){
   const emp=employees.find(e=>e.id===id);
   if(!emp){toast('Employee not found','error');return;}
   window._attendTabUnlockedYear=null;
+  leaveEditMode=false;
   _editEmpId=id;
   _editEmpCareerHistory=JSON.parse(JSON.stringify(emp.careerHistory||[]));
   _editEmpAchievements=JSON.parse(JSON.stringify(emp.achievements||[]));
@@ -8530,8 +8532,17 @@ function renderAttendanceTab(){
     : `<button class="btn btn-success btn-sm" onclick="saveAttendTab(${year})"><i class="fa fa-floppy-disk"></i> Save</button>
        <button class="btn btn-secondary btn-sm" onclick="lockAttendTab()" style="margin-left:6px;"><i class="fa fa-lock"></i> Cancel</button>`;
 
-  const totalWD=312; // ~26*12
-  const annPct=Math.round(totalPresent/totalWD*100);
+  let monthPctSum=0, monthPctCount=0;
+  const nowYearCheck=new Date().getFullYear();
+  const isFutureYearCheck = year > nowYearCheck;
+  const nowMforPct = nowYearCheck===year ? new Date().getMonth() : (isFutureYearCheck ? -1 : 11);
+  for(let mi=0; mi<nowMforPct; mi++){
+    const md = attData[mi]||{};
+    const mwd = parseInt(md.wd)||0;
+    const mp = parseInt(md.present)||0;
+    if(mwd>0){ monthPctSum += Math.round(mp/mwd*100); monthPctCount++; }
+  }
+  const annPct = monthPctCount>0 ? Math.round(monthPctSum/monthPctCount) : 0;
   const kpiEl=document.getElementById('attendKpi');
   if(kpiEl) kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-val">${totalPresent}</div><div class="kpi-label">Days Present</div></div>
@@ -8541,7 +8552,7 @@ function renderAttendanceTab(){
     <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-val">${annPct}%</div><div class="kpi-label">Annual Attendance</div></div>
   `;
 
-  if(emp) renderLeaveBalanceCards(emp, year);
+  if(emp) renderLeaveBalanceCards(emp, year, 'attLeaveBalanceTab');
 }
 function unlockAttendTab(year){ window._attendTabUnlockedYear=year; renderAttendanceTab(); }
 function lockAttendTab(){ window._attendTabUnlockedYear=null; renderAttendanceTab(); }
@@ -8566,7 +8577,7 @@ function toggleAttendTabLeaveEdit(){
   const empId = parseInt(document.getElementById('empEditId').value)||null;
   const year = parseInt(document.getElementById('attendYear').value)||new Date().getFullYear();
   const emp = employees.find(e=>e.id===empId);
-  if(emp) renderLeaveBalanceCards(emp, year);
+  if(emp) renderLeaveBalanceCards(emp, year, 'attLeaveBalanceTab');
   if(!leaveEditMode){ saveState(); toast('Leave balance saved ✓','success'); }
 }
 
