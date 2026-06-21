@@ -2257,6 +2257,42 @@ function saveAllConfirm(){
   document.body.appendChild(c);
 }
 
+// ── Lightweight single-key save (faster than full saveState for small updates) ──
+async function saveSingleKey(key, value){
+  localStorage.setItem('ied_manning_v7', JSON.stringify(manningSched2)); // keep local backup in sync
+  try{
+    let { data: { session } } = await _supabase.auth.getSession();
+    if(!session){
+      try{
+        const s=sessionStorage.getItem('ied_session');
+        if(s){
+          const u=JSON.parse(s);
+          if(u.refresh_token){
+            const {data:refreshed}=await _supabase.auth.refreshSession({refresh_token:u.refresh_token});
+            session=refreshed?.session;
+            if(session){ u.access_token=session.access_token; u.refresh_token=session.refresh_token; sessionStorage.setItem('ied_session',JSON.stringify(u)); }
+          }
+        }
+      }catch(e){}
+    }
+    if(!session){ toast('Session expired, please login again','error'); doLogout(); return false; }
+
+    const { data: existing } = await _supabase.from('app_data').select('key').eq('key', key);
+    if(existing && existing.length){
+      const { error } = await _supabase.from('app_data').update({ value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' }).eq('key', key);
+      if(error) throw error;
+    } else {
+      const { error } = await _supabase.from('app_data').insert({ key, value, updated_at: new Date().toISOString(), updated_by: _loggedInUser.email||'unknown' });
+      if(error) throw error;
+    }
+    return true;
+  }catch(err){
+    console.error('saveSingleKey failed:', err.message);
+    toast('Sync failed: '+err.message,'warning');
+    return false;
+  }
+}
+
 async function saveState(){
   // Always save to localStorage immediately
   try{
@@ -5972,14 +6008,8 @@ async function saveTeam(){
   }
   document.getElementById('teamModal').remove();
   renderKpiPanel();
-  toast('Saving team...','success');
-  try{
-    await saveState();
-    toast('Team saved ✓','success');
-  }catch(e){
-    console.error('Team save failed',e);
-    toast('Failed to save team — check connection and try again','error');
-  }
+  const ok = await saveSingleKey('manningSched2', manningSched2);
+  if(ok) toast('Team saved ✓','success');
 }
 
 function deleteTeamConfirm(teamId){
@@ -6003,9 +6033,9 @@ function deleteTeamConfirm(teamId){
 
 async function doDeleteTeam(teamId){
   setKpiTeams(getKpiTeams().filter(t=>t.id!==teamId));
-  await saveState();
   renderKpiPanel();
-  toast('Team deleted','success');
+  const ok = await saveSingleKey('manningSched2', manningSched2);
+  if(ok) toast('Team deleted','success');
 }
 
 function renderStarboard(){
