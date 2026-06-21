@@ -1707,13 +1707,15 @@ async function handleLoginSubmit(e) {
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
         <label style="font-size:12px;color:var(--text2);">Year:</label>
         <select class="form-control" id="attendYear" style="width:100px;" onchange="window._attendTabUnlockedYear=null;renderAttendanceTab()"></select>
-        <span id="attendTabLockBtn"></span>
       </div>
       <!-- Annual Attendance Summary KPIs -->
       <div class="kpi-grid" id="attendKpi" style="margin-bottom:14px;"></div>
       <!-- Monthly Attendance Table -->
       <div class="form-section" style="margin-bottom:12px;">
-        <div class="form-section-title"><i class="fa fa-calendar-check"></i> Monthly Attendance Record</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="form-section-title" style="margin:0;"><i class="fa fa-calendar-check"></i> Monthly Attendance Record</div>
+          <span id="attendTabLockBtn"></span>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr>
