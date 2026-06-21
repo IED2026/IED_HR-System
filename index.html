@@ -2171,7 +2171,9 @@ const PROJ_10YR={
 };
 
 // ── STATE ──
-let employees=[], projects={}, monthlySalary={}, manningSched2={}, kpiTeams=[], currentRole='hr';
+let employees=[], projects={}, monthlySalary={}, manningSched2={}, currentRole='hr';
+function getKpiTeams(){ return manningSched2.__kpiTeams || []; }
+function setKpiTeams(arr){ manningSched2.__kpiTeams = arr; }
 let _editEmpCareerHistory=[], _editEmpAchievements=[], _editEmpId=null;
 let _charts={};
 
@@ -2210,7 +2212,6 @@ async function loadState(){
       projects = map['projects'] || JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
       monthlySalary = map['monthlySalary'] || {};
       manningSched2 = map['manningSched2'] || {};
-      kpiTeams = map['kpiTeams'] || [];
       // Also sync to localStorage as backup
       localStorage.setItem('ied_emp_v7', JSON.stringify(employees));
       localStorage.setItem('ied_proj_v7', JSON.stringify(projects));
@@ -2231,12 +2232,10 @@ async function loadState(){
     monthlySalary=ms?JSON.parse(ms):{};
     const mn=localStorage.getItem('ied_manning_v7');
     manningSched2=mn?JSON.parse(mn):{};
-    const kt=localStorage.getItem('ied_kpiteams_v7');
-    kpiTeams=kt?JSON.parse(kt):[];
   }catch(e){
     employees=migrateEmployees(JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)));
     projects=JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
-    monthlySalary={};manningSched2={};kpiTeams=[];
+    monthlySalary={};manningSched2={};
   }
 }
 
@@ -2265,7 +2264,6 @@ async function saveState(){
     localStorage.setItem('ied_proj_v7',JSON.stringify(projects));
     localStorage.setItem('ied_monthly_v7',JSON.stringify(monthlySalary));
     localStorage.setItem('ied_manning_v7',JSON.stringify(manningSched2));
-    localStorage.setItem('ied_kpiteams_v7',JSON.stringify(kpiTeams));
   }catch(e){}
 
   // Save to Supabase
@@ -2300,8 +2298,7 @@ async function saveState(){
       { key:'employees',     value: employees },
       { key:'projects',      value: projects },
       { key:'monthlySalary', value: monthlySalary },
-      { key:'manningSched2', value: manningSched2 },
-      { key:'kpiTeams',      value: kpiTeams }
+      { key:'manningSched2', value: manningSched2 }
     ];
     // Check existing keys
     const { data: existing } = await _supabase.from('app_data').select('key');
@@ -5876,15 +5873,15 @@ document.addEventListener('click', function(e){
 
 // ══════════════ KPI PANEL ══════════════
 function renderKpiPanel(){
-  const totalTeams=kpiTeams.length;
-  const totalMembers=kpiTeams.reduce((s,t)=>s+(t.memberIds||[]).length,0);
+  const totalTeams=getKpiTeams().length;
+  const totalMembers=getKpiTeams().reduce((s,t)=>s+(t.memberIds||[]).length,0);
   document.getElementById('kpiPanelKpi').innerHTML=`
     <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-val">${totalTeams}</div><div class="kpi-label">Teams</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🧑‍🤝‍🧑</div><div class="kpi-val">${totalMembers}</div><div class="kpi-label">Total Members</div></div>
   `;
 
   const listEl=document.getElementById('kpiPanelTeamsList');
-  if(!kpiTeams.length){
+  if(!getKpiTeams().length){
     listEl.innerHTML=`<div class="card" style="text-align:center;padding:30px;color:var(--text2);">
       <i class="fa fa-users-gear" style="font-size:32px;opacity:.4;margin-bottom:10px;"></i>
       <p>No teams created yet. Click "Create Team" to get started.</p>
@@ -5892,7 +5889,7 @@ function renderKpiPanel(){
     return;
   }
 
-  listEl.innerHTML = kpiTeams.map(team=>{
+  listEl.innerHTML = getKpiTeams().map(team=>{
     const leader = employees.find(e=>e.id===team.leaderId);
     const members = (team.memberIds||[]).map(id=>employees.find(e=>e.id===id)).filter(Boolean);
     return `<div class="card" style="margin-bottom:14px;">
@@ -5914,7 +5911,7 @@ function renderKpiPanel(){
 }
 
 function openCreateTeamModal(teamId){
-  const team = teamId ? kpiTeams.find(t=>t.id===teamId) : null;
+  const team = teamId ? getKpiTeams().find(t=>t.id===teamId) : null;
   window._editTeamId = teamId || null;
 
   const empOptions = employees.filter(e=>isEmpActive(e)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
@@ -5964,10 +5961,14 @@ async function saveTeam(){
   const memberIds = [...document.querySelectorAll('.team-member-cb:checked')].map(cb=>parseInt(cb.value));
 
   if(window._editTeamId){
-    const t = kpiTeams.find(t=>t.id===window._editTeamId);
+    const teams=getKpiTeams();
+    const t = teams.find(t=>t.id===window._editTeamId);
     if(t){ t.name=name; t.leaderId=leaderId; t.memberIds=memberIds; }
+    setKpiTeams(teams);
   } else {
-    kpiTeams.push({ id: Date.now(), name, leaderId, memberIds, createdAt: new Date().toISOString() });
+    const teams=getKpiTeams();
+    teams.push({ id: Date.now(), name, leaderId, memberIds, createdAt: new Date().toISOString() });
+    setKpiTeams(teams);
   }
   document.getElementById('teamModal').remove();
   renderKpiPanel();
@@ -5982,7 +5983,7 @@ async function saveTeam(){
 }
 
 function deleteTeamConfirm(teamId){
-  const team = kpiTeams.find(t=>t.id===teamId);
+  const team = getKpiTeams().find(t=>t.id===teamId);
   if(!team) return;
   const c=document.createElement('div');
   c.id='deleteTeamConfirm';
@@ -6001,7 +6002,7 @@ function deleteTeamConfirm(teamId){
 }
 
 async function doDeleteTeam(teamId){
-  kpiTeams = kpiTeams.filter(t=>t.id!==teamId);
+  setKpiTeams(getKpiTeams().filter(t=>t.id!==teamId));
   await saveState();
   renderKpiPanel();
   toast('Team deleted','success');
