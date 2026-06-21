@@ -6118,9 +6118,10 @@ function openCreateTeamModal(teamId){
 
       <div class="form-group">
         <label>Team Leader</label>
-        <input class="form-control" id="teamLeaderSearch" placeholder="🔍 Search leader by name..." oninput="filterLeaderOptions(this.value)" onfocus="filterLeaderOptions(this.value)" autocomplete="off" value="${team&&team.leaderId?(employees.find(e=>e.id===team.leaderId)?.name||''):''}">
-        <input type="hidden" id="teamLeaderSelect" value="${team?team.leaderId||'':''}">
-        <div id="teamLeaderOptionsList" style="display:none;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--navy3);"></div>
+        <select class="form-control" id="teamLeaderSelect">
+          <option value="">-- Select Leader --</option>
+          ${empOptions.map(e=>`<option value="${e.id}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
+        </select>
       </div>
 
       <div class="form-group">
@@ -6141,33 +6142,6 @@ function openCreateTeamModal(teamId){
     </div>`;
   document.body.appendChild(c);
 }
-
-function filterLeaderOptions(query){
-  const list = document.getElementById('teamLeaderOptionsList');
-  const opts = window._teamModalEmpOptions || [];
-  const q = (query||'').toLowerCase().trim();
-  const filtered = q ? opts.filter(e=>(e.name||'').toLowerCase().includes(q) || (e.desig||'').toLowerCase().includes(q)) : opts;
-  if(!filtered.length){
-    list.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--text3);">No match found</div>`;
-  } else {
-    list.innerHTML = filtered.slice(0,50).map(e=>`
-      <div onclick="selectLeader(${e.id},'${(e.name||'').replace(/'/g,"\\'")}')" style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
-        <b style="color:var(--text1);">${e.name}</b> <span style="color:var(--text3);">(${e.desig||''})</span>
-      </div>`).join('');
-  }
-  list.style.display = 'block';
-}
-function selectLeader(empId, empName){
-  document.getElementById('teamLeaderSelect').value = empId;
-  document.getElementById('teamLeaderSearch').value = empName;
-  document.getElementById('teamLeaderOptionsList').style.display = 'none';
-}
-document.addEventListener('click', function(e){
-  if(!e.target.closest('#teamLeaderSearch') && !e.target.closest('#teamLeaderOptionsList')){
-    const list = document.getElementById('teamLeaderOptionsList');
-    if(list) list.style.display = 'none';
-  }
-});
 
 async function saveTeam(){
   const name = document.getElementById('teamNameInput').value.trim();
