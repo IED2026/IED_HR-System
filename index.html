@@ -5928,22 +5928,131 @@ function renderKpiPanel(){
   listEl.innerHTML = getKpiTeams().map(team=>{
     const leader = employees.find(e=>e.id===team.leaderId);
     const members = (team.memberIds||[]).map(id=>employees.find(e=>e.id===id)).filter(Boolean);
-    return `<div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-        <div>
-          <div style="font-size:14px;font-weight:700;color:var(--text1);">${team.name}</div>
-          <div style="font-size:11px;color:var(--text3);">Team Leader: <b style="color:var(--gold);">${leader?leader.name:'—'}</b> | ${members.length} member(s)</div>
+    const curYear = new Date().getFullYear();
+
+    const memberCards = members.map(m=>{
+      const kpiYearData = (m.kpiData||{})[curYear];
+      const items = kpiYearData?.items || [];
+      const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
+      const overall = items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
+      const scoreColor = overall===null ? 'var(--text3)' : overall>=80?'#10b981':overall>=60?'#f59e0b':'#ef4444';
+      const deadline = items.find(k=>k.deadline)?.deadline;
+      const level = calcStarLevel(getEmpScore(m));
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:13px;flex-shrink:0;">${(m.name||'?').charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</div>
+            <div style="font-size:10px;color:var(--text3);">${m.desig||''} ${starHtml(level,'xs')}</div>
+          </div>
+          <div style="text-align:center;min-width:54px;">
+            <div style="font-size:14px;font-weight:800;color:${scoreColor};">${overall===null?'—':overall+'%'}</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">KPI Score</div>
+          </div>
+          ${deadline?`<div style="text-align:center;min-width:64px;"><div style="font-size:10px;font-weight:600;color:var(--orange);"><i class="fa fa-clock"></i> ${deadline}</div><div style="font-size:8px;color:var(--text3);text-transform:uppercase;">Deadline</div></div>`:''}
+          <button class="btn btn-secondary btn-xs" onclick="openAssignKpiModal(${m.id},${team.id})"><i class="fa fa-bullseye"></i> Assign KPI</button>
+        </div>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:16px;border:1px solid rgba(212,175,55,0.18);background:linear-gradient(180deg,var(--card),rgba(212,175,55,0.015));overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b8941f);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👥</div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--text1);letter-spacing:.2px;">${team.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;"><i class="fa fa-user-tie" style="color:var(--gold);"></i> Leader: <b style="color:var(--gold);">${leader?leader.name:'—'}</b> &nbsp;|&nbsp; ${members.length} member${members.length!==1?'s':''}</div>
+          </div>
         </div>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-secondary btn-xs" onclick="openCreateTeamModal(${team.id})"><i class="fa fa-pen"></i> Edit</button>
           <button class="btn btn-danger btn-xs" onclick="deleteTeamConfirm(${team.id})"><i class="fa fa-trash"></i></button>
         </div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${members.map(m=>`<span class="badge" style="background:rgba(255,255,255,0.05);">${m.name}</span>`).join('')||'<span style="font-size:11px;color:var(--text3);">No members assigned</span>'}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${memberCards || '<span style="font-size:11px;color:var(--text3);">No members assigned</span>'}
       </div>
     </div>`;
   }).join('');
+}
+
+function openAssignKpiModal(empId, teamId){
+  const emp = employees.find(e=>e.id===empId);
+  if(!emp) return;
+  const year = new Date().getFullYear();
+  if(!emp.kpiData) emp.kpiData={};
+  if(!emp.kpiData[year]) emp.kpiData[year]={items:[],review:{}};
+  window._kpiModalEmpId = empId;
+  window._kpiModalTeamId = teamId;
+  window._kpiModalYear = year;
+
+  const c=document.createElement('div');
+  c.id='assignKpiModal';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:680px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--gold);"><i class="fa fa-bullseye"></i> Assign KPI — ${emp.name}</div>
+        <button class="btn btn-secondary btn-xs" onclick="document.getElementById('assignKpiModal').remove()"><i class="fa fa-times"></i></button>
+      </div>
+      <div id="assignKpiBody"></div>
+      <button class="btn btn-primary btn-sm" onclick="addAssignKpiItem()" style="margin-top:10px;"><i class="fa fa-plus"></i> Add KPI Target</button>
+      <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+        <button class="btn btn-success btn-sm" onclick="saveAssignKpi()"><i class="fa fa-check"></i> Save & Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+  renderAssignKpiBody();
+}
+
+function renderAssignKpiBody(){
+  const emp = employees.find(e=>e.id===window._kpiModalEmpId);
+  const year = window._kpiModalYear;
+  const items = emp.kpiData[year].items;
+  const el = document.getElementById('assignKpiBody');
+  if(!el) return;
+  if(!items.length){
+    el.innerHTML = `<p style="font-size:12px;color:var(--text3);text-align:center;padding:16px;">No KPI targets yet. Click "Add KPI Target" below.</p>`;
+    return;
+  }
+  el.innerHTML = items.map((k,i)=>`
+    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+        <input class="form-control" style="flex:1;font-size:12px;" value="${k.desc||''}" placeholder="KPI description" onchange="updateAssignKpiItem(${i},'desc',this.value)">
+        <input class="form-control" type="number" style="width:70px;font-size:12px;color:#111;" value="${k.weight||0}" placeholder="Wt%" onchange="updateAssignKpiItem(${i},'weight',this.value)">
+        <input class="form-control" type="date" style="width:140px;font-size:12px;color:#111;" value="${k.deadline||''}" onchange="updateAssignKpiItem(${i},'deadline',this.value)">
+        <button class="btn btn-danger btn-xs" onclick="removeAssignKpiItem(${i})"><i class="fa fa-trash"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${[1,2,3,4].map(q=>`
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:9px;color:var(--text3);">Q${q} Target</label>
+          <input class="form-control" type="number" style="font-size:11px;color:#111;" value="${k['q'+q+'t']||''}" onchange="updateAssignKpiItem(${i},'q${q}t',this.value)">
+          <label style="font-size:9px;color:var(--text3);">Q${q} Actual</label>
+          <input class="form-control" type="number" style="font-size:11px;color:#111;" value="${k['q'+q+'a']||''}" onchange="updateAssignKpiItem(${i},'q${q}a',this.value)">
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function addAssignKpiItem(){
+  const emp = employees.find(e=>e.id===window._kpiModalEmpId);
+  emp.kpiData[window._kpiModalYear].items.push({desc:'New KPI',weight:10,deadline:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:''});
+  renderAssignKpiBody();
+}
+function removeAssignKpiItem(idx){
+  const emp = employees.find(e=>e.id===window._kpiModalEmpId);
+  emp.kpiData[window._kpiModalYear].items.splice(idx,1);
+  renderAssignKpiBody();
+}
+function updateAssignKpiItem(idx,field,val){
+  const emp = employees.find(e=>e.id===window._kpiModalEmpId);
+  emp.kpiData[window._kpiModalYear].items[idx][field]=val;
+}
+async function saveAssignKpi(){
+  document.getElementById('assignKpiModal').remove();
+  renderKpiPanel();
+  const ok = await saveSingleKey('employees', employees);
+  if(ok) toast('KPI targets saved ✓','success');
 }
 
 function openCreateTeamModal(teamId){
