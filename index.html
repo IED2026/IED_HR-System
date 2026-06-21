@@ -5954,25 +5954,48 @@ function renderKpiPanel(){
         </div>`;
     }).join('');
 
-    return `<div class="card" style="margin-bottom:16px;border:1px solid rgba(212,175,55,0.18);background:linear-gradient(180deg,var(--card),rgba(212,175,55,0.015));overflow:hidden;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b8941f);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👥</div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:var(--text1);letter-spacing:.2px;">${team.name}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px;"><i class="fa fa-user-tie" style="color:var(--gold);"></i> Leader: <b style="color:var(--gold);">${leader?leader.name:'—'}</b> &nbsp;|&nbsp; ${members.length} member${members.length!==1?'s':''}</div>
+    // Team-level average KPI (across members with data)
+    const memberScores = members.map(m=>{
+      const items = ((m.kpiData||{})[curYear])?.items || [];
+      const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
+      return items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
+    }).filter(v=>v!==null);
+    const teamAvg = memberScores.length ? Math.round(memberScores.reduce((a,b)=>a+b,0)/memberScores.length) : null;
+    const teamAvgColor = teamAvg===null ? 'var(--text3)' : teamAvg>=80?'#10b981':teamAvg>=60?'#f59e0b':'#ef4444';
+    const isOpen = window._kpiTeamOpen && window._kpiTeamOpen[team.id];
+
+    return `<div class="card" style="margin-bottom:12px;border:1px solid rgba(212,175,55,0.18);background:linear-gradient(180deg,var(--card),rgba(212,175,55,0.015));overflow:hidden;padding:0;">
+      <div onclick="toggleTeamCard(${team.id})" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+          <i class="fa fa-chevron-${isOpen?'down':'right'}" style="color:var(--text3);font-size:11px;width:12px;flex-shrink:0;"></i>
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b8941f);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👥</div>
+          <div style="min-width:0;">
+            <div style="font-size:14px;font-weight:800;color:var(--text1);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${team.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;"><i class="fa fa-user-tie" style="color:var(--gold);"></i> ${leader?leader.name:'—'} &nbsp;|&nbsp; ${members.length} member${members.length!==1?'s':''}</div>
           </div>
         </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-secondary btn-xs" onclick="openCreateTeamModal(${team.id})"><i class="fa fa-pen"></i> Edit</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteTeamConfirm(${team.id})"><i class="fa fa-trash"></i></button>
+        <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;">
+          <div style="text-align:center;">
+            <div style="font-size:15px;font-weight:800;color:${teamAvgColor};">${teamAvg===null?'—':teamAvg+'%'}</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">Avg KPI</div>
+          </div>
+          <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary btn-xs" onclick="openCreateTeamModal(${team.id})"><i class="fa fa-pen"></i></button>
+            <button class="btn btn-danger btn-xs" onclick="deleteTeamConfirm(${team.id})"><i class="fa fa-trash"></i></button>
+          </div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:${isOpen?'flex':'none'};flex-direction:column;gap:8px;padding:0 16px 16px 16px;border-top:1px solid var(--border);padding-top:12px;">
         ${memberCards || '<span style="font-size:11px;color:var(--text3);">No members assigned</span>'}
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleTeamCard(teamId){
+  if(!window._kpiTeamOpen) window._kpiTeamOpen={};
+  window._kpiTeamOpen[teamId] = !window._kpiTeamOpen[teamId];
+  renderKpiPanel();
 }
 
 function openAssignKpiModal(empId, teamId){
