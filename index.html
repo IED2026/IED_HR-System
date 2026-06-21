@@ -5936,7 +5936,7 @@ function renderKpiPanel(){
       const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
       const overall = items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
       const scoreColor = overall===null ? 'var(--text3)' : overall>=80?'#10b981':overall>=60?'#f59e0b':'#ef4444';
-      const deadline = items.find(k=>k.deadline)?.deadline;
+      const deadline = items.find(k=>k.endDate)?.endDate;
       const level = calcStarLevel(getEmpScore(m));
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;">
@@ -6037,13 +6037,28 @@ function renderAssignKpiBody(){
     el.innerHTML = `<p style="font-size:12px;color:var(--text3);text-align:center;padding:16px;">No KPI targets yet. Click "Add KPI Target" below.</p>`;
     return;
   }
-  el.innerHTML = items.map((k,i)=>`
+  el.innerHTML = items.map((k,i)=>{
+    const totalDays = (k.startDate && k.endDate) ? Math.max(0, Math.round((new Date(k.endDate) - new Date(k.startDate)) / 86400000) + 1) : null;
+    return `
     <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-        <input class="form-control" style="flex:1;font-size:12px;" value="${k.desc||''}" placeholder="KPI description" onchange="updateAssignKpiItem(${i},'desc',this.value)">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+        <input class="form-control" style="flex:1;min-width:140px;font-size:12px;" value="${k.desc||''}" placeholder="KPI description" onchange="updateAssignKpiItem(${i},'desc',this.value)">
         <input class="form-control" type="number" style="width:70px;font-size:12px;color:#111;" value="${k.weight||0}" placeholder="Wt%" onchange="updateAssignKpiItem(${i},'weight',this.value)">
-        <input class="form-control" type="date" style="width:140px;font-size:12px;color:#111;" value="${k.deadline||''}" onchange="updateAssignKpiItem(${i},'deadline',this.value)">
         <button class="btn btn-danger btn-xs" onclick="removeAssignKpiItem(${i})"><i class="fa fa-trash"></i></button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:9px;color:var(--text3);">Start Date</label>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;" value="${k.startDate||''}" onchange="updateAssignKpiItem(${i},'startDate',this.value)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:9px;color:var(--text3);">End Date</label>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;" value="${k.endDate||''}" onchange="updateAssignKpiItem(${i},'endDate',this.value)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:9px;color:var(--text3);">Total Days</label>
+          <div style="padding:8px 12px;background:rgba(212,175,55,0.08);border:1px solid var(--gold);border-radius:7px;font-size:12px;font-weight:700;color:var(--gold);min-width:60px;text-align:center;">${totalDays===null?'—':totalDays}</div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
         ${[1,2,3,4].map(q=>`
@@ -6054,12 +6069,13 @@ function renderAssignKpiBody(){
           <input class="form-control" type="number" style="font-size:11px;color:#111;" value="${k['q'+q+'a']||''}" onchange="updateAssignKpiItem(${i},'q${q}a',this.value)">
         </div>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function addAssignKpiItem(){
   const emp = employees.find(e=>e.id===window._kpiModalEmpId);
-  emp.kpiData[window._kpiModalYear].items.push({desc:'New KPI',weight:10,deadline:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:''});
+  emp.kpiData[window._kpiModalYear].items.push({desc:'New KPI',weight:10,startDate:'',endDate:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:''});
   renderAssignKpiBody();
 }
 function removeAssignKpiItem(idx){
@@ -6070,6 +6086,7 @@ function removeAssignKpiItem(idx){
 function updateAssignKpiItem(idx,field,val){
   const emp = employees.find(e=>e.id===window._kpiModalEmpId);
   emp.kpiData[window._kpiModalYear].items[idx][field]=val;
+  if(field==='startDate'||field==='endDate') renderAssignKpiBody();
 }
 async function saveAssignKpi(){
   document.getElementById('assignKpiModal').remove();
@@ -6083,6 +6100,7 @@ function openCreateTeamModal(teamId){
   window._editTeamId = teamId || null;
 
   const empOptions = employees.filter(e=>isEmpActive(e)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  window._teamModalEmpOptions = empOptions;
   const c=document.createElement('div');
   c.id='teamModal';
   c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -6097,10 +6115,9 @@ function openCreateTeamModal(teamId){
 
       <div class="form-group">
         <label>Team Leader</label>
-        <select class="form-control" id="teamLeaderSelect">
-          <option value="">-- Select Leader --</option>
-          ${empOptions.map(e=>`<option value="${e.id}" ${team&&team.leaderId===e.id?'selected':''}>${e.name} (${e.desig||''})</option>`).join('')}
-        </select>
+        <input class="form-control" id="teamLeaderSearch" placeholder="🔍 Search leader by name..." oninput="filterLeaderOptions(this.value)" onfocus="filterLeaderOptions(this.value)" autocomplete="off" value="${team&&team.leaderId?(employees.find(e=>e.id===team.leaderId)?.name||''):''}">
+        <input type="hidden" id="teamLeaderSelect" value="${team?team.leaderId||'':''}">
+        <div id="teamLeaderOptionsList" style="display:none;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--navy3);"></div>
       </div>
 
       <div class="form-group">
@@ -6121,6 +6138,33 @@ function openCreateTeamModal(teamId){
     </div>`;
   document.body.appendChild(c);
 }
+
+function filterLeaderOptions(query){
+  const list = document.getElementById('teamLeaderOptionsList');
+  const opts = window._teamModalEmpOptions || [];
+  const q = (query||'').toLowerCase().trim();
+  const filtered = q ? opts.filter(e=>(e.name||'').toLowerCase().includes(q) || (e.desig||'').toLowerCase().includes(q)) : opts;
+  if(!filtered.length){
+    list.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--text3);">No match found</div>`;
+  } else {
+    list.innerHTML = filtered.slice(0,50).map(e=>`
+      <div onclick="selectLeader(${e.id},'${(e.name||'').replace(/'/g,"\\'")}')" style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+        <b style="color:var(--text1);">${e.name}</b> <span style="color:var(--text3);">(${e.desig||''})</span>
+      </div>`).join('');
+  }
+  list.style.display = 'block';
+}
+function selectLeader(empId, empName){
+  document.getElementById('teamLeaderSelect').value = empId;
+  document.getElementById('teamLeaderSearch').value = empName;
+  document.getElementById('teamLeaderOptionsList').style.display = 'none';
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#teamLeaderSearch') && !e.target.closest('#teamLeaderOptionsList')){
+    const list = document.getElementById('teamLeaderOptionsList');
+    if(list) list.style.display = 'none';
+  }
+});
 
 async function saveTeam(){
   const name = document.getElementById('teamNameInput').value.trim();
