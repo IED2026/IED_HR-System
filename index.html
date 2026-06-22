@@ -5947,14 +5947,20 @@ function renderKpiPanel(){
             <div style="font-size:12px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</div>
             <div style="font-size:10px;color:var(--text3);">${m.desig||''} ${starHtml(level,'xs')}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <div style="text-align:center;min-width:46px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:220px;justify-content:flex-end;">
+            <div style="text-align:center;width:56px;">
               <div style="font-size:13px;font-weight:800;color:${scoreColor};">${overall===null?'—':overall+'%'}</div>
               <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">KPI Score</div>
             </div>
-            ${items.length?`<button class="btn btn-secondary btn-xs" onclick="showMemberKpiPopup(${m.id})"><i class="fa fa-chart-bar"></i> KPI (${items.length})</button>`:''}
-            ${satCount?`<span style="font-size:12px;color:#10b981;">👍 ${satCount}</span>`:''}
-            ${regretCount?`<span style="font-size:12px;color:#ef4444;">👎 ${regretCount}</span>`:''}
+            <div style="width:70px;">
+              ${items.length?`<button class="btn btn-secondary btn-xs" style="width:100%;" onclick="showMemberKpiPopup(${m.id})"><i class="fa fa-chart-bar"></i> KPI (${items.length})</button>`:`<span style="display:inline-block;width:100%;"></span>`}
+            </div>
+            <div style="width:32px;text-align:center;">
+              ${satCount?`<span style="font-size:12px;color:#10b981;">👍 ${satCount}</span>`:`<span></span>`}
+            </div>
+            <div style="width:32px;text-align:center;">
+              ${regretCount?`<span style="font-size:12px;color:#ef4444;">👎 ${regretCount}</span>`:`<span></span>`}
+            </div>
             <button class="btn btn-secondary btn-xs" onclick="openSatRegretModal(${m.id},${team.id})"><i class="fa fa-comment-dots"></i></button>
           </div>
         </div>`;
