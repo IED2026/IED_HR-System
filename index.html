@@ -5952,9 +5952,9 @@ function renderKpiPanel(){
             <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">KPI Score</div>
           </div>
           ${deadline?`<div style="text-align:center;min-width:64px;"><div style="font-size:10px;font-weight:600;color:var(--orange);"><i class="fa fa-clock"></i> ${deadline}</div><div style="font-size:8px;color:var(--text3);text-transform:uppercase;">Deadline</div></div>`:''}
+          ${items.length?`<div style="text-align:center;min-width:48px;"><div style="font-size:12px;font-weight:700;color:#3b82f6;">${items.length}</div><div style="font-size:8px;color:var(--text3);text-transform:uppercase;">KPIs</div></div>`:''}
           ${(satCount||regretCount)?`<div style="display:flex;gap:6px;font-size:11px;">${satCount?`<span style="color:#10b981;">👍 ${satCount}</span>`:''}${regretCount?`<span style="color:#ef4444;">👎 ${regretCount}</span>`:''}</div>`:''}
-          <button class="btn btn-secondary btn-xs" onclick="openAssignKpiModal(${m.id},${team.id})"><i class="fa fa-bullseye"></i> Assign KPI</button>
-          <button class="btn btn-secondary btn-xs" onclick="openSatRegretModal(${m.id},${team.id})"><i class="fa fa-comment-dots"></i> Satisfactory & Regret</button>
+          <button class="btn btn-secondary btn-xs" onclick="openSatRegretModal(${m.id},${team.id})"><i class="fa fa-comment-dots"></i></button>
         </div>`;
     }).join('');
 
@@ -5984,6 +5984,7 @@ function renderKpiPanel(){
             <div style="font-size:8px;color:var(--text3);text-transform:uppercase;">Avg KPI</div>
           </div>
           <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+            <button class="btn btn-primary btn-xs" onclick="openTeamKpiModal(${team.id})"><i class="fa fa-bullseye"></i> Assign KPI</button>
             <button class="btn btn-secondary btn-xs" onclick="openCreateTeamModal(${team.id})"><i class="fa fa-pen"></i></button>
             <button class="btn btn-danger btn-xs" onclick="deleteTeamConfirm(${team.id})"><i class="fa fa-trash"></i></button>
           </div>
@@ -6116,6 +6117,142 @@ async function doRemoveSatRegret(recordId){
   renderKpiPanel();
   const ok = await saveSingleKey('employees', employees);
   if(ok) toast('Removed ✓','success');
+}
+
+function openTeamKpiModal(teamId){
+  const team = getKpiTeams().find(t=>t.id===teamId);
+  if(!team) return;
+  const members = (team.memberIds||[]).map(id=>employees.find(e=>e.id===id)).filter(Boolean);
+  const curYear = new Date().getFullYear();
+  window._teamKpiYear = curYear;
+  window._teamKpiTeamId = teamId;
+
+  const c=document.createElement('div');
+  c.id='teamKpiModal';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:900px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6);margin:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--gold);"><i class="fa fa-bullseye"></i> Assign KPI — ${team.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">${curYear} | ${members.length} member(s)</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-success btn-sm" onclick="saveTeamKpi()"><i class="fa fa-floppy-disk"></i> Save All</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('teamKpiModal').remove()"><i class="fa fa-times"></i> Close</button>
+        </div>
+      </div>
+      <div id="teamKpiMembersArea"></div>
+    </div>`;
+  document.body.appendChild(c);
+  renderTeamKpiMembers();
+}
+
+function renderTeamKpiMembers(){
+  const team = getKpiTeams().find(t=>t.id===window._teamKpiTeamId);
+  if(!team) return;
+  const members = (team.memberIds||[]).map(id=>employees.find(e=>e.id===id)).filter(Boolean);
+  const year = window._teamKpiYear;
+  const el = document.getElementById('teamKpiMembersArea');
+  if(!el) return;
+
+  el.innerHTML = members.map(m=>{
+    if(!m.kpiData) m.kpiData={};
+    if(!m.kpiData[year]) m.kpiData[year]={items:[],review:{}};
+    const items = m.kpiData[year].items;
+    const level = calcStarLevel(getEmpScore(m));
+    return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:14px;flex-shrink:0;">${(m.name||'?').charAt(0)}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--text1);">${m.name}</div>
+          <div style="font-size:10px;color:var(--text3);">${m.desig||''} ${starHtml(level,'xs')}</div>
+        </div>
+        <button class="btn btn-primary btn-xs" onclick="addTeamMemberKpiItem(${m.id})"><i class="fa fa-plus"></i> Add KPI</button>
+      </div>
+      <div style="padding:12px 16px;" id="teamKpiItems_${m.id}">
+        ${renderTeamMemberKpiItems(m, year)}
+      </div>
+    </div>`;
+  }).join('') || '<p style="text-align:center;color:var(--text3);padding:20px;">No members in this team.</p>';
+}
+
+function renderTeamMemberKpiItems(m, year){
+  const items = m.kpiData[year].items;
+  if(!items.length) return `<p style="font-size:11px;color:var(--text3);text-align:center;padding:8px;">No KPI targets yet. Click "+ Add KPI" above.</p>`;
+  return items.map((k,i)=>{
+    const totalDays = (k.startDate && k.endDate) ? Math.max(0, Math.round((new Date(k.endDate)-new Date(k.startDate))/86400000)+1) : null;
+    return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:140px;"><label style="font-size:9px;color:var(--text3);">KPI Description</label>
+          <input class="form-control" style="font-size:12px;" value="${k.desc||''}" placeholder="KPI description" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'desc',this.value)"></div>
+        <div><label style="font-size:9px;color:var(--text3);">Weight %</label>
+          <input class="form-control" type="number" style="width:70px;font-size:12px;color:#111;" value="${k.weight||0}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'weight',this.value)"></div>
+        <div><label style="font-size:9px;color:var(--text3);">Start Date</label>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;" value="${k.startDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'startDate',this.value)"></div>
+        <div><label style="font-size:9px;color:var(--text3);">End Date</label>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;" value="${k.endDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'endDate',this.value)"></div>
+        <div style="text-align:center;"><label style="font-size:9px;color:var(--text3);">Total Days</label>
+          <div style="padding:8px 12px;background:rgba(212,175,55,0.08);border:1px solid var(--gold);border-radius:7px;font-size:12px;font-weight:700;color:var(--gold);min-width:52px;">${totalDays===null?'—':totalDays}</div></div>
+        <button class="btn btn-danger btn-xs" style="margin-top:14px;" onclick="removeTeamKpiItemConfirm(${m.id},'${year}',${i})"><i class="fa fa-trash"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${[1,2,3,4].map(q=>`<div>
+          <label style="font-size:9px;color:var(--text3);">Q${q} Target</label>
+          <input class="form-control" type="number" style="font-size:11px;color:#111;" value="${k['q'+q+'t']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}t',this.value)">
+          <label style="font-size:9px;color:var(--text3);">Q${q} Actual</label>
+          <input class="form-control" type="number" style="font-size:11px;color:#111;" value="${k['q'+q+'a']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}a',this.value)">
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addTeamMemberKpiItem(empId){
+  const emp = employees.find(e=>e.id===empId);
+  const year = window._teamKpiYear;
+  if(!emp.kpiData) emp.kpiData={};
+  if(!emp.kpiData[year]) emp.kpiData[year]={items:[],review:{}};
+  emp.kpiData[year].items.push({desc:'New KPI',weight:10,startDate:'',endDate:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:''});
+  const el=document.getElementById(`teamKpiItems_${empId}`);
+  if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
+}
+function updateTeamKpiItem(empId, year, idx, field, val){
+  const emp = employees.find(e=>e.id===empId);
+  emp.kpiData[year].items[idx][field]=val;
+  if(field==='startDate'||field==='endDate'){
+    const el=document.getElementById(`teamKpiItems_${empId}`);
+    if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
+  }
+}
+function removeTeamKpiItemConfirm(empId, year, idx){
+  const emp = employees.find(e=>e.id===empId);
+  const item = emp.kpiData[year].items[idx];
+  const c=document.createElement('div');
+  c.id='removeTeamKpiConfirm';
+  c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  c.innerHTML=`
+    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;padding:24px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:8px;">Remove "${item?.desc||'this KPI'}"?</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="document.getElementById('removeTeamKpiConfirm').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="document.getElementById('removeTeamKpiConfirm').remove();doRemoveTeamKpiItem(${empId},'${year}',${idx})" style="padding:8px 18px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Remove</button>
+      </div>
+    </div>`;
+  document.body.appendChild(c);
+}
+function doRemoveTeamKpiItem(empId, year, idx){
+  const emp = employees.find(e=>e.id===empId);
+  emp.kpiData[year].items.splice(idx,1);
+  const el=document.getElementById(`teamKpiItems_${empId}`);
+  if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
+}
+async function saveTeamKpi(){
+  document.getElementById('teamKpiModal').remove();
+  renderKpiPanel();
+  const ok = await saveSingleKey('employees', employees);
+  if(ok) toast('KPI targets saved ✓','success');
 }
 
 function openAssignKpiModal(empId, teamId){
