@@ -1554,6 +1554,7 @@ async function handleLoginSubmit(e) {
           <div class="form-group"><label>NID Number</label><input class="form-control" id="empNid" placeholder="National ID No."></div>
           <div class="form-group"><label>Phone</label><input class="form-control" id="empPhone" placeholder="+880..."></div>
           <div class="form-group"><label>Email</label><input class="form-control" id="empEmail" type="email" placeholder="email@example.com"></div>
+          <div class="form-group"><label>Portal Password <span style="font-size:10px;color:var(--text3);">(Employee Portal login)</span></label><input class="form-control" id="empPortalPassword" type="text" placeholder="Set portal password"></div>
           <div class="form-group"><label>Emergency Contact</label><input class="form-control" id="empEmergency" placeholder="Emergency phone"></div>
         </div>
         <div class="form-grid">
@@ -5356,7 +5357,7 @@ function editEmployee(id){
   setVal('empExitReason',emp.exitReason||'');setVal('empExitSettlement',emp.exitSettlement||'');
   // Personal
   setVal('empDob',emp.dob||'');setVal('empBlood',emp.bloodGroup||'');setVal('empNid',emp.nid||'');
-  setVal('empPhone',emp.phone||'');setVal('empEmail',emp.email||'');setVal('empEmergency',emp.emergency||'');
+  setVal('empPhone',emp.phone||'');setVal('empEmail',emp.email||'');setVal('empPortalPassword',emp.portalPassword||'');setVal('empEmergency',emp.emergency||'');
   setVal('empFatherName',emp.fatherName||'');setVal('empMotherName',emp.motherName||'');
   setVal('empSpouse',emp.spouse||'');setVal('empNationality',emp.nationality||'Bangladeshi');
   setVal('empAddressPresent',emp.addressPresent||'');setVal('empAddressPermanent',emp.addressPermanent||'');
@@ -5417,7 +5418,7 @@ async function saveEmployee(){
     photo:document.getElementById('empPhoto').value||'',
     // Personal
     dob:getVal('empDob'),bloodGroup:getVal('empBlood'),nid:getVal('empNid'),
-    phone:getVal('empPhone'),email:getVal('empEmail'),emergency:getVal('empEmergency'),
+    phone:getVal('empPhone'),email:getVal('empEmail'),portalPassword:getVal('empPortalPassword'),emergency:getVal('empEmergency'),
     fatherName:getVal('empFatherName'),motherName:getVal('empMotherName'),
     spouse:getVal('empSpouse'),nationality:getVal('empNationality'),
     addressPresent:getVal('empAddressPresent'),addressPermanent:getVal('empAddressPermanent'),
