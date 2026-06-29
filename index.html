@@ -718,6 +718,45 @@ async function handleLoginSubmit(e) {
 
 <!-- EMPLOYEES -->
 <div class="page" id="page-attendance">
+
+  <!-- Portal Requests Panel (always visible, all employees) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="portalRequestsPanel">
+    <div class="card" style="padding:16px;">
+      <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:12px;"><i class="fa fa-file-signature"></i> Reconciliation Requests</div>
+      <div class="table-wrap">
+        <table style="font-size:12px;">
+          <thead><tr>
+            <th style="font-size:10px;">Employee</th>
+            <th style="font-size:10px;">Date</th>
+            <th style="font-size:10px;">Type</th>
+            <th style="font-size:10px;">In</th>
+            <th style="font-size:10px;">Out</th>
+            <th style="font-size:10px;">Status</th>
+            <th style="font-size:10px;">Action</th>
+          </tr></thead>
+          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No requests</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-size:13px;font-weight:700;color:#8b5cf6;margin-bottom:12px;"><i class="fa fa-paper-plane"></i> Leave Applications</div>
+      <div class="table-wrap">
+        <table style="font-size:12px;">
+          <thead><tr>
+            <th style="font-size:10px;">Employee</th>
+            <th style="font-size:10px;">Type</th>
+            <th style="font-size:10px;">From</th>
+            <th style="font-size:10px;">To</th>
+            <th style="font-size:10px;">Days</th>
+            <th style="font-size:10px;">Status</th>
+            <th style="font-size:10px;">Action</th>
+          </tr></thead>
+          <tbody id="portalLeaveReqBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No applications</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- Employee Selector -->
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
     <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
@@ -842,32 +881,6 @@ async function handleLoginSubmit(e) {
       <div style="display:flex;gap:6px;">
         <button class="btn btn-success btn-sm" onclick="saveLeavePageRecord()"><i class="fa fa-floppy-disk"></i> Save Leave</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('attAddLeaveForm').style.display='none'">Cancel</button>
-      </div>
-    </div>
-
-    <!-- Portal Reconciliation Requests -->
-    <div class="form-section" style="margin-bottom:16px;">
-      <div class="form-section-title"><i class="fa fa-file-signature" style="color:#06b6d4;"></i> Portal Reconciliation Requests</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Date</th><th>Type</th><th>In Time</th><th>Out Time</th><th>Applied On</th><th>Status</th><th>Action</th>
-          </tr></thead>
-          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px;">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Portal Leave Applications -->
-    <div class="form-section">
-      <div class="form-section-title"><i class="fa fa-paper-plane" style="color:#8b5cf6;"></i> Portal Leave Applications</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Applied On</th><th>Status</th><th>Action</th>
-          </tr></thead>
-          <tbody id="portalLeaveReqBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;">—</td></tr></tbody>
-        </table>
       </div>
     </div>
 
@@ -2884,43 +2897,6 @@ function renderAttendancePage(){
   // Render leave balance cards
   renderLeaveBalanceCards(emp, year);
   leaveEditMode = false; // reset edit mode on employee change
-
-  // Portal Reconciliation Requests
-  const reconBody = document.getElementById('portalReconBody');
-  if(reconBody){
-    const recons = emp.reconRequests||[];
-    reconBody.innerHTML = recons.length ? recons.map(r=>{
-      const sc = r.status==='approved'?'#10b981':r.status==='rejected'?'#ef4444':'#f59e0b';
-      return `<tr>
-        <td>${r.date||'—'}</td>
-        <td>${r.type||'—'}</td>
-        <td>${r.inTime||'—'}</td>
-        <td>${r.outTime||'—'}</td>
-        <td>${r.appDate||'—'}</td>
-        <td><span style="color:${sc};font-weight:700;">${r.status||'pending'}</span></td>
-        <td>${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon('${emp.id}','${r.id}')">Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon('${emp.id}','${r.id}')">Reject</button>`:'—'}</td>
-      </tr>`;
-    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px;">No portal reconciliation requests</td></tr>';
-  }
-
-  // Portal Leave Applications
-  const leaveReqBody = document.getElementById('portalLeaveReqBody');
-  if(leaveReqBody){
-    const leaves2 = emp.leaveRequests||[];
-    leaveReqBody.innerHTML = leaves2.length ? leaves2.map(l=>{
-      const sc = l.status==='approved'?'#10b981':l.status==='rejected'?'#ef4444':'#f59e0b';
-      return `<tr>
-        <td>${l.type||'—'}</td>
-        <td>${l.fromDate||'—'}</td>
-        <td>${l.toDate||'—'}</td>
-        <td>${l.days||'—'}</td>
-        <td>${l.reason||'—'}</td>
-        <td>${l.appDate||'—'}</td>
-        <td><span style="color:${sc};font-weight:700;">${l.status||'pending'}</span></td>
-        <td>${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave('${emp.id}','${l.id}')">Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave('${emp.id}','${l.id}')">Reject</button>`:'—'}</td>
-      </tr>`;
-    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;">No portal leave applications</td></tr>';
-  }
 
   const leaves=(emp.leaveRecords||[]).filter(l=>{
     if(!year) return true;
@@ -5012,13 +4988,55 @@ function addLeavePageRecord(){
   document.getElementById('attAddLeaveForm').style.display='block';
 }
 
+function renderPortalRequests(){
+  const reconBody=document.getElementById('portalReconBody');
+  const leaveBody=document.getElementById('portalLeaveReqBody');
+  if(!reconBody||!leaveBody) return;
+
+  // Collect all employees' recon requests
+  const allRecons=[];
+  const allLeaves=[];
+  employees.forEach(emp=>{
+    (emp.reconRequests||[]).forEach(r=>allRecons.push({...r,empName:emp.name,empId:emp.id}));
+    (emp.leaveRequests||[]).forEach(l=>allLeaves.push({...l,empName:emp.name,empId:emp.id}));
+  });
+  allRecons.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
+  allLeaves.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
+
+  reconBody.innerHTML=allRecons.length?allRecons.map(r=>{
+    const sc=r.status==='approved'?'#10b981':r.status==='rejected'?'#ef4444':'#f59e0b';
+    return `<tr>
+      <td style="font-weight:600;">${r.empName||'—'}</td>
+      <td>${r.date||'—'}</td>
+      <td>${r.type||'—'}</td>
+      <td>${r.inTime||'—'}</td>
+      <td>${r.outTime||'—'}</td>
+      <td><span style="color:${sc};font-weight:700;">${r.status||'pending'}</span></td>
+      <td>${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon(${r.empId},'${r.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon(${r.empId},'${r.id}')">✗</button>`:'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No reconciliation requests</td></tr>';
+
+  leaveBody.innerHTML=allLeaves.length?allLeaves.map(l=>{
+    const sc=l.status==='approved'?'#10b981':l.status==='rejected'?'#ef4444':'#f59e0b';
+    return `<tr>
+      <td style="font-weight:600;">${l.empName||'—'}</td>
+      <td>${l.type||'—'}</td>
+      <td>${l.fromDate||'—'}</td>
+      <td>${l.toDate||'—'}</td>
+      <td>${l.days||'—'}</td>
+      <td><span style="color:${sc};font-weight:700;">${l.status||'pending'}</span></td>
+      <td>${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave(${l.empId},'${l.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave(${l.empId},'${l.id}')">✗</button>`:'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No leave applications</td></tr>';
+}
+
 async function approvePortalRecon(empId, reconId){
   const emp=employees.find(e=>e.id===parseInt(empId));
   if(!emp) return;
   const r=emp.reconRequests?.find(r=>r.id===reconId);
   if(r) r.status='approved';
   await saveSingleKey('employees',employees);
-  renderAttendancePage();
+  renderPortalRequests();
   toast('Reconciliation approved ✓','success');
 }
 async function rejectPortalRecon(empId, reconId){
@@ -5027,7 +5045,7 @@ async function rejectPortalRecon(empId, reconId){
   const r=emp.reconRequests?.find(r=>r.id===reconId);
   if(r) r.status='rejected';
   await saveSingleKey('employees',employees);
-  renderAttendancePage();
+  renderPortalRequests();
   toast('Reconciliation rejected','success');
 }
 async function approvePortalLeave(empId, leaveId){
@@ -5036,7 +5054,7 @@ async function approvePortalLeave(empId, leaveId){
   const l=emp.leaveRequests?.find(l=>l.id===leaveId);
   if(l) l.status='approved';
   await saveSingleKey('employees',employees);
-  renderAttendancePage();
+  renderPortalRequests();
   toast('Leave approved ✓','success');
 }
 async function rejectPortalLeave(empId, leaveId){
@@ -5045,7 +5063,7 @@ async function rejectPortalLeave(empId, leaveId){
   const l=emp.leaveRequests?.find(l=>l.id===leaveId);
   if(l) l.status='rejected';
   await saveSingleKey('employees',employees);
-  renderAttendancePage();
+  renderPortalRequests();
   toast('Leave rejected','success');
 }
 
@@ -5116,7 +5134,7 @@ function nav(page){
   if(pg) pg.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active');});
   document.getElementById('pageTitle').textContent=PAGE_TITLES[page]||page;
-  if(page==='attendance') renderAttendancePage();
+  if(page==='attendance'){ renderAttendancePage(); renderPortalRequests(); }
   if(page==='dashboard') renderDashboard();
   else if(page==='employees') renderEmployees();
   else if(page==='emphistory') initEmpHistory();
