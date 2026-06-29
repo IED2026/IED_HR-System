@@ -5073,9 +5073,36 @@ async function approvePortalLeave(empId, leaveId){
   const emp=employees.find(e=>e.id===parseInt(empId));
   if(!emp) return;
   const l=emp.leaveRequests?.find(l=>l.id===leaveId);
-  if(l) l.status='approved';
+  if(!l) return;
+  l.status='approved';
+  // Add to HR leave records
+  if(!emp.leaveRecords) emp.leaveRecords=[];
+  // Parse dates from portal format (DD-MM-YYYY or similar)
+  const parsePortalDate = s => {
+    if(!s) return '';
+    // try YYYY-MM-DD first
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+    // try DD-MM-YYYY
+    const m=s.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
+  };
+  const existing = emp.leaveRecords.find(r=>r.id===leaveId);
+  if(!existing){
+    emp.leaveRecords.push({
+      id: leaveId,
+      type: l.type||'Leave',
+      from: parsePortalDate(l.fromDate),
+      to: parsePortalDate(l.toDate),
+      days: l.days||1,
+      reason: l.reason||'',
+      status: 'Approved',
+      approver: 'HR',
+      appDate: l.appDate||''
+    });
+  }
   await saveSingleKey('employees',employees);
   renderPortalRequests();
+  if(document.getElementById('attEmpSelect')?.value) renderAttendancePage();
   toast('Leave approved ✓','success');
 }
 async function rejectPortalLeave(empId, leaveId){
