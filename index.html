@@ -719,45 +719,7 @@ async function handleLoginSubmit(e) {
 <!-- EMPLOYEES -->
 <div class="page" id="page-attendance">
 
-  <!-- Portal Requests Panel (always visible, all employees) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="portalRequestsPanel">
-    <div class="card" style="padding:16px;">
-      <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:12px;"><i class="fa fa-file-signature"></i> Reconciliation Requests</div>
-      <div class="table-wrap">
-        <table style="font-size:12px;">
-          <thead><tr>
-            <th style="font-size:10px;">Employee</th>
-            <th style="font-size:10px;">Date</th>
-            <th style="font-size:10px;">Type</th>
-            <th style="font-size:10px;">In</th>
-            <th style="font-size:10px;">Out</th>
-            <th style="font-size:10px;">Status</th>
-            <th style="font-size:10px;">Action</th>
-          </tr></thead>
-          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No requests</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-size:13px;font-weight:700;color:#8b5cf6;margin-bottom:12px;"><i class="fa fa-paper-plane"></i> Leave Applications</div>
-      <div class="table-wrap">
-        <table style="font-size:12px;">
-          <thead><tr>
-            <th style="font-size:10px;">Employee</th>
-            <th style="font-size:10px;">Type</th>
-            <th style="font-size:10px;">From</th>
-            <th style="font-size:10px;">To</th>
-            <th style="font-size:10px;">Days</th>
-            <th style="font-size:10px;">Status</th>
-            <th style="font-size:10px;">Action</th>
-          </tr></thead>
-          <tbody id="portalLeaveReqBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No applications</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Employee Selector -->
+    <!-- Employee Selector -->
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
     <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;">
       <label style="font-size:12px;color:var(--text2);white-space:nowrap;">Employee:</label>
@@ -884,6 +846,44 @@ async function handleLoginSubmit(e) {
       </div>
     </div>
 
+  </div>
+
+  <!-- Portal Requests Panel (always visible, all employees) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="portalRequestsPanel">
+    <div class="card" style="padding:16px;">
+      <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:12px;"><i class="fa fa-file-signature"></i> Reconciliation Requests</div>
+      <div class="table-wrap">
+        <table style="font-size:12px;">
+          <thead><tr>
+            <th style="font-size:10px;">Employee</th>
+            <th style="font-size:10px;">Date</th>
+            <th style="font-size:10px;">Type</th>
+            <th style="font-size:10px;">In</th>
+            <th style="font-size:10px;">Out</th>
+            <th style="font-size:10px;">Status</th>
+            <th style="font-size:10px;">Action</th>
+          </tr></thead>
+          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No requests</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-size:13px;font-weight:700;color:#8b5cf6;margin-bottom:12px;"><i class="fa fa-paper-plane"></i> Leave Applications</div>
+      <div class="table-wrap">
+        <table style="font-size:12px;">
+          <thead><tr>
+            <th style="font-size:10px;">Employee</th>
+            <th style="font-size:10px;">Type</th>
+            <th style="font-size:10px;">From</th>
+            <th style="font-size:10px;">To</th>
+            <th style="font-size:10px;">Days</th>
+            <th style="font-size:10px;">Status</th>
+            <th style="font-size:10px;">Action</th>
+          </tr></thead>
+          <tbody id="portalLeaveReqBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No applications</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2502,7 +2502,8 @@ function renderAttendancePage(){
   // Show/hide sections
   document.getElementById('attNoEmp').style.display = emp ? 'none' : 'block';
   document.getElementById('attMainContent').style.display = emp ? 'block' : 'none';
-  document.getElementById('portalRequestsPanel').style.display = emp ? 'none' : 'grid';
+  const _pp=document.getElementById('portalRequestsPanel');
+  if(_pp) _pp.style.display = emp ? 'none' : 'grid';
   const bar = document.getElementById('attEmpBar');
   if(emp){
     bar.style.display='flex';
