@@ -5077,28 +5077,52 @@ async function approvePortalLeave(empId, leaveId){
   l.status='approved';
   // Add to HR leave records
   if(!emp.leaveRecords) emp.leaveRecords=[];
-  // Parse dates from portal format (DD-MM-YYYY or similar)
-  const parsePortalDate = s => {
-    if(!s) return '';
-    // try YYYY-MM-DD first
-    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
-    // try DD-MM-YYYY
-    const m=s.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-    return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
-  };
   const existing = emp.leaveRecords.find(r=>r.id===leaveId);
   if(!existing){
+    // Parse date helper
+    const pd = s => {
+      if(!s) return '';
+      if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+      const m=s.match(/(\d{2})[\/-](\d{2})[\/-](\d{4})/);
+      return m?`${m[3]}-${m[2]}-${m[1]}`:s;
+    };
+    const fromISO=pd(l.fromDate), toISO=pd(l.toDate);
+    const days=parseInt(l.days)||1;
     emp.leaveRecords.push({
-      id: leaveId,
-      type: l.type||'Leave',
-      from: parsePortalDate(l.fromDate),
-      to: parsePortalDate(l.toDate),
-      days: l.days||1,
-      reason: l.reason||'',
-      status: 'Approved',
-      approver: 'HR',
-      appDate: l.appDate||''
+      id:leaveId, type:l.type||'Leave',
+      from:fromISO, to:toISO, days:days,
+      reason:l.reason||'', status:'Approved',
+      approver:'HR', appDate:l.appDate||''
     });
+    // Deduct from leaveBalance
+    const yr = fromISO?new Date(fromISO).getFullYear():new Date().getFullYear();
+    if(!emp.leaveBalance) emp.leaveBalance={};
+    if(!emp.leaveBalance[yr]) emp.leaveBalance[yr]={annualEntitled:14,annualTaken:0,casualEntitled:14,casualTaken:0};
+    const lb=emp.leaveBalance[yr];
+    const ltype=(l.type||'').toLowerCase();
+    if(ltype.includes('annual')) lb.annualTaken=(lb.annualTaken||0)+days;
+    else lb.casualTaken=(lb.casualTaken||0)+days;
+    // Update monthly attendance leave count
+    if(fromISO&&toISO){
+      let cur=new Date(fromISO);
+      const end=new Date(toISO);
+      while(cur<=end){
+        const y=cur.getFullYear(),mo=cur.getMonth();
+        if(!emp.attendance) emp.attendance={};
+        if(!emp.attendance[y]) emp.attendance[y]={};
+        if(!emp.attendance[y][mo]) emp.attendance[y][mo]={};
+        const md=emp.attendance[y][mo];
+        md.leave=(parseInt(md.leave)||0)+1;
+        const d=cur.getDate();
+        if(!md.daily) md.daily=[];
+        while(md.daily.length<d) md.daily.push('');
+        const raw=md.daily[d-1];
+        const obj=typeof raw==='object'&&raw?{...raw}:{s:typeof raw==='string'?raw:''};
+        obj.s='L';
+        md.daily[d-1]=obj;
+        cur.setDate(cur.getDate()+1);
+      }
+    }
   }
   await saveSingleKey('employees',employees);
   renderPortalRequests();
