@@ -844,6 +844,33 @@ async function handleLoginSubmit(e) {
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('attAddLeaveForm').style.display='none'">Cancel</button>
       </div>
     </div>
+
+    <!-- Portal Reconciliation Requests -->
+    <div class="form-section" style="margin-bottom:16px;">
+      <div class="form-section-title"><i class="fa fa-file-signature" style="color:#06b6d4;"></i> Portal Reconciliation Requests</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Type</th><th>In Time</th><th>Out Time</th><th>Applied On</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px;">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Portal Leave Applications -->
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa fa-paper-plane" style="color:#8b5cf6;"></i> Portal Leave Applications</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Applied On</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="portalLeaveReqBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2857,6 +2884,43 @@ function renderAttendancePage(){
   // Render leave balance cards
   renderLeaveBalanceCards(emp, year);
   leaveEditMode = false; // reset edit mode on employee change
+
+  // Portal Reconciliation Requests
+  const reconBody = document.getElementById('portalReconBody');
+  if(reconBody){
+    const recons = emp.reconRequests||[];
+    reconBody.innerHTML = recons.length ? recons.map(r=>{
+      const sc = r.status==='approved'?'#10b981':r.status==='rejected'?'#ef4444':'#f59e0b';
+      return `<tr>
+        <td>${r.date||'—'}</td>
+        <td>${r.type||'—'}</td>
+        <td>${r.inTime||'—'}</td>
+        <td>${r.outTime||'—'}</td>
+        <td>${r.appDate||'—'}</td>
+        <td><span style="color:${sc};font-weight:700;">${r.status||'pending'}</span></td>
+        <td>${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon('${emp.id}','${r.id}')">Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon('${emp.id}','${r.id}')">Reject</button>`:'—'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px;">No portal reconciliation requests</td></tr>';
+  }
+
+  // Portal Leave Applications
+  const leaveReqBody = document.getElementById('portalLeaveReqBody');
+  if(leaveReqBody){
+    const leaves2 = emp.leaveRequests||[];
+    leaveReqBody.innerHTML = leaves2.length ? leaves2.map(l=>{
+      const sc = l.status==='approved'?'#10b981':l.status==='rejected'?'#ef4444':'#f59e0b';
+      return `<tr>
+        <td>${l.type||'—'}</td>
+        <td>${l.fromDate||'—'}</td>
+        <td>${l.toDate||'—'}</td>
+        <td>${l.days||'—'}</td>
+        <td>${l.reason||'—'}</td>
+        <td>${l.appDate||'—'}</td>
+        <td><span style="color:${sc};font-weight:700;">${l.status||'pending'}</span></td>
+        <td>${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave('${emp.id}','${l.id}')">Approve</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave('${emp.id}','${l.id}')">Reject</button>`:'—'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;">No portal leave applications</td></tr>';
+  }
 
   const leaves=(emp.leaveRecords||[]).filter(l=>{
     if(!year) return true;
@@ -4946,6 +5010,43 @@ function saveAttPage(){
 
 function addLeavePageRecord(){
   document.getElementById('attAddLeaveForm').style.display='block';
+}
+
+async function approvePortalRecon(empId, reconId){
+  const emp=employees.find(e=>e.id===parseInt(empId));
+  if(!emp) return;
+  const r=emp.reconRequests?.find(r=>r.id===reconId);
+  if(r) r.status='approved';
+  await saveSingleKey('employees',employees);
+  renderAttendancePage();
+  toast('Reconciliation approved ✓','success');
+}
+async function rejectPortalRecon(empId, reconId){
+  const emp=employees.find(e=>e.id===parseInt(empId));
+  if(!emp) return;
+  const r=emp.reconRequests?.find(r=>r.id===reconId);
+  if(r) r.status='rejected';
+  await saveSingleKey('employees',employees);
+  renderAttendancePage();
+  toast('Reconciliation rejected','success');
+}
+async function approvePortalLeave(empId, leaveId){
+  const emp=employees.find(e=>e.id===parseInt(empId));
+  if(!emp) return;
+  const l=emp.leaveRequests?.find(l=>l.id===leaveId);
+  if(l) l.status='approved';
+  await saveSingleKey('employees',employees);
+  renderAttendancePage();
+  toast('Leave approved ✓','success');
+}
+async function rejectPortalLeave(empId, leaveId){
+  const emp=employees.find(e=>e.id===parseInt(empId));
+  if(!emp) return;
+  const l=emp.leaveRequests?.find(l=>l.id===leaveId);
+  if(l) l.status='rejected';
+  await saveSingleKey('employees',employees);
+  renderAttendancePage();
+  toast('Leave rejected','success');
 }
 
 function saveLeavePageRecord(){
