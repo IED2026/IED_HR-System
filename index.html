@@ -5012,8 +5012,18 @@ function renderPortalRequests(){
     (emp.reconRequests||[]).forEach(r=>allRecons.push({...r,empName:emp.name,empId:emp.id}));
     (emp.leaveRequests||[]).forEach(l=>allLeaves.push({...l,empName:emp.name,empId:emp.id}));
   });
-  allRecons.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
-  allLeaves.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
+  const parseAppDate = s => {
+    if(!s) return 0;
+    // format: "29-06-2026 11:25 AM" or "29-06-2026"
+    const m = s.match(/(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})\s*(AM|PM))?/i);
+    if(!m) return new Date(s).getTime()||0;
+    let h=parseInt(m[4]||0), min=parseInt(m[5]||0);
+    if(m[6]&&m[6].toUpperCase()==='PM'&&h!==12) h+=12;
+    if(m[6]&&m[6].toUpperCase()==='AM'&&h===12) h=0;
+    return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]),h,min).getTime();
+  };
+  allRecons.sort((a,b)=>parseAppDate(b.appDate)-parseAppDate(a.appDate));
+  allLeaves.sort((a,b)=>parseAppDate(b.appDate)-parseAppDate(a.appDate));
 
   const stBadge=(st)=>{const sc=st==='approved'?'#10b981':st==='rejected'?'#ef4444':'#f59e0b';return `<span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;">${st||'pending'}</span>`;};
   const tdS='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);';
