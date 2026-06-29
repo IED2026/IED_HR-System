@@ -5073,7 +5073,6 @@ async function approvePortalRecon(empId, reconId){
   r.status='approved';
   // Apply recon times to attendance daily record
   if(r.date){
-    // r.date format: "Tue, 2 Jun 2026"
     const parsed=new Date(r.date);
     if(!isNaN(parsed)){
       const yr=parsed.getFullYear(), mo=parsed.getMonth(), dy=parsed.getDate();
@@ -5086,6 +5085,16 @@ async function approvePortalRecon(empId, reconId){
       let dayObj=typeof md.daily[dy-1]==='object'&&md.daily[dy-1]?{...md.daily[dy-1]}:{s:typeof md.daily[dy-1]==='string'?md.daily[dy-1]:''};
       if(r.inTime){ dayObj.i=r.inTime; dayObj.in=r.inTime; }
       if(r.outTime){ dayObj.o=r.outTime; dayObj.out=r.outTime; }
+      const prevS=dayObj.s||'';
+      if(!prevS||prevS==='A'||prevS===''){
+        if(r.inTime&&r.outTime) dayObj.s='P';
+        else if(r.inTime) dayObj.s='D';
+      }
+      if((prevS==='A'||!prevS)&&(dayObj.s==='P'||dayObj.s==='D')){
+        md.absent=Math.max(0,(parseInt(md.absent)||0)-1);
+        md.present=(parseInt(md.present)||0)+1;
+        if(dayObj.s==='D') md.late=(parseInt(md.late)||0)+1;
+      }
       md.daily[dy-1]=dayObj;
     }
   }
