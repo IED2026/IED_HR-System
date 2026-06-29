@@ -2502,6 +2502,7 @@ function renderAttendancePage(){
   // Show/hide sections
   document.getElementById('attNoEmp').style.display = emp ? 'none' : 'block';
   document.getElementById('attMainContent').style.display = emp ? 'block' : 'none';
+  document.getElementById('portalRequestsPanel').style.display = emp ? 'none' : 'grid';
   const bar = document.getElementById('attEmpBar');
   if(emp){
     bar.style.display='flex';
