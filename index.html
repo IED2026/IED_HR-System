@@ -848,39 +848,49 @@ async function handleLoginSubmit(e) {
 
   </div>
 
-  <!-- Portal Requests Panel (always visible, all employees) -->
+  <!-- Portal Requests Panel -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="portalRequestsPanel">
-    <div class="card" style="padding:16px;">
-      <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:12px;"><i class="fa fa-file-signature"></i> Reconciliation Requests</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <i class="fa fa-file-signature" style="color:#06b6d4;font-size:13px;"></i>
+        <span style="font-size:13px;font-weight:700;color:#06b6d4;">Reconciliation Requests</span>
+      </div>
       <div class="table-wrap">
-        <table style="font-size:12px;">
-          <thead><tr>
-            <th style="font-size:10px;">Employee</th>
-            <th style="font-size:10px;">Date</th>
-            <th style="font-size:10px;">Type</th>
-            <th style="font-size:10px;">In</th>
-            <th style="font-size:10px;">Out</th>
-            <th style="font-size:10px;">Status</th>
-            <th style="font-size:10px;">Action</th>
+        <table style="font-size:11px;width:100%;">
+          <thead><tr style="background:rgba(6,182,212,0.06);">
+            <th style="font-size:9px;color:#06b6d4;letter-spacing:.05em;padding:8px 10px;">Emp ID</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Employee</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Date</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Type</th>
+            <th style="font-size:9px;color:#06b6d4;letter-spacing:.05em;padding:8px 10px;">In Time</th>
+            <th style="font-size:9px;color:#8b5cf6;letter-spacing:.05em;padding:8px 10px;">Out Time</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Applied On</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Status</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Action</th>
           </tr></thead>
-          <tbody id="portalReconBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No requests</td></tr></tbody>
+          <tbody id="portalReconBody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No requests</td></tr></tbody>
         </table>
       </div>
     </div>
-    <div class="card" style="padding:16px;">
-      <div style="font-size:13px;font-weight:700;color:#8b5cf6;margin-bottom:12px;"><i class="fa fa-paper-plane"></i> Leave Applications</div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <i class="fa fa-paper-plane" style="color:#8b5cf6;font-size:13px;"></i>
+        <span style="font-size:13px;font-weight:700;color:#8b5cf6;">Leave Applications</span>
+      </div>
       <div class="table-wrap">
-        <table style="font-size:12px;">
-          <thead><tr>
-            <th style="font-size:10px;">Employee</th>
-            <th style="font-size:10px;">Type</th>
-            <th style="font-size:10px;">From</th>
-            <th style="font-size:10px;">To</th>
-            <th style="font-size:10px;">Days</th>
-            <th style="font-size:10px;">Status</th>
-            <th style="font-size:10px;">Action</th>
+        <table style="font-size:11px;width:100%;">
+          <thead><tr style="background:rgba(139,92,246,0.06);">
+            <th style="font-size:9px;color:#8b5cf6;letter-spacing:.05em;padding:8px 10px;">Emp ID</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Employee</th>
+            <th style="font-size:9px;color:#f59e0b;letter-spacing:.05em;padding:8px 10px;">Leave Type</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">From</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">To</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Days</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Applied On</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Status</th>
+            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Action</th>
           </tr></thead>
-          <tbody id="portalLeaveReqBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No applications</td></tr></tbody>
+          <tbody id="portalLeaveReqBody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No applications</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -5005,31 +5015,44 @@ function renderPortalRequests(){
   allRecons.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
   allLeaves.sort((a,b)=>new Date(b.appDate||0)-new Date(a.appDate||0));
 
+  const stBadge=(st)=>{const sc=st==='approved'?'#10b981':st==='rejected'?'#ef4444':'#f59e0b';return `<span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;">${st||'pending'}</span>`;};
+  const tdS='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);';
+  const tdH='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);font-weight:700;color:var(--text);';
+  const tdA='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#06b6d4;font-weight:700;';
+  const tdO='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#8b5cf6;font-weight:700;';
+  const tdID='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#f59e0b;font-weight:700;font-size:11px;';
+
   reconBody.innerHTML=allRecons.length?allRecons.map(r=>{
-    const sc=r.status==='approved'?'#10b981':r.status==='rejected'?'#ef4444':'#f59e0b';
-    return `<tr>
-      <td style="font-weight:600;">${r.empName||'—'}</td>
-      <td>${r.date||'—'}</td>
-      <td>${r.type||'—'}</td>
-      <td>${r.inTime||'—'}</td>
-      <td>${r.outTime||'—'}</td>
-      <td><span style="color:${sc};font-weight:700;">${r.status||'pending'}</span></td>
-      <td>${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon(${r.empId},'${r.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon(${r.empId},'${r.id}')">✗</button>`:'—'}</td>
+    return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(6,182,212,0.05)'" onmouseout="this.style.background=''">
+      <td style="${tdID}">${r.empId||'—'}</td>
+      <td style="${tdH}">${r.empName||'—'}</td>
+      <td style="${tdS}">${r.date||'—'}</td>
+      <td style="${tdS}">${r.type||'—'}</td>
+      <td style="${tdA}">${r.inTime||'—'}</td>
+      <td style="${tdO}">${r.outTime||'—'}</td>
+      <td style="${tdS};color:var(--text3);">${r.appDate||'—'}</td>
+      <td style="${tdS}">${stBadge(r.status)}</td>
+      <td style="${tdS}">${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon(${r.empId},'${r.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon(${r.empId},'${r.id}')">✗</button>`:'—'}</td>
     </tr>`;
-  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No reconciliation requests</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No reconciliation requests</td></tr>';
+
+  const tdL='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);';
+  const tdLT='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#f59e0b;font-weight:700;';
+  const tdLID='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#8b5cf6;font-weight:700;font-size:11px;';
 
   leaveBody.innerHTML=allLeaves.length?allLeaves.map(l=>{
-    const sc=l.status==='approved'?'#10b981':l.status==='rejected'?'#ef4444':'#f59e0b';
-    return `<tr>
-      <td style="font-weight:600;">${l.empName||'—'}</td>
-      <td>${l.type||'—'}</td>
-      <td>${l.fromDate||'—'}</td>
-      <td>${l.toDate||'—'}</td>
-      <td>${l.days||'—'}</td>
-      <td><span style="color:${sc};font-weight:700;">${l.status||'pending'}</span></td>
-      <td>${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave(${l.empId},'${l.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave(${l.empId},'${l.id}')">✗</button>`:'—'}</td>
+    return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(139,92,246,0.05)'" onmouseout="this.style.background=''">
+      <td style="${tdLID}">${l.empId||'—'}</td>
+      <td style="${tdH}">${l.empName||'—'}</td>
+      <td style="${tdLT}">${l.type||'—'}</td>
+      <td style="${tdL}">${l.fromDate||'—'}</td>
+      <td style="${tdL}">${l.toDate||'—'}</td>
+      <td style="${tdL};text-align:center;font-weight:700;">${l.days||'—'}</td>
+      <td style="${tdL};color:var(--text3);">${l.appDate||'—'}</td>
+      <td style="${tdL}">${stBadge(l.status)}</td>
+      <td style="${tdL}">${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave(${l.empId},'${l.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave(${l.empId},'${l.id}')">✗</button>`:'—'}</td>
     </tr>`;
-  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;font-size:11px;">No leave applications</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No leave applications</td></tr>';
 }
 
 async function approvePortalRecon(empId, reconId){
