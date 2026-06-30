@@ -2478,6 +2478,34 @@ function canApprove(){return currentRole==='ceo'||currentRole==='hr';}
 
 const PAGE_TITLES={dashboard:'Dashboard',attendance:'Attendance & Leave',employees:'Employee Directory',emphistory:'🕐 Employee History',starboard:'Star & Performance Scores',salary:'Monthly Salary Input',empstmt:'Employee Statement',projstmt:'Project Statement',kpipanel:'KPI Panel',manning:'Manning Schedule',mandayreport:'Man-Day Report',ledger10:'10-Year Salary Ledger',projects:'Project Management',reports:'Reports & Export',yearhistory:'📅 Historical Year View',yearsummary:'📊 Yearly Salary Summary'};
 // ══════════════ ATTENDANCE & LEAVE PAGE ══════════════
+// Single source of truth: derive month stats purely from daily[] array.
+// This ensures Monthly Attendance Record, Leave Records, charts, and the
+// Employee Portal all agree with the Yearly Attendance Status calendar.
+function deriveMonthStats(rawData, upToDay){
+  const daily = rawData.daily || [];
+  const limit = upToDay ? Math.min(upToDay, daily.length) : daily.length;
+  let wd=0, present=0, absent=0, leave=0, late=0, holiday=0, onTime=0, delay=0, exDelay=0;
+  for(let i=0; i<limit; i++){
+    const d = daily[i];
+    const s = typeof d==='object' && d ? (d.s||'') : (d||'');
+    if(s==='P'||s==='P(L)'){ present++; wd++; onTime++; }
+    else if(s==='D'){ present++; wd++; late++; delay++; }
+    else if(s==='E'){ present++; wd++; late++; exDelay++; }
+    else if(s==='A'){ absent++; wd++; }
+    else if(s==='L'){ leave++; wd++; }
+    else if(s==='H'){ holiday++; }
+    else if(s==='P(W)'||s==='P(H)'){ present++; wd++; onTime++; }
+  }
+  return {
+    wd, present, absent, leave, late, holiday, onTime, delay, exDelay,
+    half: parseInt(rawData.half)||0,
+    ot: parseFloat(rawData.ot)||0,
+    elOt: rawData.elOt||'',
+    note: rawData.note||'',
+    daily
+  };
+}
+
 function renderAttendancePage(){
   // Init employee dropdown
   const empSel = document.getElementById('attEmpSelect');
@@ -2541,27 +2569,11 @@ function renderAttendancePage(){
     const rawData = attData[i]||{};
     let mData;
     if(isFuture){
-      mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',note:rawData.note||''};
+      mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',note:rawData.note||'',daily:rawData.daily||[]};
     } else if(isCurMonth){
-      const _daily=rawData.daily||[];
-      if(_daily.length>0){
-        let _wd=0,_p=0,_a=0,_l=0,_late=0,_h=0;
-        _daily.slice(0,nowDay-1).forEach(d=>{
-          const s=typeof d==='object'?d.s:d;
-          if(s==='P'||s==='P(L)'){ _p++; _wd++; }
-          else if(s==='D'){ _p++; _wd++; _late++; }
-          else if(s==='E'){ _p++; _wd++; _late++; }
-          else if(s==='A'){ _a++; _wd++; }
-          else if(s==='L'){ _l++; _wd++; }
-          else if(s==='H'){ _h++; }
-          else if(s==='P(W)'||s==='P(H)'){ _p++; _wd++; }
-        });
-        mData={...rawData,wd:_wd,present:_p,absent:_a,leave:_l,late:_late,holiday:_h,half:rawData.half||0,ot:rawData.ot||0};
-      } else {
-        mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',note:rawData.note||'',...rawData};
-      }
+      mData = deriveMonthStats(rawData, nowDay-1);
     } else {
-      mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',...rawData,wd:rawData.wd||0};
+      mData = deriveMonthStats(rawData);
     }
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
@@ -2573,15 +2585,8 @@ function renderAttendancePage(){
     const pct2 = effectiveWD>0 ? Math.round(present/effectiveWD*100) : 0;
     const pctColor2 = pct2>=90?'#10b981':pct2>=75?'#f59e0b':'#ef4444';
     const pctBg = pct2>=90?'rgba(16,185,129,0.1)':pct2>=75?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)';
-    // Count P/D/E from daily array
     const daily=mData.daily||[];
-    let mOnTime=0,mDelay=0,mExDelay=0;
-    daily.forEach(d=>{
-      const s=typeof d==='object'?(d.s||''):d;
-      if(s==='P'||s==='P(W)'||s==='P(H)'||s==='P(L)') mOnTime++;
-      else if(s==='D') mDelay++;
-      else if(s==='E') mExDelay++;
-    });
+    const mOnTime=mData.onTime||0, mDelay=mData.delay||0, mExDelay=mData.exDelay||0;
     totalPresent+=present;
     totalLeave+=leave;
     totalAbsent+=absent;
@@ -3182,7 +3187,7 @@ function renderYearlyAttCalendar(emp, year, attData){
     const isPast = isFutureYear3 ? false : (year < new Date().getFullYear() ? true : mIdx < nowM);
     const isCurrent = isFutureYear3 ? false : (mIdx === nowM && new Date().getFullYear()===year);
     const isFuture = isFutureYear3 ? true : (mIdx > nowM);
-    const mData = attData[mIdx]||{wd:0,present:0,absent:0,leave:0,late:0};
+    const mData = deriveMonthStats(attData[mIdx]||{});
 
     const borderClr = isPast ? '#2563eb' : isCurrent ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)';
     const titleClr = isPast ? '#60a5fa' : isCurrent ? 'var(--gold)' : '#475569';
