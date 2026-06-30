@@ -730,7 +730,29 @@ async function handleLoginSubmit(e) {
     <div style="display:flex;align-items:center;gap:8px;">
       <label style="font-size:12px;color:var(--text2);">Year:</label>
       <select class="form-control" id="attYear" onchange="renderAttendancePage()" style="width:90px;"></select>
+      <button class="btn btn-secondary btn-sm" onclick="openTimePolicyModal()"><i class="fa fa-gear"></i> Time &amp; Holiday Policy</button>
       <button class="btn btn-primary btn-sm" onclick="saveAttPage()"><i class="fa fa-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+
+  <!-- Time & Holiday Policy Modal -->
+  <div class="modal-overlay" id="timePolicyModal" style="display:none;">
+    <div class="modal-box" style="max-width:760px;">
+      <div class="modal-header">
+        <h3><i class="fa fa-gear"></i> Time &amp; Holiday Policy</h3>
+        <div class="modal-close" onclick="closeModal('timePolicyModal')"><i class="fa fa-xmark"></i></div>
+      </div>
+      <div style="padding:18px;max-height:70vh;overflow-y:auto;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">
+          Define date-range rules. Each rule controls: on-time cutoff (Present), delay cutoff (Delay → Extreme Delay), expected working hours, which weekdays are weekends, and specific holiday dates. The calendar derives every employee's daily status (P/D/E) live from their check-in/out time against whichever rule covers that date.
+        </div>
+        <div id="policyRulesList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addPolicyRule()"><i class="fa fa-plus"></i> Add Rule</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('timePolicyModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="savePolicyRules()"><i class="fa fa-floppy-disk"></i> Save Policy</button>
+      </div>
     </div>
   </div>
 
@@ -2481,13 +2503,181 @@ const PAGE_TITLES={dashboard:'Dashboard',attendance:'Attendance & Leave',employe
 // Single source of truth: derive month stats purely from daily[] array.
 // This ensures Monthly Attendance Record, Leave Records, charts, and the
 // Employee Portal all agree with the Yearly Attendance Status calendar.
-function deriveMonthStats(rawData, upToDay){
+// ── TIME & HOLIDAY POLICY ENGINE ──
+// Stored globally (applies to all employees) in manningSched2.__timePolicy
+// Rule: { id, startDate:'YYYY-MM-DD', endDate:'YYYY-MM-DD', pTime:'09:30', dTime:'09:45',
+//         workHours:8, weekendDays:[5,6], holidays:['YYYY-MM-DD',...] }
+function getTimePolicy(){
+  if(!manningSched2.__timePolicy) manningSched2.__timePolicy=[];
+  return manningSched2.__timePolicy;
+}
+function setTimePolicy(rules){
+  manningSched2.__timePolicy = rules;
+}
+function findPolicyForDate(dateStr){
+  const rules = getTimePolicy();
+  // dateStr = 'YYYY-MM-DD'
+  for(let i=rules.length-1;i>=0;i--){
+    const r=rules[i];
+    if(dateStr>=r.startDate && dateStr<=r.endDate) return r;
+  }
+  return null;
+}
+function parseHM(hm){
+  if(!hm) return null;
+  const m=hm.match(/(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+function parseTimeToMinutes(t){
+  if(!t) return null;
+  // handles "09:21 AM" or "09:21"
+  const m=t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if(!m) return null;
+  let h=parseInt(m[1]), mi=parseInt(m[2]);
+  if(m[3]){
+    if(m[3].toUpperCase()==='PM'&&h!==12) h+=12;
+    if(m[3].toUpperCase()==='AM'&&h===12) h=0;
+  }
+  return h*60+mi;
+}
+// Computes the live status for a single day, using policy if available,
+// falling back to whatever status was already stored (manual entry / recon).
+function computeDayStatus(yr, mo, dy, dayObj){
+  const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;
+  const policy = findPolicyForDate(dateStr);
+  const storedS = typeof dayObj==='object'&&dayObj ? (dayObj.s||'') : (dayObj||'');
+  const inTime = typeof dayObj==='object'&&dayObj ? (dayObj.i||dayObj.in||'') : '';
+  const outTime = typeof dayObj==='object'&&dayObj ? (dayObj.o||dayObj.out||'') : '';
+
+  if(policy){
+    // Holiday overrides everything except explicit Present-with-checkin
+    const isHoliday = (policy.holidays||[]).includes(dateStr);
+    const dow = new Date(yr,mo,dy).getDay();
+    const isWeekend = (policy.weekendDays||[5,6]).includes(dow);
+    if(inTime){
+      // Has check-in → determine P/D/E from cutoff times
+      const inMin = parseTimeToMinutes(inTime);
+      const pCut = parseHM(policy.pTime);
+      const dCut = parseHM(policy.dTime);
+      let s='P';
+      if(pCut!=null && inMin!=null){
+        if(inMin<=pCut) s='P';
+        else if(dCut!=null && inMin<=dCut) s='D';
+        else s='E';
+      }
+      if(isHoliday) s = s==='P'?'P(H)':s;
+      else if(isWeekend) s = s==='P'?'P(W)':s;
+      return s;
+    }
+    if(isHoliday) return 'H';
+    if(isWeekend) return 'W';
+    if(storedS==='L'||storedS==='A') return storedS;
+    return storedS||'A';
+  }
+  // No policy covers this date → fall back to stored status (legacy behavior)
+  if(inTime && (!storedS||storedS==='A')) return 'P';
+  return storedS;
+}
+
+// ── TIME POLICY MODAL UI ──
+let _policyDraft = [];
+function openTimePolicyModal(){
+  _policyDraft = JSON.parse(JSON.stringify(getTimePolicy()));
+  if(_policyDraft.length===0){
+    _policyDraft.push({id:'R'+Date.now(), startDate:new Date().toISOString().slice(0,10), endDate:new Date().toISOString().slice(0,10), pTime:'09:30', dTime:'09:45', workHours:8, weekendDays:[5,6], holidays:[]});
+  }
+  renderPolicyRules();
+  openModal('timePolicyModal');
+}
+function addPolicyRule(){
+  _policyDraft.push({id:'R'+Date.now(), startDate:new Date().toISOString().slice(0,10), endDate:new Date().toISOString().slice(0,10), pTime:'09:30', dTime:'09:45', workHours:8, weekendDays:[5,6], holidays:[]});
+  renderPolicyRules();
+}
+function removePolicyRule(id){
+  _policyDraft = _policyDraft.filter(r=>r.id!==id);
+  renderPolicyRules();
+}
+function updatePolicyField(id, field, value){
+  const r = _policyDraft.find(r=>r.id===id);
+  if(!r) return;
+  r[field]=value;
+}
+function togglePolicyWeekend(id, dow){
+  const r = _policyDraft.find(r=>r.id===id);
+  if(!r) return;
+  if(!r.weekendDays) r.weekendDays=[];
+  const idx=r.weekendDays.indexOf(dow);
+  if(idx===-1) r.weekendDays.push(dow); else r.weekendDays.splice(idx,1);
+  renderPolicyRules();
+}
+function addPolicyHoliday(id){
+  const input = document.getElementById('hdate_'+id);
+  if(!input || !input.value) return;
+  const r = _policyDraft.find(r=>r.id===id);
+  if(!r) return;
+  if(!r.holidays) r.holidays=[];
+  if(!r.holidays.includes(input.value)) r.holidays.push(input.value);
+  input.value='';
+  renderPolicyRules();
+}
+function removePolicyHoliday(id, date){
+  const r = _policyDraft.find(r=>r.id===id);
+  if(!r) return;
+  r.holidays = (r.holidays||[]).filter(h=>h!==date);
+  renderPolicyRules();
+}
+function renderPolicyRules(){
+  const list = document.getElementById('policyRulesList');
+  if(!list) return;
+  const dowLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  list.innerHTML = _policyDraft.map(r=>`
+    <div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="form-group" style="margin:0;"><label style="font-size:10px;">Start Date</label><input type="date" class="form-control" value="${r.startDate}" onchange="updatePolicyField('${r.id}','startDate',this.value)"></div>
+        <div class="form-group" style="margin:0;"><label style="font-size:10px;">End Date</label><input type="date" class="form-control" value="${r.endDate}" onchange="updatePolicyField('${r.id}','endDate',this.value)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="form-group" style="margin:0;"><label style="font-size:10px;">Present Cutoff (P)</label><input type="time" class="form-control" value="${r.pTime}" onchange="updatePolicyField('${r.id}','pTime',this.value)"></div>
+        <div class="form-group" style="margin:0;"><label style="font-size:10px;">Delay Cutoff (D→E after)</label><input type="time" class="form-control" value="${r.dTime}" onchange="updatePolicyField('${r.id}','dTime',this.value)"></div>
+        <div class="form-group" style="margin:0;"><label style="font-size:10px;">Working Hours</label><input type="number" class="form-control" value="${r.workHours}" step="0.5" onchange="updatePolicyField('${r.id}','workHours',parseFloat(this.value))"></div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;color:var(--text2);display:block;margin-bottom:4px;">Weekend Days</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${dowLabels.map((lb,dow)=>`<button type="button" onclick="togglePolicyWeekend('${r.id}',${dow})" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ${(r.weekendDays||[]).includes(dow)?'#ef4444':'var(--border)'};background:${(r.weekendDays||[]).includes(dow)?'rgba(239,68,68,0.15)':'var(--navy4)'};color:${(r.weekendDays||[]).includes(dow)?'#ef4444':'var(--text2)'};">${lb}</button>`).join('')}
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:10px;color:var(--text2);display:block;margin-bottom:4px;">Holidays in this range</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="date" id="hdate_${r.id}" class="form-control" style="flex:1;">
+          <button class="btn btn-secondary btn-sm" onclick="addPolicyHoliday('${r.id}')"><i class="fa fa-plus"></i></button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${(r.holidays||[]).map(h=>`<span style="background:rgba(129,140,248,0.15);color:#818cf8;border:1px solid rgba(129,140,248,0.3);padding:3px 8px;border-radius:6px;font-size:10px;">${h} <i class="fa fa-xmark" style="cursor:pointer;margin-left:4px;" onclick="removePolicyHoliday('${r.id}','${h}')"></i></span>`).join('')||'<span style="font-size:10px;color:var(--text3);">None</span>'}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <button class="btn btn-danger btn-xs" onclick="removePolicyRule('${r.id}')"><i class="fa fa-trash"></i> Remove Rule</button>
+      </div>
+    </div>`).join('');
+}
+function savePolicyRules(){
+  setTimePolicy(_policyDraft);
+  saveSingleKey('manningSched2', manningSched2);
+  closeModal('timePolicyModal');
+  renderAttendancePage();
+  toast('Time & Holiday Policy saved ✓','success');
+}
+
+function deriveMonthStats(rawData, upToDay, yr, mo){
   const daily = rawData.daily || [];
   const limit = upToDay ? Math.min(upToDay, daily.length) : daily.length;
   let wd=0, present=0, absent=0, leave=0, late=0, holiday=0, onTime=0, delay=0, exDelay=0;
   for(let i=0; i<limit; i++){
     const d = daily[i];
-    const s = typeof d==='object' && d ? (d.s||'') : (d||'');
+    const s = (yr!=null && mo!=null) ? computeDayStatus(yr, mo, i+1, d) : (typeof d==='object' && d ? (d.s||'') : (d||''));
     if(s==='P'||s==='P(L)'){ present++; wd++; onTime++; }
     else if(s==='D'){ present++; wd++; late++; delay++; }
     else if(s==='E'){ present++; wd++; late++; exDelay++; }
@@ -2571,9 +2761,9 @@ function renderAttendancePage(){
     if(isFuture){
       mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',note:rawData.note||'',daily:rawData.daily||[]};
     } else if(isCurMonth){
-      mData = deriveMonthStats(rawData, nowDay-1);
+      mData = deriveMonthStats(rawData, nowDay-1, year, i);
     } else {
-      mData = deriveMonthStats(rawData);
+      mData = deriveMonthStats(rawData, null, year, i);
     }
     const present=parseInt(mData.present)||0;
     const leave=parseInt(mData.leave)||0;
@@ -3187,7 +3377,7 @@ function renderYearlyAttCalendar(emp, year, attData){
     const isPast = isFutureYear3 ? false : (year < new Date().getFullYear() ? true : mIdx < nowM);
     const isCurrent = isFutureYear3 ? false : (mIdx === nowM && new Date().getFullYear()===year);
     const isFuture = isFutureYear3 ? true : (mIdx > nowM);
-    const mData = deriveMonthStats(attData[mIdx]||{});
+    const mData = deriveMonthStats(attData[mIdx]||{}, null, year, mIdx);
 
     const borderClr = isPast ? '#2563eb' : isCurrent ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)';
     const titleClr = isPast ? '#60a5fa' : isCurrent ? 'var(--gold)' : '#475569';
@@ -3211,10 +3401,7 @@ function renderYearlyAttCalendar(emp, year, attData){
     for(let d=1; d<=daysInMonth; d++){
       const _raw = daily[d-1] || '';
       const _detail = typeof _raw==='object' ? _raw : null;
-      let status = typeof _raw==='object' ? (_raw.s||'') : _raw;
-      // If has check-in/out time but status wasn't set to a present-type code, infer Present
-      const hasInOut = _detail && (_detail.i||_detail.in||_detail.o||_detail.out);
-      if(hasInOut && (status===''||status==='A')) status='P';
+      let status = computeDayStatus(year, mIdx, d, _raw);
       // isPast for this specific day
       const isDayPast = isPast || (isCurrent && d < nowD);
       const isDayToday = isCurrent && d === nowD;
