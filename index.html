@@ -3205,8 +3205,11 @@ function renderYearlyAttCalendar(emp, year, attData){
     const nowD = new Date().getDate(); // today's date number
     for(let d=1; d<=daysInMonth; d++){
       const _raw = daily[d-1] || '';
-      const status = typeof _raw==='object' ? (_raw.s||'') : _raw;
       const _detail = typeof _raw==='object' ? _raw : null;
+      let status = typeof _raw==='object' ? (_raw.s||'') : _raw;
+      // If has check-in/out time but status wasn't set to a present-type code, infer Present
+      const hasInOut = _detail && (_detail.i||_detail.in||_detail.o||_detail.out);
+      if(hasInOut && (status===''||status==='A')) status='P';
       // isPast for this specific day
       const isDayPast = isPast || (isCurrent && d < nowD);
       const isDayToday = isCurrent && d === nowD;
