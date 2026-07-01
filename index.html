@@ -2586,6 +2586,8 @@ function computeDayStatus(yr, mo, dy, dayObj){
     return storedS||'A';
   }
   // No policy covers this date → fall back to stored status (legacy behavior)
+  // But if today and no actual check-in yet, don't show as present from imported data
+  if(isToday && !inTime) return '';
   if(inTime && (!storedS||storedS==='A')) return 'P';
   return storedS;
 }
