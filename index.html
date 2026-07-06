@@ -2584,8 +2584,9 @@ function computeDayStatus(yr, mo, dy, dayObj){
     }
     if(isHoliday) return 'H';
     if(isWeekend) return 'W';
-    if(storedS==='L'||storedS==='A') return storedS;
-    return storedS||'A';
+    if(storedS==='L') return 'L';
+    // Only mark Absent if HR has explicitly entered 'A', not auto-derived
+    return storedS||'';
   }
   // No policy covers this date → fall back to stored status (legacy behavior)
   // But if today and no actual check-in yet, don't show as present from imported data
