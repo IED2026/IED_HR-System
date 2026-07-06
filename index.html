@@ -2930,6 +2930,14 @@ function renderAttendancePage(){
     <div style="display:flex;gap:8px;flex:3;min-width:300px;">
     <div class="kpi-card" style="border-top:2px solid var(--gold);padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;">
       <div style="font-size:11px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:6px;"><i class="fa fa-file-excel"></i> Quick Data Import</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <label style="font-size:10px;color:var(--text3);">Year:</label>
+        <select id="attImportYear" style="flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text);font-size:11px;font-family:inherit;">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+        </select>
+      </div>
       <div id="attDropZoneKpi" onclick="document.getElementById('attFileInput').click()" 
         style="border:1.5px dashed var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;flex:1;"
         ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
@@ -4848,6 +4856,7 @@ async function processAttFile(file){
           const now = new Date();
           const currentYear = now.getFullYear();
           const currentMonthIdx = now.getMonth();
+          const userYear = parseInt(document.getElementById('attImportYear')?.value) || currentYear;
 
           wb.SheetNames.forEach(sheetName => {
             const mIdx = monthNames.findIndex(m => sheetName.toLowerCase().includes(m.toLowerCase()));
@@ -4858,7 +4867,7 @@ async function processAttFile(file){
             const titleCell = ws2['A1'];
             const title = titleCell ? String(titleCell.v || '') : '';
             const yearMatch = title.match(/20\d\d/);
-            const sheetYear = yearMatch ? parseInt(yearMatch[0]) : currentYear;
+            const sheetYear = yearMatch ? parseInt(yearMatch[0]) : userYear;
 
             // Skip if this month/year is in the future
             if(sheetYear > currentYear) return;
