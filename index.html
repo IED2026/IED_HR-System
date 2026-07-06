@@ -659,7 +659,6 @@ async function handleLoginSubmit(e) {
       <option value="ceo">CEO / Director</option>
       <option value="viewer">Viewer (Read-Only)</option>
     </select>
-    <button class="btn btn-secondary btn-sm" onclick="fixAllJoinDates()" title="Clear attendance data before each employee's join date"><i class="fa fa-broom"></i> Fix Join Dates</button>
     <button class="btn btn-secondary btn-sm" onclick="exportAllData()"><i class="fa-solid fa-download"></i> Backup</button>
     <button class="btn btn-primary btn-sm" onclick="saveAllConfirm()"><i class="fa-solid fa-floppy-disk"></i> Save All</button>
   </div>
@@ -5319,42 +5318,7 @@ function renderPortalRequests(){
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No leave applications</td></tr>';
 }
 
-async function fixAllJoinDates(){
-  if(!confirm('This will clear attendance data before each employee\'s join date. Make sure you have a Backup first. Proceed?')) return;
-  let fixed=0;
-  employees.forEach(emp=>{
-    if(!emp.join||!emp.attendance) return;
-    let joinDate=null;
-    const m1=emp.join.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    const m2=emp.join.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-    if(m1) joinDate=new Date(parseInt(m1[1]),parseInt(m1[2])-1,parseInt(m1[3]));
-    else if(m2) joinDate=new Date(parseInt(m2[3]),parseInt(m2[2])-1,parseInt(m2[1]));
-    if(!joinDate) return;
-    const jy=joinDate.getFullYear(), jm=joinDate.getMonth(), jd=joinDate.getDate();
-    Object.keys(emp.attendance).forEach(yr=>{
-      const y=parseInt(yr);
-      Object.keys(emp.attendance[yr]).forEach(mo=>{
-        const m=parseInt(mo);
-        if(y<jy||(y===jy&&m<jm)){
-          // Entire month before join — clear all daily
-          if(emp.attendance[yr][mo].daily) emp.attendance[yr][mo].daily=[];
-          fixed++;
-        } else if(y===jy&&m===jm){
-          // Join month — clear days before join day
-          const daily=emp.attendance[yr][mo].daily||[];
-          for(let d=0;d<jd-1&&d<daily.length;d++) daily[d]='';
-          emp.attendance[yr][mo].daily=daily;
-          fixed++;
-        }
-      });
-    });
-  });
-  await saveSingleKey('employees',employees);
-  renderAttendancePage();
-  toast(`Join date fix applied to ${fixed} months ✓`,'success');
-}
-
-
+async function approvePortalRecon(empId, reconId){
   const emp=employees.find(e=>e.id===parseInt(empId));
   if(!emp) return;
   const r=emp.reconRequests?.find(r=>r.id===reconId);
