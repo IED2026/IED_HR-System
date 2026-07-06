@@ -5053,13 +5053,39 @@ function importAllAttMonths(){
     }
     if(!empRow2) return; // skip if employee not found in file
 
+    // Parse employee join date
+    const joinStr = emp.join||''; // format: DD-MM-YYYY or YYYY-MM-DD
+    let joinDate = null;
+    if(joinStr){
+      const m1=joinStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const m2=joinStr.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if(m1) joinDate=new Date(parseInt(m1[1]),parseInt(m1[2])-1,parseInt(m1[3]));
+      else if(m2) joinDate=new Date(parseInt(m2[3]),parseInt(m2[2])-1,parseInt(m2[1]));
+    }
+
     if(!emp.attendance) emp.attendance={};
     if(!emp.attendance[year]) emp.attendance[year]={};
+
+    // Clear daily entries before join date
+    let daily = [...(empRow2.daily||[])];
+    if(joinDate){
+      const joinYear=joinDate.getFullYear(), joinMo=joinDate.getMonth();
+      // If this month is before the join month in the join year
+      if(year < joinYear || (year === joinYear && mIdx < joinMo)){
+        return; // skip entire month
+      }
+      // If this is the join month, clear days before join day
+      if(year === joinYear && mIdx === joinMo){
+        const joinDay = joinDate.getDate();
+        for(let d=0; d<joinDay-1 && d<daily.length; d++) daily[d]='';
+      }
+    }
+
     emp.attendance[year][mIdx] = {
       wd: empRow2.wd||0, present: empRow2.present||0, leave: empRow2.leave||0,
       absent: empRow2.absent||0, holiday: empRow2.holiday||0, late: empRow2.late||0, half: 0, ot: 0,
       note: emp.attendance[year]?.[mIdx]?.note||'',
-      daily: empRow2.daily||[]
+      daily
     };
     count++;
   });
