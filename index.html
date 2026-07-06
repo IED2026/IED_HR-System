@@ -4492,12 +4492,25 @@ function pihrDoFillSingle(rowIdx, year){
   const _sElSign=_sElMins<0?'-':'+';
   const _sAbsEl=Math.abs(_sElMins);
   const _sElOtStr=_sAbsEl>0?(_sElSign+Math.floor(_sAbsEl/60)+':'+(_sAbsEl%60).toString().padStart(2,'0')):'';
+  // Build daily array mapped by date field
+  let pihrDailySingle = new Array(31).fill('');
+  rawDaily.forEach(r=>{
+    if(typeof r==='object' && r.date){
+      const dm=r.date.match(/(\d{2})-(\d{2})-(\d{4})/);
+      const dayIdx=dm?parseInt(dm[1])-1:null;
+      if(dayIdx!==null&&dayIdx>=0&&dayIdx<31){
+        pihrDailySingle[dayIdx]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''};
+      }
+    }
+  });
+  while(pihrDailySingle.length>0 && pihrDailySingle[pihrDailySingle.length-1]==='') pihrDailySingle.pop();
+
   emp.attendance[year][mi]={
     wd: d.wd||0, present: d.present||0, absent: d.absent||0,
     leave: d.leave||0, late: d.late||0, half: 0,
     ot: d.ot||0, holiday: d.holiday||0,
     note: emp.attendance[year][mi]?.note||'',
-    daily: rawDaily.map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
+    daily: pihrDailySingle,
     elOt: _sElOtStr
   };
   saveState();
@@ -4661,12 +4674,22 @@ function confirmPihrFill(year){
       const _elSign=_elMins<0?'-':'+';
       const _absEl=Math.abs(_elMins);
       const _elOtStr=_absEl>0?(_elSign+Math.floor(_absEl/60)+':'+((_absEl%60)).toString().padStart(2,'0')):'';
+      // Build date-indexed daily array
+      let _daily = new Array(31).fill('');
+      (d.daily||[]).forEach(r=>{
+        if(typeof r==='object'&&r.date){
+          const dm=r.date.match(/(\d{2})-(\d{2})-(\d{4})/);
+          const di=dm?parseInt(dm[1])-1:null;
+          if(di!==null&&di>=0&&di<31) _daily[di]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''};
+        }
+      });
+      while(_daily.length>0&&_daily[_daily.length-1]==='') _daily.pop();
       emp.attendance[year][mi]={
         wd: d.wd||0, present: d.present||0, absent: d.absent||0,
         leave: d.leave||0, late: d.late||0, half: 0,
         ot: d.ot||0, holiday: d.holiday||0,
         note: emp.attendance[year][mi]?.note||'',
-        daily: (d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
+        daily: _daily,
         elOt: _elOtStr
       };
       // Store yearSummary at emp level
