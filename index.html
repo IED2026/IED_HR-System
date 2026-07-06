@@ -4562,12 +4562,23 @@ function pihrDoFillAllForEmp(pihrCode, year){
     const _elSign=_elMins<0?'-':'+';
     const _absEl=Math.abs(_elMins);
     const _elOtStr=_absEl>0?(_elSign+Math.floor(_absEl/60)+':'+(_absEl%60).toString().padStart(2,'0')):'';
+    // Build daily array
+    let pihrDaily = (d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r);
+    // Clear days before join date
+    if(emp.join){
+      const jm=emp.join.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(jm){
+        const jy=parseInt(jm[1]),jmo=parseInt(jm[2])-1,jd=parseInt(jm[3]);
+        if(year<jy||(year===jy&&mi<jmo)){ return; } // skip entire month
+        if(year===jy&&mi===jmo){ for(let i=0;i<jd-1&&i<pihrDaily.length;i++) pihrDaily[i]=''; }
+      }
+    }
     emp.attendance[year][mi]={
       wd:d.wd||0, present:d.present||0, absent:d.absent||0,
       leave:d.leave||0, late:d.late||0, half:0,
       ot:d.ot||0, holiday:d.holiday||0,
       note:emp.attendance[year][mi]?.note||'',
-      daily:(d.daily||[]).map(r=>typeof r==='object'?{s:r.status,i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''}:r),
+      daily:pihrDaily,
       elOt:_elOtStr
     };
     if(pe.yearSummary){ if(!emp.yearSummary) emp.yearSummary={}; emp.yearSummary[year]=pe.yearSummary; }
