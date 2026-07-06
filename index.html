@@ -5159,6 +5159,19 @@ function confirmAttImport(idx){
 
   if(!emp.attendance) emp.attendance={};
   if(!emp.attendance[year]) emp.attendance[year]={};
+
+  // Apply join date filter to daily array
+  let daily2 = [...(empRow?.daily||[])];
+  if(emp.join){
+    const jm=emp.join.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(jm){
+      const jy=parseInt(jm[1]),jmo=parseInt(jm[2])-1,jd=parseInt(jm[3]);
+      if(year===jy && mIdx===jmo){
+        for(let d=0;d<jd-1&&d<daily2.length;d++) daily2[d]='';
+      }
+    }
+  }
+
   emp.attendance[year][mIdx] = {
     wd: empRow ? empRow.wd||0 : m.working_days||0,
     present: empRow ? empRow.present||0 : m.present||0,
@@ -5169,7 +5182,7 @@ function confirmAttImport(idx){
     half: m.half_day||0,
     ot: m.ot_hours||0,
     note: emp.attendance[year][mIdx]?.note||'',
-    daily: empRow?.daily || []
+    daily: daily2
   };
 
   // Re-render but restore file state after
