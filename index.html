@@ -10761,21 +10761,87 @@ function openCalDayEdit(dateStr){
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Status</label>
         <select id="calEditStatus" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;">${STATUSES.map(s=>`<option value="${s}"${obj.s===s?' selected':''}>${s||'— none —'}</option>`).join('')}</select></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">In Time</label>
-        <input id="calEditIn" type="text" value="${obj.i||obj.in||''}" placeholder="09:00 AM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+        <div style="display:flex;gap:5px;">
+          <input id="calEditIn" type="text" value="${obj.i||obj.in||''}" placeholder="09:00 AM" oninput="calcEditElDuty()" style="flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;min-width:0;">
+          <button type="button" onclick="openClockPicker('calEditIn')" style="padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--gold);cursor:pointer;font-size:12px;" title="Pick time"><i class="fa fa-clock"></i></button>
+        </div></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Out Time</label>
-        <input id="calEditOut" type="text" value="${obj.o||obj.out||''}" placeholder="06:00 PM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+        <div style="display:flex;gap:5px;">
+          <input id="calEditOut" type="text" value="${obj.o||obj.out||''}" placeholder="06:00 PM" style="flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;min-width:0;">
+          <button type="button" onclick="openClockPicker('calEditOut')" style="padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--gold);cursor:pointer;font-size:12px;" title="Pick time"><i class="fa fa-clock"></i></button>
+        </div></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Expected Duty (h)</label>
-        <input id="calEditExpected" type="text" value="${obj.exp||''}" placeholder="08:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+        <input id="calEditExpected" type="text" value="${obj.exp||''}" placeholder="08:00" oninput="calcEditElDuty()" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Actual Duty (h)</label>
-        <input id="calEditActual" type="text" value="${obj.t||''}" placeholder="08:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
-      <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">E/L Duty (h)</label>
-        <input id="calEditEl" type="text" value="${obj.e||''}" placeholder="+00:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+        <input id="calEditActual" type="text" value="${obj.t||''}" placeholder="08:00" oninput="calcEditElDuty()" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+      <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">E/L Duty (h) <span style="color:var(--text3);font-size:9px;">(auto)</span></label>
+        <input id="calEditEl" type="text" readonly placeholder="auto" style="width:100%;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:#10b981;font-size:12px;font-family:inherit;box-sizing:border-box;cursor:default;"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button onclick="document.getElementById('calDayEditModal').remove()" style="padding:8px 16px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
       <button onclick="saveCalDayEdit(${yr},${mo},${dy})" style="padding:8px 18px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fa fa-floppy-disk"></i> Save</button>
     </div>
   </div>`;
+  document.body.appendChild(modal);
+}
+
+function calcEditElDuty(){
+  const parseHM=v=>{if(!v)return null;const m=v.match(/(\d+):(\d+)/);return m?parseInt(m[1])*60+parseInt(m[2]):null;};
+  const exp=parseHM(document.getElementById('calEditExpected')?.value);
+  const act=parseHM(document.getElementById('calEditActual')?.value);
+  const el=document.getElementById('calEditEl');
+  if(!el) return;
+  if(exp!=null && act!=null){
+    const diff=act-exp;
+    const neg=diff<0; const abs=Math.abs(diff);
+    const h=Math.floor(abs/60), m=abs%60;
+    el.value=(neg?'-':'+')+(String(h).padStart(2,'0'))+':'+(String(m).padStart(2,'0'));
+    el.style.color=neg?'#ef4444':'#10b981';
+  } else { el.value=''; }
+}
+
+function openClockPicker(targetId){
+  document.getElementById('clockPickerModal')?.remove();
+  const now=new Date();
+  const modal=document.createElement('div');
+  modal.id='clockPickerModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10010;display:flex;align-items:center;justify-content:center;';
+  let selH=now.getHours(), selM=Math.floor(now.getMinutes()/5)*5, selAmPm=selH>=12?'PM':'AM';
+  selH=selH%12||12;
+  const render=()=>{
+    const hrs=Array.from({length:12},(_,i)=>i+1);
+    const mins=[0,5,10,15,20,25,30,35,40,45,50,55];
+    modal.innerHTML=`<div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);padding:20px;width:300px;box-shadow:0 20px 60px rgba(0,0,0,.7);">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:14px;"><i class="fa fa-clock"></i> Select Time</div>
+      <div style="font-size:32px;font-weight:800;color:var(--text);text-align:center;margin-bottom:16px;letter-spacing:2px;">
+        ${String(selH).padStart(2,'0')}:${String(selM).padStart(2,'0')} ${selAmPm}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px;">
+        ${hrs.map(h=>`<button onclick="clockSelH(${h})" style="padding:6px;border-radius:6px;border:1px solid ${h===selH?'var(--gold)':'var(--border)'};background:${h===selH?'rgba(201,162,77,0.15)':'var(--navy3)'};color:${h===selH?'var(--gold)':'var(--text2)'};font-size:12px;font-weight:${h===selH?'700':'400'};cursor:pointer;font-family:inherit;">${String(h).padStart(2,'0')}</button>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px;">
+        ${mins.map(m=>`<button onclick="clockSelM(${m})" style="padding:6px;border-radius:6px;border:1px solid ${m===selM?'var(--gold)':'var(--border)'};background:${m===selM?'rgba(201,162,77,0.15)':'var(--navy3)'};color:${m===selM?'var(--gold)':'var(--text2)'};font-size:12px;font-weight:${m===selM?'700':'400'};cursor:pointer;font-family:inherit;">${String(m).padStart(2,'0')}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button onclick="clockSelAmPm('AM')" style="flex:1;padding:8px;border-radius:7px;border:1px solid ${'AM'===selAmPm?'var(--gold)':'var(--border)'};background:${'AM'===selAmPm?'rgba(201,162,77,0.15)':'var(--navy3)'};color:${'AM'===selAmPm?'var(--gold)':'var(--text2)'};font-weight:${'AM'===selAmPm?'700':'400'};cursor:pointer;font-family:inherit;">AM</button>
+        <button onclick="clockSelAmPm('PM')" style="flex:1;padding:8px;border-radius:7px;border:1px solid ${'PM'===selAmPm?'var(--gold)':'var(--border)'};background:${'PM'===selAmPm?'rgba(201,162,77,0.15)':'var(--navy3)'};color:${'PM'===selAmPm?'var(--gold)':'var(--text2)'};font-weight:${'PM'===selAmPm?'700':'400'};cursor:pointer;font-family:inherit;">PM</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('clockPickerModal').remove()" style="padding:8px 16px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="clockConfirm('${targetId}')" style="padding:8px 20px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Set Time</button>
+      </div>
+    </div>`;
+  };
+  window.clockSelH=h=>{selH=h;render();};
+  window.clockSelM=m=>{selM=m;render();};
+  window.clockSelAmPm=ap=>{selAmPm=ap;render();};
+  window.clockConfirm=id=>{
+    const inp=document.getElementById(id);
+    if(inp) inp.value=`${String(selH).padStart(2,'0')}:${String(selM).padStart(2,'0')} ${selAmPm}`;
+    document.getElementById('clockPickerModal').remove();
+    calcEditElDuty();
+  };
+  render();
   document.body.appendChild(modal);
 }
 
@@ -10788,21 +10854,18 @@ async function saveCalDayEdit(yr,mo,dy){
   const md=emp.attendance[yr][mo];
   if(!md.daily) md.daily=[];
   while(md.daily.length<dy) md.daily.push('');
-  md.daily[dy-1]={
-    s:document.getElementById('calEditStatus').value,
-    i:document.getElementById('calEditIn').value.trim(),
-    in:document.getElementById('calEditIn').value.trim(),
-    o:document.getElementById('calEditOut').value.trim(),
-    out:document.getElementById('calEditOut').value.trim(),
-    exp:document.getElementById('calEditExpected').value.trim(),
-    t:document.getElementById('calEditActual').value.trim(),
-    e:document.getElementById('calEditEl').value.trim()
-  };
+  const inT=document.getElementById('calEditIn').value.trim();
+  const outT=document.getElementById('calEditOut').value.trim();
+  const exp=document.getElementById('calEditExpected').value.trim();
+  const act=document.getElementById('calEditActual').value.trim();
+  const el=document.getElementById('calEditEl').value.trim();
+  md.daily[dy-1]={s:document.getElementById('calEditStatus').value,i:inT,in:inT,o:outT,out:outT,exp,t:act,e:el};
   document.getElementById('calDayEditModal').remove();
   await saveSingleKey('employees',employees);
   renderAttendancePage();
   toast('Day updated ✓','success');
 }
+
 
 </script>
 </body>
