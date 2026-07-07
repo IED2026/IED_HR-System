@@ -2782,6 +2782,9 @@ function renderAttendancePage(){
   const nowM = nowYear2===year ? new Date().getMonth() : (isFutureYear ? -1 : 11);
   let totalPresent=0,totalLeave=0,totalAbsent=0,totalLate=0,totalOT=0,totalWDSoFar=0;
   let totalOnTime=0,totalDelay=0,totalExDelay=0;
+  let _totalActualMins=0,_totalElMins=0;
+  const _parseHMins=hm=>{if(!hm)return 0;const neg=hm.startsWith('-');const m=hm.replace('-','').match(/(\d+):(\d+)/);if(!m)return 0;const v=parseInt(m[1])*60+parseInt(m[2]);return neg?-v:v;};
+  const _fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);const h=Math.floor(abs/60);const m=abs%60;return (neg?'-':'')+(String(h).padStart(2,'0'))+':'+(String(m).padStart(2,'0'));};
   const barLabels=[],barWD=[],barPresent=[],barLeaveAbsent=[];
   const rows=MONTHS.map((m,i)=>{
     const nowYear=new Date().getFullYear(), nowMonth=new Date().getMonth(), nowDay=new Date().getDate();
@@ -2817,6 +2820,13 @@ function renderAttendancePage(){
     totalOnTime+=mOnTime;
     totalDelay+=mDelay;
     totalExDelay+=mExDelay;
+    // Accumulate duty hours from daily[]
+    (mData.daily||[]).forEach(d=>{
+      if(!d||d==='') return;
+      const obj=typeof d==='object'?d:null;
+      if(obj?.t) _totalActualMins+=_parseHMins(obj.t);
+      if(obj?.e) _totalElMins+=_parseHMins(obj.e);
+    });
     // Only count months up to current for overall %
     if(i<=nowM){ totalWDSoFar+=wd; }
     // Bar chart - only up to current month
@@ -2920,11 +2930,11 @@ function renderAttendancePage(){
         </div>
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Actual</div>
-          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${(Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&d!==''&&(typeof d!=='object'||d.s||d.i))))?emp?.yearSummary?.[year]?.actualDuty||'—':'—'}</div>
+          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${_totalActualMins>0?_fmtHM(_totalActualMins):'—'}</div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:8px;">
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Extra / Less</div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${(()=>{const v=(Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&d!==''&&(typeof d!=='object'||d.s||d.i))))?emp?.yearSummary?.[year]?.elOtTotal:'';return v&&v.startsWith('-')?'#ef4444':'#8b5cf6';})()};">${(()=>{const v=(Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&d!==''&&(typeof d!=='object'||d.s||d.i))))?emp?.yearSummary?.[year]?.elOtTotal:'';return v?(v.startsWith('-')?v:'+'+v):'—';})()}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${_totalActualMins>0&&_totalElMins<0?'#ef4444':'#8b5cf6'};">${_totalActualMins>0?(_totalElMins>=0?'+':'')+_fmtHM(_totalElMins):'—'}</div>
         </div>
       </div>
     </div>
