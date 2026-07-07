@@ -2718,13 +2718,11 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
     else if(s==='H'){ holiday++; }
     else if(s==='P(W)'||s==='P(H)'){ present++; wd++; onTime++; }
   }
-  // Only use stored OT/elOt if there is actual daily data
-  const hasData = daily.some(d=>d && (typeof d==='string'?d!=='':d.s||d.i||d.o));
   return {
     wd, present, absent, leave, late, holiday, onTime, delay, exDelay,
     half: parseInt(rawData.half)||0,
-    ot: hasData ? (parseFloat(rawData.ot)||0) : 0,
-    elOt: hasData ? (rawData.elOt||'') : '',
+    ot: parseFloat(rawData.ot)||0,
+    elOt: rawData.elOt||'',
     note: rawData.note||'',
     daily
   };
