@@ -872,48 +872,64 @@ async function handleLoginSubmit(e) {
   </div>
 
   <!-- Portal Requests Panel -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="portalRequestsPanel">
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <i class="fa fa-file-signature" style="color:#06b6d4;font-size:13px;"></i>
-        <span style="font-size:13px;font-weight:700;color:#06b6d4;">Reconciliation Requests</span>
+  <div style="margin-bottom:20px;" id="portalRequestsPanel">
+    <!-- Recon Section -->
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="fa fa-file-signature" style="color:#06b6d4;font-size:13px;"></i>
+          <span style="font-size:13px;font-weight:700;color:#06b6d4;">Reconciliation Requests</span>
+          <span id="reconPendingBadge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none;"></span>
+        </div>
+        <div style="display:flex;gap:6px;" id="reconTabBtns">
+          <button onclick="switchReconTab('pending')" id="reconTab_pending" style="padding:4px 12px;border-radius:6px;border:1px solid #f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">Pending <span id="reconCount_pending"></span></button>
+          <button onclick="switchReconTab('approved')" id="reconTab_approved" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Approved <span id="reconCount_approved"></span></button>
+          <button onclick="switchReconTab('rejected')" id="reconTab_rejected" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Rejected <span id="reconCount_rejected"></span></button>
+        </div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" id="portalReconTableWrap">
         <table style="font-size:11px;width:100%;">
-          <thead><tr style="background:rgba(6,182,212,0.06);">
-            <th style="font-size:9px;color:#06b6d4;letter-spacing:.05em;padding:8px 10px;">Emp ID</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Employee</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Date</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Type</th>
-            <th style="font-size:9px;color:#06b6d4;letter-spacing:.05em;padding:8px 10px;">In Time</th>
-            <th style="font-size:9px;color:#8b5cf6;letter-spacing:.05em;padding:8px 10px;">Out Time</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Applied On</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Status</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Action</th>
+          <thead><tr style="background:rgba(6,182,212,0.04);">
+            <th style="font-size:9px;color:#06b6d4;padding:8px 10px;">Emp ID</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Employee</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Date</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Type</th>
+            <th style="font-size:9px;color:#06b6d4;padding:8px 10px;">In Time</th>
+            <th style="font-size:9px;color:#8b5cf6;padding:8px 10px;">Out Time</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Applied On</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Action</th>
           </tr></thead>
-          <tbody id="portalReconBody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No requests</td></tr></tbody>
+          <tbody id="portalReconBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No requests</td></tr></tbody>
         </table>
       </div>
     </div>
+    <!-- Leave Section -->
     <div class="card" style="padding:0;overflow:hidden;">
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-        <i class="fa fa-paper-plane" style="color:#8b5cf6;font-size:13px;"></i>
-        <span style="font-size:13px;font-weight:700;color:#8b5cf6;">Leave Applications</span>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="fa fa-paper-plane" style="color:#8b5cf6;font-size:13px;"></i>
+          <span style="font-size:13px;font-weight:700;color:#8b5cf6;">Leave Applications</span>
+          <span id="leavePendingBadge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none;"></span>
+        </div>
+        <div style="display:flex;gap:6px;" id="leaveTabBtns">
+          <button onclick="switchLeaveTab('pending')" id="leaveTab_pending" style="padding:4px 12px;border-radius:6px;border:1px solid #f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">Pending <span id="leaveCount_pending"></span></button>
+          <button onclick="switchLeaveTab('approved')" id="leaveTab_approved" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Approved <span id="leaveCount_approved"></span></button>
+          <button onclick="switchLeaveTab('rejected')" id="leaveTab_rejected" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Rejected <span id="leaveCount_rejected"></span></button>
+        </div>
       </div>
       <div class="table-wrap">
         <table style="font-size:11px;width:100%;">
-          <thead><tr style="background:rgba(139,92,246,0.06);">
-            <th style="font-size:9px;color:#8b5cf6;letter-spacing:.05em;padding:8px 10px;">Emp ID</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Employee</th>
-            <th style="font-size:9px;color:#f59e0b;letter-spacing:.05em;padding:8px 10px;">Leave Type</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">From</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">To</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Days</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Applied On</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Status</th>
-            <th style="font-size:9px;color:var(--text2);letter-spacing:.05em;padding:8px 10px;">Action</th>
+          <thead><tr style="background:rgba(139,92,246,0.04);">
+            <th style="font-size:9px;color:#8b5cf6;padding:8px 10px;">Emp ID</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Employee</th>
+            <th style="font-size:9px;color:#f59e0b;padding:8px 10px;">Leave Type</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">From</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">To</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Days</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Applied On</th>
+            <th style="font-size:9px;color:var(--text2);padding:8px 10px;">Action</th>
           </tr></thead>
-          <tbody id="portalLeaveReqBody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No applications</td></tr></tbody>
+          <tbody id="portalLeaveReqBody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No applications</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -5303,40 +5319,88 @@ function addLeavePageRecord(){
   document.getElementById('attAddLeaveForm').style.display='block';
 }
 
+let _reconTab='pending', _leaveTab='pending';
+
+function switchReconTab(tab){
+  _reconTab=tab;
+  ['pending','approved','rejected'].forEach(t=>{
+    const btn=document.getElementById('reconTab_'+t);
+    if(!btn) return;
+    const active=t===tab;
+    const colors={pending:'#f59e0b',approved:'#10b981',rejected:'#ef4444'};
+    btn.style.borderColor=active?colors[t]:'var(--border)';
+    btn.style.background=active?`rgba(${t==='pending'?'245,158,11':t==='approved'?'16,185,129':'239,68,68'},0.12)`:'transparent';
+    btn.style.color=active?colors[t]:'var(--text2)';
+    btn.style.fontWeight=active?'700':'400';
+  });
+  renderPortalRequests();
+}
+
+function switchLeaveTab(tab){
+  _leaveTab=tab;
+  ['pending','approved','rejected'].forEach(t=>{
+    const btn=document.getElementById('leaveTab_'+t);
+    if(!btn) return;
+    const active=t===tab;
+    const colors={pending:'#f59e0b',approved:'#10b981',rejected:'#ef4444'};
+    btn.style.borderColor=active?colors[t]:'var(--border)';
+    btn.style.background=active?`rgba(${t==='pending'?'245,158,11':t==='approved'?'16,185,129':'239,68,68'},0.12)`:'transparent';
+    btn.style.color=active?colors[t]:'var(--text2)';
+    btn.style.fontWeight=active?'700':'400';
+  });
+  renderPortalRequests();
+}
+
 function renderPortalRequests(){
   const reconBody=document.getElementById('portalReconBody');
   const leaveBody=document.getElementById('portalLeaveReqBody');
   if(!reconBody||!leaveBody) return;
 
-  // Collect all employees' recon requests
-  const allRecons=[];
-  const allLeaves=[];
+  const allRecons=[], allLeaves=[];
   employees.forEach(emp=>{
     (emp.reconRequests||[]).forEach(r=>allRecons.push({...r,empName:emp.name,empId:emp.id}));
     (emp.leaveRequests||[]).forEach(l=>allLeaves.push({...l,empName:emp.name,empId:emp.id}));
   });
-  const parseAppDate = s => {
+  const parseAppDate=s=>{
     if(!s) return 0;
-    const m = s.match(/(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})\s*(AM|PM))?/i);
+    const m=s.match(/(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})\s*(AM|PM))?/i);
     if(!m) return new Date(s).getTime()||0;
-    let h=parseInt(m[4]||0), min=parseInt(m[5]||0);
+    let h=parseInt(m[4]||0),min=parseInt(m[5]||0);
     if(m[6]&&m[6].toUpperCase()==='PM'&&h!==12) h+=12;
     if(m[6]&&m[6].toUpperCase()==='AM'&&h===12) h=0;
     return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]),h,min).getTime();
   };
-  const statusRank = s => s==='pending'?0:s==='approved'?1:2;
-  allRecons.sort((a,b)=>statusRank(a.status)-statusRank(b.status)||parseAppDate(b.appDate)-parseAppDate(a.appDate));
-  allLeaves.sort((a,b)=>statusRank(a.status)-statusRank(b.status)||parseAppDate(b.appDate)-parseAppDate(a.appDate));
+  allRecons.sort((a,b)=>parseAppDate(b.appDate)-parseAppDate(a.appDate));
+  allLeaves.sort((a,b)=>parseAppDate(b.appDate)-parseAppDate(a.appDate));
 
-  const stBadge=(st)=>{const sc=st==='approved'?'#10b981':st==='rejected'?'#ef4444':'#f59e0b';return `<span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;">${st||'pending'}</span>`;};
+  // Update counts
+  ['pending','approved','rejected'].forEach(t=>{
+    const rc=document.getElementById('reconCount_'+t);
+    const lc=document.getElementById('leaveCount_'+t);
+    const rn=allRecons.filter(r=>r.status===t).length;
+    const ln=allLeaves.filter(l=>l.status===t).length;
+    if(rc) rc.textContent=rn?'('+rn+')':'';
+    if(lc) lc.textContent=ln?'('+ln+')':'';
+  });
+  const rPend=allRecons.filter(r=>r.status==='pending').length;
+  const lPend=allLeaves.filter(l=>l.status==='pending').length;
+  const rpb=document.getElementById('reconPendingBadge');
+  const lpb=document.getElementById('leavePendingBadge');
+  if(rpb){rpb.style.display=rPend?'inline':'none';rpb.textContent=rPend+' pending';}
+  if(lpb){lpb.style.display=lPend?'inline':'none';lpb.textContent=lPend+' pending';}
+
   const tdS='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);';
   const tdH='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);font-weight:700;color:var(--text);';
   const tdA='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#06b6d4;font-weight:700;';
   const tdO='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#8b5cf6;font-weight:700;';
   const tdID='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#f59e0b;font-weight:700;font-size:11px;';
 
-  reconBody.innerHTML=allRecons.length?allRecons.map(r=>{
-    return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(6,182,212,0.05)'" onmouseout="this.style.background=''">
+  // Filter by active tab
+  const filtRecons=allRecons.filter(r=>(r.status||'pending')===_reconTab);
+  const filtLeaves=allLeaves.filter(l=>(l.status||'pending')===_leaveTab);
+
+  reconBody.innerHTML=filtRecons.length?filtRecons.map(r=>`
+    <tr style="transition:background .15s;" onmouseover="this.style.background='rgba(6,182,212,0.05)'" onmouseout="this.style.background=''">
       <td style="${tdID}">${r.empId||'—'}</td>
       <td style="${tdH}">${r.empName||'—'}</td>
       <td style="${tdS}">${r.date||'—'}</td>
@@ -5344,17 +5408,15 @@ function renderPortalRequests(){
       <td style="${tdA}">${r.inTime||'—'}</td>
       <td style="${tdO}">${r.outTime||'—'}</td>
       <td style="${tdS};color:var(--text3);">${r.appDate||'—'}</td>
-      <td style="${tdS}">${stBadge(r.status)}</td>
       <td style="${tdS}">${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalRecon(${r.empId},'${r.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalRecon(${r.empId},'${r.id}')">✗</button>`:'—'}</td>
-    </tr>`;
-  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No reconciliation requests</td></tr>';
+    </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No ${_reconTab} reconciliation requests</td></tr>`;
 
   const tdL='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);';
   const tdLT='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#f59e0b;font-weight:700;';
   const tdLID='padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#8b5cf6;font-weight:700;font-size:11px;';
 
-  leaveBody.innerHTML=allLeaves.length?allLeaves.map(l=>{
-    return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(139,92,246,0.05)'" onmouseout="this.style.background=''">
+  leaveBody.innerHTML=filtLeaves.length?filtLeaves.map(l=>`
+    <tr style="transition:background .15s;" onmouseover="this.style.background='rgba(139,92,246,0.05)'" onmouseout="this.style.background=''">
       <td style="${tdLID}">${l.empId||'—'}</td>
       <td style="${tdH}">${l.empName||'—'}</td>
       <td style="${tdLT}">${l.type||'—'}</td>
@@ -5362,10 +5424,8 @@ function renderPortalRequests(){
       <td style="${tdL}">${l.toDate||'—'}</td>
       <td style="${tdL};text-align:center;font-weight:700;">${l.days||'—'}</td>
       <td style="${tdL};color:var(--text3);">${l.appDate||'—'}</td>
-      <td style="${tdL}">${stBadge(l.status)}</td>
       <td style="${tdL}">${l.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePortalLeave(${l.empId},'${l.id}')">✓</button> <button class="btn btn-danger btn-xs" onclick="rejectPortalLeave(${l.empId},'${l.id}')">✗</button>`:'—'}</td>
-    </tr>`;
-  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No leave applications</td></tr>';
+    </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px;font-size:11px;">No ${_leaveTab} leave applications</td></tr>`;
 }
 
 async function approvePortalRecon(empId, reconId){
