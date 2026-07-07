@@ -3386,7 +3386,14 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
       </div>
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
-      ${(()=>{const pol=findPolicyForDate(dateStr.includes('-')&&dateStr.length===10?dateStr:dateStr.split('-').reverse().join('-'));const wh=pol?pol.workHours:null;return wh?row('Expected Duty (h)',String(wh).padStart(2,'0')+':00','#f59e0b'):'';})()}
+      ${(()=>{
+        let iso=dateStr;
+        const dm=dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if(dm) iso=dm[3]+'-'+dm[2]+'-'+dm[1];
+        const pol=findPolicyForDate(iso);
+        const wh=pol?pol.workHours:8;
+        return row('Expected Duty (h)',String(Math.floor(wh)).padStart(2,'0')+':'+String(Math.round((wh%1)*60)).padStart(2,'0'),'#f59e0b');
+      })()}
       ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
       ${row('Extra/Less Duty (h)', elDuty, elColor)}
       ${!inTime&&!outTime?'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">No time data</div>':''}
@@ -10757,6 +10764,8 @@ function openCalDayEdit(dateStr){
         <input id="calEditIn" type="text" value="${obj.i||obj.in||''}" placeholder="09:00 AM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Out Time</label>
         <input id="calEditOut" type="text" value="${obj.o||obj.out||''}" placeholder="06:00 PM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
+      <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Expected Duty (h)</label>
+        <input id="calEditExpected" type="text" value="${obj.exp||''}" placeholder="08:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Actual Duty (h)</label>
         <input id="calEditActual" type="text" value="${obj.t||''}" placeholder="08:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;"></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">E/L Duty (h)</label>
@@ -10785,6 +10794,7 @@ async function saveCalDayEdit(yr,mo,dy){
     in:document.getElementById('calEditIn').value.trim(),
     o:document.getElementById('calEditOut').value.trim(),
     out:document.getElementById('calEditOut').value.trim(),
+    exp:document.getElementById('calEditExpected').value.trim(),
     t:document.getElementById('calEditActual').value.trim(),
     e:document.getElementById('calEditEl').value.trim()
   };
