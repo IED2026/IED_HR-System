@@ -3387,11 +3387,21 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
       ${(()=>{
-        // No expected duty for holiday/weekend/absent/leave
         if(status==='H'||status==='W'||status===''||!status) return '';
+        // Use stored exp from daily[], fallback to policy, fallback to 08:00
+        const empSel=document.getElementById('attEmpSelect');
+        const empObj=empSel?employees.find(e=>e.id===parseInt(empSel.value)):null;
         let iso=dateStr;
         const dm=dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
         if(dm) iso=dm[3]+'-'+dm[2]+'-'+dm[1];
+        const dm2=iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        let storedExp='';
+        if(dm2&&empObj){
+          const yr2=parseInt(dm2[1]),mo2=parseInt(dm2[2])-1,dy2=parseInt(dm2[3]);
+          const raw2=(empObj.attendance||{})[yr2]?.[mo2]?.daily?.[dy2-1];
+          storedExp=typeof raw2==='object'&&raw2?raw2.exp||'':'';
+        }
+        if(storedExp) return row('Expected Duty (h)',storedExp,'#f59e0b');
         const pol=findPolicyForDate(iso);
         const wh=pol?pol.workHours:8;
         return row('Expected Duty (h)',String(Math.floor(wh)).padStart(2,'0')+':'+String(Math.round((wh%1)*60)).padStart(2,'0'),'#f59e0b');
@@ -3662,6 +3672,7 @@ async function processPihrJobCard(file){
         const month=r[0].substring(3,5);
         const dateStr=r[0].substring(0,10);
         const status=r[1];
+        const expectedDuty=r[2]&&r[2]!=='-'?String(r[2]).trim():'';
         const inTime=r[3]||'';
         const outTime=r[4]||'';
         const otRaw=r[6];
@@ -3682,7 +3693,7 @@ async function processPihrJobCard(file){
           const parts=otRaw.split(':');
           if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
         }
-        m.daily.push({date:dateStr, status, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:'', elOt:elOtRaw&&elOtRaw!=='-'?elOtRaw:''});
+        m.daily.push({date:dateStr, status, expectedDuty, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:'', elOt:elOtRaw&&elOtRaw!=='-'?elOtRaw:''});
       }
     }
     if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
@@ -4539,7 +4550,7 @@ function pihrDoFillSingle(rowIdx, year){
       const dm=r.date.match(/(\d{2})-(\d{2})-(\d{4})/);
       const dayIdx=dm?parseInt(dm[1])-1:null;
       if(dayIdx!==null&&dayIdx>=0&&dayIdx<31){
-        pihrDailySingle[dayIdx]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''};
+        pihrDailySingle[dayIdx]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',exp:r.expectedDuty||'',t:r.ot||'',e:r.elOt||''};
       }
     }
   });
@@ -4622,7 +4633,7 @@ function pihrDoFillAllForEmp(pihrCode, year){
         const dm=r.date.match(/(\d{2})-(\d{2})-(\d{4})/);
         const dayIdx=dm?parseInt(dm[1])-1:null;
         if(dayIdx!==null&&dayIdx>=0&&dayIdx<31){
-          pihrDaily[dayIdx]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''};
+          pihrDaily[dayIdx]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',exp:r.expectedDuty||'',t:r.ot||'',e:r.elOt||''};
         }
       }
     });
@@ -4720,7 +4731,7 @@ function confirmPihrFill(year){
         if(typeof r==='object'&&r.date){
           const dm=r.date.match(/(\d{2})-(\d{2})-(\d{4})/);
           const di=dm?parseInt(dm[1])-1:null;
-          if(di!==null&&di>=0&&di<31) _daily[di]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',t:r.ot||'',e:r.elOt||''};
+          if(di!==null&&di>=0&&di<31) _daily[di]={s:r.status||'',i:r.inTime||'',o:r.outTime||'',exp:r.expectedDuty||'',t:r.ot||'',e:r.elOt||''};
         }
       });
       while(_daily.length>0&&_daily[_daily.length-1]==='') _daily.pop();
