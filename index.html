@@ -4794,6 +4794,7 @@ function showPihrDailyDetail(rowIdx){
       <td style="padding:5px 10px;text-align:center;"><span style="font-size:10px;font-weight:700;color:${sc};background:${sc}22;padding:2px 8px;border-radius:10px;">${sl}</span></td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.inTime||'—'}</td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:var(--text1);">${d.outTime||'—'}</td>
+      <td style="padding:5px 10px;font-size:11px;text-align:center;color:#f59e0b;">${d.expectedDuty||'—'}</td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:#3b82f6;">${d.ot||'—'}</td>
       <td style="padding:5px 10px;font-size:11px;text-align:center;color:#8b5cf6;">${d.elOt||'—'}</td>
     </tr>`;
@@ -4837,7 +4838,7 @@ function showPihrDailyDetail(rowIdx){
   const chip=(label,val,color,bg)=>val?'<span style="font-size:10px;background:'+bg+';color:'+color+';padding:2px 8px;border-radius:10px;">'+label+': <b>'+val+'</b></span>':'';
   const summaryRow=`
     <tr style="background:rgba(212,175,55,0.08);border-top:2px solid var(--gold);">
-      <td colspan="6" style="padding:0;">
+      <td colspan="7" style="padding:0;">
         <div style="display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;align-items:center;">
           <span style="font-size:9px;font-weight:700;color:var(--gold);margin-right:2px;">SUMMARY</span>
           ${chip('Present',sPresent,'#10b981','rgba(16,185,129,0.15)')}
@@ -4878,6 +4879,7 @@ function showPihrDailyDetail(rowIdx){
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Status</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:var(--green);border-bottom:1px solid var(--border);">In Time</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#ef4444;border-bottom:1px solid var(--border);">Out Time</th>
+              <th style="padding:7px 10px;text-align:center;font-size:10px;color:#f59e0b;border-bottom:1px solid var(--border);">Exp.T(H)</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT Hours</th>
               <th style="padding:7px 10px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
             </tr>
