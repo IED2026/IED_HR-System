@@ -2918,15 +2918,15 @@ function renderAttendancePage(){
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Expected</div>
-          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return _computedExpectedDuty}</div>
+          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${_computedExpectedDuty}</div>
         </div>
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Actual</div>
-          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return _computedActualDuty}</div>
+          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${_computedActualDuty}</div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:8px;">
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Extra / Less</div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));_computedElDuty!=='—'&&_computedElDuty.startsWith('-')?'#ef4444':'#8b5cf6'};">${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));_computedElDuty}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${_computedElDuty!=='—'&&_computedElDuty.startsWith('-')?'#ef4444':'#8b5cf6'};">${_computedElDuty}</div>
         </div>
       </div>
     </div>
