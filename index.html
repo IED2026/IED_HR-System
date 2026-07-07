@@ -3387,6 +3387,8 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
       ${(()=>{
+        // No expected duty for holiday/weekend/absent/leave
+        if(status==='H'||status==='W'||status===''||!status) return '';
         let iso=dateStr;
         const dm=dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
         if(dm) iso=dm[3]+'-'+dm[2]+'-'+dm[1];
