@@ -3376,14 +3376,17 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
     <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text1);">${dateStr}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text1);">${dateStr}</div>
+            ${currentRole!=='viewer'?`<button onclick="openCalDayEdit('${dateStr}')" style="background:rgba(201,162,77,0.1);border:1px solid rgba(201,162,77,0.3);border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--gold);font-size:10px;line-height:1;" title="Edit"><i class="fa fa-pen"></i></button>`:''}
+          </div>
           <span style="font-size:10px;font-weight:700;color:${sc};background:${sc}22;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:3px;">${sl}</span>
         </div>
         <button onclick="document.getElementById('calDayPopup').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1;"><i class="fa fa-xmark"></i></button>
       </div>
-      ${currentRole!=='viewer'?`<div style="text-align:right;margin-bottom:8px;"><button onclick="openCalDayEdit('${dateStr}')" style="background:rgba(201,162,77,0.12);border:1px solid rgba(201,162,77,0.3);border-radius:7px;padding:4px 12px;cursor:pointer;color:var(--gold);font-size:11px;font-family:inherit;"><i class="fa fa-pen"></i> Edit</button></div>`:''}
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
+      ${(()=>{const pol=findPolicyForDate(dateStr.includes('-')&&dateStr.length===10?dateStr:dateStr.split('-').reverse().join('-'));const wh=pol?pol.workHours:null;return wh?row('Expected Duty (h)',String(wh).padStart(2,'0')+':00','#f59e0b'):'';})()}
       ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
       ${row('Extra/Less Duty (h)', elDuty, elColor)}
       ${!inTime&&!outTime?'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">No time data</div>':''}
