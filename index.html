@@ -4338,6 +4338,14 @@ function openPihrPreviewModal(title){
       const mElSign=mElOtMins<0?'-':'+';
       const mAbsEl=Math.abs(mElOtMins);
       const mElOtStr=mAbsEl>0?(mElSign+Math.floor(mAbsEl/60)+':'+(mAbsEl%60).toString().padStart(2,'0')):'—';
+      let mExpMins=0;
+      (d.daily||[]).forEach(day=>{
+        if(day.expectedDuty&&day.expectedDuty!=='-'){
+          const p=String(day.expectedDuty).split(':');
+          if(p.length>=2) mExpMins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);
+        }
+      });
+      d.expTotal=mExpMins>0?(Math.floor(mExpMins/60)+':'+(mExpMins%60).toString().padStart(2,'0')):'—';
       rows.push({pihrCode:pe.code,pihrName:pe.name,matched,monthIdx:mi,monthName:MSHORT[mi],data:d,rawMonthData:pe.months[mk],empElOt:mElOtStr});
     });
   });
@@ -4399,6 +4407,7 @@ function openPihrPreviewModal(title){
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;'+borderTop+'">'+r.data.leave+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#f97316;'+borderTop+'">'+r.data.late+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#64748b;'+borderTop+'">'+r.data.holiday+'</td>'+
+        '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#f59e0b;'+borderTop+'">'+(r.data.expTotal||'—')+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#3b82f6;'+borderTop+'">'+r.data.ot+'</td>'+
         '<td style="padding:5px 6px;text-align:center;font-size:10px;color:#8b5cf6;'+borderTop+'">'+( r.empElOt||'—')+'</td>'+
         '<td style="padding:5px 6px;text-align:center;'+borderTop+'">'+detailBtn+'</td>'+
@@ -4454,6 +4463,7 @@ function openPihrPreviewModal(title){
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">Leave</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f97316;border-bottom:1px solid var(--border);">Late</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#64748b;border-bottom:1px solid var(--border);">Holiday</th>
+              <th style="padding:7px 4px;text-align:center;font-size:10px;color:#f59e0b;border-bottom:1px solid var(--border);">Exp.T(H)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#3b82f6;border-bottom:1px solid var(--border);">OT(h)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:#8b5cf6;border-bottom:1px solid var(--border);">E/L OT(h)</th>
               <th style="padding:7px 4px;text-align:center;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">Daily</th>
