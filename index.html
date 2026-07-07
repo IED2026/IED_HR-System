@@ -3373,16 +3373,13 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
   popup.id='calDayPopup';
   popup.style.cssText='position:fixed;z-index:9999;';
   popup.innerHTML=`
-    <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:240px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+    <div style="background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--text1);">${dateStr}</div>
           <span style="font-size:10px;font-weight:700;color:${sc};background:${sc}22;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:3px;">${sl}</span>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          ${canEdit()?`<button onclick="openCalDayEdit('${dateStr}')" style="background:rgba(201,162,77,0.1);border:1px solid rgba(201,162,77,0.3);border-radius:7px;padding:4px 8px;cursor:pointer;color:var(--gold);font-size:11px;" title="Edit this day"><i class="fa fa-pen"></i></button>`:''}
-          <button onclick="document.getElementById('calDayPopup').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1;"><i class="fa fa-xmark"></i></button>
-        </div>
+        <button onclick="document.getElementById('calDayPopup').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1;"><i class="fa fa-xmark"></i></button>
       </div>
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
@@ -3391,108 +3388,6 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
       ${!inTime&&!outTime?'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">No time data</div>':''}
     </div>`;
   document.body.appendChild(popup);
-
-  const x=event.clientX, y=event.clientY;
-  const pw=240, ph=200;
-  popup.style.left=Math.min(x+12, window.innerWidth-pw-10)+'px';
-  popup.style.top=(y+12+ph>window.innerHeight?y-ph-10:y+12)+'px';
-
-  setTimeout(()=>{
-    function closeHandler(e){
-      document.removeEventListener('click', closeHandler);
-      const popup=document.getElementById('calDayPopup');
-      if(popup && !popup.contains(e.target)) popup.remove();
-    }
-    document.addEventListener('click', closeHandler);
-  },200);
-}
-
-function openCalDayEdit(dateStr){
-  document.getElementById('calDayPopup')?.remove();
-  document.getElementById('calDayEditModal')?.remove();
-
-  // Parse dateStr e.g. "2025-06-22" or "22-06-2025"
-  let yr,mo,dy;
-  const m1=dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  const m2=dateStr.match(/^(\d{2})-(\d{2})-(\d{4})/);
-  if(m1){yr=parseInt(m1[1]);mo=parseInt(m1[2])-1;dy=parseInt(m1[3]);}
-  else if(m2){dy=parseInt(m2[1]);mo=parseInt(m2[2])-1;yr=parseInt(m2[3]);}
-  else return;
-
-  const emp=getCurrentAttEmp();
-  if(!emp) return;
-  const md=(emp.attendance||{})[yr]?.[mo]||{};
-  const daily=md.daily||[];
-  const raw=daily[dy-1];
-  const obj=typeof raw==='object'&&raw?raw:{s:typeof raw==='string'?raw:''};
-
-  const STATUSES=['P','D','E','A','L','H','W','P(W)','P(H)'];
-  const modal=document.createElement('div');
-  modal.id='calDayEditModal';
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px;';
-  modal.innerHTML=`
-    <div style="background:var(--navy2);border-radius:14px;border:1px solid var(--border);width:100%;max-width:420px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
-      <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:18px;"><i class="fa fa-pen"></i> Edit Attendance — ${dateStr}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Status</label>
-          <select id="calEditStatus" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;">
-            ${STATUSES.map(s=>`<option value="${s}"${obj.s===s?' selected':''}>${s}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">In Time</label>
-          <input id="calEditIn" type="text" value="${obj.i||obj.in||''}" placeholder="09:00 AM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Out Time</label>
-          <input id="calEditOut" type="text" value="${obj.o||obj.out||''}" placeholder="06:00 PM" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Actual Duty (h)</label>
-          <input id="calEditActual" type="text" value="${obj.t||''}" placeholder="08:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">E/L Duty (h)</label>
-          <input id="calEditEl" type="text" value="${obj.e||''}" placeholder="+00:00" style="width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button onclick="document.getElementById('calDayEditModal').remove()" style="padding:9px 18px;border-radius:8px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
-        <button onclick="saveCalDayEdit(${yr},${mo},${dy})" style="padding:9px 20px;border-radius:8px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fa fa-floppy-disk"></i> Save</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-}
-
-async function saveCalDayEdit(yr, mo, dy){
-  const emp=getCurrentAttEmp();
-  if(!emp) return;
-  if(!emp.attendance) emp.attendance={};
-  if(!emp.attendance[yr]) emp.attendance[yr]={};
-  if(!emp.attendance[yr][mo]) emp.attendance[yr][mo]={daily:[]};
-  const md=emp.attendance[yr][mo];
-  if(!md.daily) md.daily=[];
-  while(md.daily.length<dy) md.daily.push('');
-  const s=document.getElementById('calEditStatus').value;
-  const inT=document.getElementById('calEditIn').value.trim();
-  const outT=document.getElementById('calEditOut').value.trim();
-  const actual=document.getElementById('calEditActual').value.trim();
-  const el=document.getElementById('calEditEl').value.trim();
-  md.daily[dy-1]={s,i:inT,in:inT,o:outT,out:outT,t:actual,e:el};
-  document.getElementById('calDayEditModal').remove();
-  await saveSingleKey('employees',employees);
-  renderAttendancePage();
-  toast('Day updated ✓','success');
-}
-
-function getCurrentAttEmp(){
-  const sel=document.getElementById('attEmpSelect');
-  if(!sel||!sel.value) return null;
-  return employees.find(e=>e.id===parseInt(sel.value))||null;
-}
-
-
 
   // Position near click, stay within viewport
   const x=event.clientX, y=event.clientY;
