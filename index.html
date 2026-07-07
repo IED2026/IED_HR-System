@@ -2918,15 +2918,15 @@ function renderAttendancePage(){
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Expected</div>
-          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return hasD&&ys?.expectedDuty?ys.expectedDuty:'—';})()}</div>
+          <div style="font-size:15px;font-weight:800;color:var(--text2);letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return _computedExpectedDuty}</div>
         </div>
         <div>
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Actual</div>
-          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return hasD&&ys?.actualDuty?ys.actualDuty:'—';})()}</div>
+          <div style="font-size:15px;font-weight:800;color:#10b981;letter-spacing:.5px;">${(()=>{const ys=emp?.yearSummary?.[year]; const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return _computedActualDuty}</div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:8px;">
           <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">Extra / Less</div>
-          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return hasD&&v&&v.startsWith('-')?'#ef4444':'#8b5cf6';})()};">${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));return hasD&&v?(v.startsWith('-')?v:'+'+v):'—';})()}</div>
+          <div style="font-size:15px;font-weight:800;letter-spacing:.5px;color:${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));_computedElDuty!=='—'&&_computedElDuty.startsWith('-')?'#ef4444':'#8b5cf6'};">${(()=>{const v=emp?.yearSummary?.[year]?.elOtTotal;const hasD=Object.values((emp?.attendance||{})[year]||{}).some(m=>(m.daily||[]).some(d=>d&&(typeof d==='string'?d!=='':d.s||d.i)));_computedElDuty}</div>
         </div>
       </div>
     </div>
@@ -5354,6 +5354,22 @@ function switchLeaveTab(tab){
 }
 
 function renderPortalRequests(){
+  // ── Compute duty hours from daily[] ──
+  const parseHMins=hm=>{if(!hm)return 0;const neg=hm.startsWith('-');const m=hm.replace('-','').match(/(\d+):(\d+)/);if(!m)return 0;const v=parseInt(m[1])*60+parseInt(m[2]);return neg?-v:v;};
+  const fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);const h=Math.floor(abs/60);const m=abs%60;return (neg?'-':'')+(String(h).padStart(2,'0'))+':'+(String(m).padStart(2,'0'));};
+  let _totalActualMins=0,_totalElMins=0;
+  Object.values((emp.attendance||{})[year]||{}).forEach(md=>{
+    (md.daily||[]).forEach(d=>{
+      if(!d||d==='') return;
+      const obj=typeof d==='object'?d:{s:d};
+      if(obj.t){const v=parseHMins(obj.t);if(v>0)_totalActualMins+=v;}
+      if(obj.e) _totalElMins+=parseHMins(obj.e);
+    });
+  });
+  const _computedActualDuty=_totalActualMins>0?fmtHM(_totalActualMins):'—';
+  const _computedElDuty=_totalActualMins>0?(_totalElMins>=0?'+':'')+fmtHM(_totalElMins):'—';
+  const _computedExpectedDuty=emp?.yearSummary?.[year]?.expectedDuty||'—';
+
   const reconBody=document.getElementById('portalReconBody');
   const leaveBody=document.getElementById('portalLeaveReqBody');
   if(!reconBody||!leaveBody) return;
