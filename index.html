@@ -2618,6 +2618,7 @@ function computeDayStatus(yr, mo, dy, dayObj){
 let _policyDraft = [];
 function openTimePolicyModal(){
   _policyDraft = JSON.parse(JSON.stringify(getTimePolicy()));
+  _policyDraft.forEach(function(r){ r._editing=false; });
   renderPolicyRules();
   openModal('timePolicyModal');
 }
