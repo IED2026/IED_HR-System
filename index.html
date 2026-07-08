@@ -2626,7 +2626,11 @@ function addPolicyRule(){
   renderPolicyRules();
 }
 function removePolicyRule(id){
+  const r=_policyDraft.find(r=>r.id===id);
+  const label=r?(r.startDate||'this rule'):'this rule';
+  if(!confirm('Delete rule "'+label+'"? This cannot be undone.')) return;
   _policyDraft = _policyDraft.filter(r=>r.id!==id);
+  savePolicyRules();
   renderPolicyRules();
 }
 function updatePolicyField(id, field, value){
@@ -2659,6 +2663,7 @@ function addPolicyHoliday(id){
   renderPolicyRules();
 }
 function removePolicyHoliday(id, date){
+  if(!confirm('Remove holiday "'+date+'"?')) return;
   const r = _policyDraft.find(r=>r.id===id);
   if(!r) return;
   r.holidays = (r.holidays||[]).filter(h=>(typeof h==='object'?h.date:h)!==date);
