@@ -2676,74 +2676,102 @@ function renderPolicyRules(){
   var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var INP='width:100%;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;';
   if(!_policyDraft.length){
-    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:8px;">No rules yet. Click <b style=\'color:var(--gold);\'>+ Add Rule</b> above.</div>';
+    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:8px;">No rules yet. Click <b style="color:var(--gold);">+ Add Rule</b> above.</div>';
     return;
   }
+  var editingId=null;
+  _policyDraft.forEach(function(r){ if(r._editing) editingId=r.id; });
   var html='';
   _policyDraft.forEach(function(r,ri){
+    var ed=r._editing;
+    if(editingId && !ed) {
+      // Show other rules as minimal collapsed rows
+      var wkd=(r.weekendDays||[]).map(function(d){return DOW[d];}).join(', ')||'None';
+      html+='<div style="background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;opacity:0.5;">';
+      html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">Rule '+(ri+1)+'</span>';
+      if(r.name) html+='<span style="font-size:11px;color:var(--text2);">'+r.name+'</span>';
+      html+='<span style="font-size:10px;color:var(--text3);flex:1;">'+(r.startDate||'—')+' → '+(r.endDate||'—')+'</span>';
+      html+='</div>';
+      return;
+    }
     var wkd=(r.weekendDays||[]).map(function(d){return DOW[d];}).join(', ')||'None';
     var hc=(r.holidays||[]).length;
-    var ed=r._editing;
-    // Format date like "01 January 2026"
     var MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
-    function fmtDate(ds){if(!ds)return '—';var p=ds.split('-');if(p.length<3)return ds;return p[2]+' '+MNAMES[parseInt(p[1])-1]+' '+p[0];}
-    var dateLabel=fmtDate(r.startDate)+' → '+fmtDate(r.endDate);
-    var holidayNames=(r.holidays||[]).map(function(h){return typeof h==='object'?(h.name||h.date):h;}).join(', ')||'None';
-    html+='<div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:2px;">';
-    html+='<div style="padding:10px 12px;display:flex;align-items:flex-start;gap:8px;">';
-    html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;margin-top:2px;">Rule '+(ri+1)+'</span>';
-    html+='<div style="flex:1;min-width:0;">';
-    html+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">'+dateLabel+'</div>';
-    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-    html+='<span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10b981;padding:2px 7px;border-radius:5px;">P ≤ '+(r.pTime||'—')+'</span>';
-    html+='<span style="font-size:10px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:2px 7px;border-radius:5px;">D ≤ '+(r.dTime||'—')+'</span>';
-    html+='<span style="font-size:10px;background:rgba(249,115,22,0.1);color:#f97316;padding:2px 7px;border-radius:5px;">E after '+(r.eTime||r.dTime||'—')+'</span>';
-    html+='<span style="font-size:10px;background:rgba(59,130,246,0.1);color:#3b82f6;padding:2px 7px;border-radius:5px;">Work: '+(r.workHours||8)+'h</span>';
-    html+='<span style="font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:2px 7px;border-radius:5px;">Wknd: '+wkd+'</span>';
-    html+=hc?'<span style="font-size:10px;background:rgba(129,140,248,0.1);color:#818cf8;padding:2px 7px;border-radius:5px;">Holidays: '+hc+'</span>':'';
-    html+='</div>';
-    html+='</div>';
-    html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">'+(ed?'Close':'Edit')+'</button>';
-    html+='<button onclick="removePolicyRule(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;">Delete</button>';
-    html+='</div>';
-    if(ed){
-      html+='<div style="border-top:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;">';
+    function fmtD(ds){if(!ds)return '—';var p=ds.split('-');return p.length<3?ds:parseInt(p[2])+' '+MNAMES[parseInt(p[1])-1]+' '+p[0];}
+    html+='<div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+    // Summary row
+    if(!ed){
+      html+='<div style="padding:9px 12px;display:flex;align-items:center;gap:8px;">';
+      html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;">Rule '+(ri+1)+'</span>';
+      html+='<div style="flex:1;min-width:0;">';
+      if(r.name) html+='<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;">'+r.name+'</div>';
+      html+='<div style="font-size:12px;font-weight:600;color:var(--text);">'+fmtD(r.startDate)+' → '+fmtD(r.endDate)+'</div>';
+      html+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">';
+      html+='<span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10b981;padding:1px 7px;border-radius:5px;">P &le; '+(r.pTime||'—')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:1px 7px;border-radius:5px;">D &le; '+(r.dTime||'—')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(249,115,22,0.1);color:#f97316;padding:1px 7px;border-radius:5px;">E after '+(r.eTime||r.dTime||'—')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 7px;border-radius:5px;">'+(r.workHours||8)+'h/day</span>';
+      html+='<span style="font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:1px 7px;border-radius:5px;">'+wkd+'</span>';
+      if(hc) html+='<span style="font-size:10px;background:rgba(129,140,248,0.1);color:#818cf8;padding:1px 7px;border-radius:5px;">'+hc+' holiday(s)</span>';
+      html+='</div></div>';
+      html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Edit</button>';
+      html+='<button onclick="removePolicyRule(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Delete</button>';
+      html+='</div>';
+    } else {
+      // Edit form
+      html+='<div style="padding:12px;display:flex;flex-direction:column;gap:10px;">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
+      html+='<span style="font-size:12px;font-weight:700;color:var(--gold);">Rule '+(ri+1)+' — Edit</span>';
+      html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Close</button>';
+      html+='</div>';
+      // Rule name
+      html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Rule Name (optional)</label>';
+      html+='<input type="text" style="'+INP+'" value="'+(r.name||'')+'" placeholder="e.g. Office Hours Jan-Jun 2026" onchange="updatePolicyField(\''+r.id+'\',\'name\',this.value)"></div>';
+      // Dates
       html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
       html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Start Date</label><input type="date" style="'+INP+'" value="'+(r.startDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'startDate\',this.value);renderPolicyRules()"></div>';
       html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">End Date</label><input type="date" style="'+INP+'" value="'+(r.endDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'endDate\',this.value);renderPolicyRules()"></div>';
       html+='</div>';
+      // Cutoffs + hours
       html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">';
-      html+='<div><label style="font-size:10px;color:#10b981;display:block;margin-bottom:3px;">Present (P) by</label><input type="time" style="'+INP+'" value="'+(r.pTime||'09:30')+'" onchange="updatePolicyField(\''+r.id+'\',\'pTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">check-in &le; this = P</div></div>';
-      html+='<div><label style="font-size:10px;color:#f59e0b;display:block;margin-bottom:3px;">Delay (D) by</label><input type="time" style="'+INP+'" value="'+(r.dTime||'09:45')+'" onchange="updatePolicyField(\''+r.id+'\',\'dTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">P cutoff &lt; in &le; this = D</div></div>';
-      html+='<div><label style="font-size:10px;color:#f97316;display:block;margin-bottom:3px;">Extreme (E) after</label><input type="time" style="'+INP+'" value="'+(r.eTime||r.dTime||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'eTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">after D cutoff = E</div></div>';
-      html+='<div><label style="font-size:10px;color:#3b82f6;display:block;margin-bottom:3px;">Working Hours</label><input type="number" style="'+INP+'" value="'+(r.workHours||8)+'" step="0.5" min="1" max="24" onchange="updatePolicyField(\''+r.id+'\',\'workHours\',parseFloat(this.value))"><div style="font-size:9px;color:var(--text3);margin-top:2px;">expected duty/day</div></div>';
+      html+='<div><label style="font-size:10px;color:#10b981;display:block;margin-bottom:3px;">Present (P) by</label><input type="time" style="'+INP+'" value="'+(r.pTime||'09:30')+'" onchange="updatePolicyField(\''+r.id+'\',\'pTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">check-in &le; = P</div></div>';
+      html+='<div><label style="font-size:10px;color:#f59e0b;display:block;margin-bottom:3px;">Delay (D) by</label><input type="time" style="'+INP+'" value="'+(r.dTime||'09:45')+'" onchange="updatePolicyField(\''+r.id+'\',\'dTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">P &lt; in &le; = D</div></div>';
+      html+='<div><label style="font-size:10px;color:#f97316;display:block;margin-bottom:3px;">Extreme (E) after</label><input type="time" style="'+INP+'" value="'+(r.eTime||r.dTime||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'eTime\',this.value)"><div style="font-size:9px;color:var(--text3);margin-top:2px;">after D = E</div></div>';
+      html+='<div><label style="font-size:10px;color:#3b82f6;display:block;margin-bottom:3px;">Working Hours</label><input type="number" style="'+INP+'" value="'+(r.workHours||8)+'" step="0.5" min="1" max="24" onchange="updatePolicyField(\''+r.id+'\',\'workHours\',parseFloat(this.value))"><div style="font-size:9px;color:var(--text3);margin-top:2px;">expected/day</div></div>';
       html+='</div>';
+      // Weekends
       html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;">Weekend Days</label><div style="display:flex;gap:5px;flex-wrap:wrap;">';
       DOW.forEach(function(lb,dow){
         var active=(r.weekendDays||[]).includes(dow);
         html+='<button type="button" onclick="togglePolicyWeekend(\''+r.id+'\','+dow+')" style="padding:4px 11px;border-radius:6px;font-size:11px;font-weight:'+(active?'700':'400')+';cursor:pointer;border:1px solid '+(active?'#ef4444':'var(--border)')+';background:'+(active?'rgba(239,68,68,0.12)':'var(--navy4)')+';color:'+(active?'#ef4444':'var(--text2)')+';">'+lb+'</button>';
       });
       html+='</div></div>';
+      // Holidays
       html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;">Holidays</label>';
       html+='<div style="display:flex;gap:6px;margin-bottom:6px;">';
-      html+='<input type="date" id="hdate_'+r.id+'" style="'+INP+'flex:0 0 auto;width:135px;">';
+      html+='<input type="date" id="hdate_'+r.id+'" style="'+INP+'flex:0 0 auto;width:130px;">';
       html+='<input type="text" id="hname_'+r.id+'" placeholder="Holiday name" style="'+INP+'flex:1;">';
       html+='<button onclick="addPolicyHoliday(\''+r.id+'\')" style="padding:6px 12px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">+ Add</button>';
       html+='</div>';
       if(r.holidays&&r.holidays.length){
         r.holidays.forEach(function(h){
-          var date=typeof h==="object"?h.date:h;
-          var name=typeof h==="object"?(h.name||""):"";
+          var date=typeof h==='object'?h.date:h;
+          var name=typeof h==='object'?(h.name||''):'';
           html+='<div style="display:flex;align-items:center;gap:8px;background:rgba(129,140,248,0.08);border:1px solid rgba(129,140,248,0.2);border-radius:6px;padding:4px 10px;margin-bottom:4px;">';
           html+='<span style="font-size:11px;color:#818cf8;font-weight:700;min-width:85px;">'+date+'</span>';
-          html+='<span style="font-size:11px;color:var(--text2);flex:1;">'+(name||"—")+'</span>';
+          html+='<span style="font-size:11px;color:var(--text2);flex:1;">'+(name||'—')+'</span>';
           html+='<button onclick="removePolicyHoliday(\''+r.id+'\',\''+date+'\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;padding:0;line-height:1;">&times;</button>';
           html+='</div>';
         });
       } else {
         html+='<div style="font-size:11px;color:var(--text3);">No holidays added</div>';
       }
-      html+='</div></div>';
+      html+='</div>';
+      // Save button
+      html+='<div style="text-align:right;">';
+      html+='<button onclick="savePolicyRules()" style="padding:7px 20px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Apply Policy</button>';
+      html+='</div>';
+      html+='</div>';
     }
     html+='</div>';
   });
@@ -2751,7 +2779,11 @@ function renderPolicyRules(){
 }
 function togglePolicyEdit(id){
   var r=_policyDraft.find(function(r){return r.id===id;});
-  if(r){r._editing=!r._editing;renderPolicyRules();}
+  if(!r) return;
+  var wasEditing=r._editing;
+  _policyDraft.forEach(function(x){x._editing=false;});
+  if(!wasEditing) r._editing=true;
+  renderPolicyRules();
 }
 function savePolicyRules(){
   setTimePolicy(_policyDraft);
