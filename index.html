@@ -2681,12 +2681,24 @@ function renderPolicyRules(){
     var wkd=(r.weekendDays||[]).map(function(d){return DOW[d];}).join(', ')||'None';
     var hc=(r.holidays||[]).length;
     var ed=r._editing;
+    // Format date like "01 January 2026"
+    var MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    function fmtDate(ds){if(!ds)return '—';var p=ds.split('-');if(p.length<3)return ds;return p[2]+' '+MNAMES[parseInt(p[1])-1]+' '+p[0];}
+    var dateLabel=fmtDate(r.startDate)+' → '+fmtDate(r.endDate);
+    var holidayNames=(r.holidays||[]).map(function(h){return typeof h==='object'?(h.name||h.date):h;}).join(', ')||'None';
     html+='<div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:2px;">';
-    html+='<div style="padding:8px 12px;display:flex;align-items:center;gap:8px;">';
-    html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;">Rule '+(ri+1)+'</span>';
+    html+='<div style="padding:10px 12px;display:flex;align-items:flex-start;gap:8px;">';
+    html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;margin-top:2px;">Rule '+(ri+1)+'</span>';
     html+='<div style="flex:1;min-width:0;">';
-    html+='<div style="font-size:12px;font-weight:600;color:var(--text);">'+(r.startDate||'—')+' → '+(r.endDate||'—')+'</div>';
-    html+='<div style="font-size:10px;color:var(--text3);">P≤'+(r.pTime||'—')+' · D≤'+(r.dTime||'—')+' · '+(r.workHours||8)+'h · Wknd: '+wkd+(hc?' · '+hc+' holiday(s)':'')+'</div>';
+    html+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">'+dateLabel+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    html+='<span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10b981;padding:2px 7px;border-radius:5px;">P ≤ '+(r.pTime||'—')+'</span>';
+    html+='<span style="font-size:10px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:2px 7px;border-radius:5px;">D ≤ '+(r.dTime||'—')+'</span>';
+    html+='<span style="font-size:10px;background:rgba(249,115,22,0.1);color:#f97316;padding:2px 7px;border-radius:5px;">E after '+(r.eTime||r.dTime||'—')+'</span>';
+    html+='<span style="font-size:10px;background:rgba(59,130,246,0.1);color:#3b82f6;padding:2px 7px;border-radius:5px;">Work: '+(r.workHours||8)+'h</span>';
+    html+='<span style="font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:2px 7px;border-radius:5px;">Wknd: '+wkd+'</span>';
+    html+=hc?'<span style="font-size:10px;background:rgba(129,140,248,0.1);color:#818cf8;padding:2px 7px;border-radius:5px;">Holidays: '+hc+'</span>':'';
+    html+='</div>';
     html+='</div>';
     html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">'+(ed?'Close':'Edit')+'</button>';
     html+='<button onclick="removePolicyRule(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;">Delete</button>';
