@@ -2623,9 +2623,8 @@ function openTimePolicyModal(){
   openModal('timePolicyModal');
 }
 function addPolicyRule(){
-  var nr={id:'R'+Date.now(), startDate:'', endDate:'', pTime:'', dTime:'', eTime:'', workHours:'', weekendDays:[], holidays:[], _editing:true};
   _policyDraft.forEach(function(x){x._editing=false;});
-  _policyDraft.push(nr);
+  _policyDraft.push({id:'R'+Date.now(), startDate:'', endDate:'', pTime:'', dTime:'', eTime:'', workHours:'', weekendDays:[], holidays:[], _editing:false});
   renderPolicyRules();
 }
 function removePolicyRule(id){
@@ -2745,8 +2744,9 @@ function renderPolicyRules(){
       html+='</div>';
       // Weekends
       html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:5px;">Weekend Days</label><div style="display:flex;gap:5px;flex-wrap:wrap;">';
+      var wkdSet=r.weekendDays&&r.weekendDays.length?r.weekendDays:[5,6];
       DOW.forEach(function(lb,dow){
-        var active=(r.weekendDays||[]).includes(dow);
+        var active=wkdSet.includes(dow);
         html+='<button type="button" onclick="togglePolicyWeekend(\''+r.id+'\','+dow+')" style="padding:4px 11px;border-radius:6px;font-size:11px;font-weight:'+(active?'700':'400')+';cursor:pointer;border:1px solid '+(active?'#ef4444':'var(--border)')+';background:'+(active?'rgba(239,68,68,0.12)':'var(--navy4)')+';color:'+(active?'#ef4444':'var(--text2)')+';">'+lb+'</button>';
       });
       html+='</div></div>';
@@ -2773,7 +2773,7 @@ function renderPolicyRules(){
       html+='</div>';
       // Save button
       html+='<div style="text-align:right;">';
-      html+='<button onclick="savePolicyRules()" style="padding:7px 20px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Apply Policy</button>';
+      html+='<button onclick="savePolicyRules()" style="padding:7px 20px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Save Policy</button>';
       html+='</div>';
       html+='</div>';
     }
@@ -2790,11 +2790,20 @@ function togglePolicyEdit(id){
   renderPolicyRules();
 }
 function savePolicyRules(){
+  // Apply defaults for empty fields before saving
+  _policyDraft.forEach(function(r){
+    if(!r.pTime) r.pTime='09:30';
+    if(!r.dTime) r.dTime='09:45';
+    if(!r.eTime) r.eTime='10:00';
+    if(!r.workHours) r.workHours=9;
+    if(!r.weekendDays||!r.weekendDays.length) r.weekendDays=[5,6];
+    r._editing=false;
+  });
   setTimePolicy(_policyDraft);
   saveSingleKey('manningSched2', manningSched2);
-  closeModal('timePolicyModal');
+  renderPolicyRules();
   renderAttendancePage();
-  toast('Time & Holiday Policy saved ✓','success');
+  toast('Policy saved ✓','success');
 }
 
 function deriveMonthStats(rawData, upToDay, yr, mo){
