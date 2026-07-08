@@ -2773,7 +2773,7 @@ function renderPolicyRules(){
       html+='</div>';
       // Save button
       html+='<div style="text-align:right;">';
-      html+='<button onclick="savePolicyRules()" style="padding:7px 20px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Save Policy</button>';
+      
       html+='</div>';
       html+='</div>';
     }
@@ -2788,6 +2788,10 @@ function togglePolicyEdit(id){
   _policyDraft.forEach(function(x){x._editing=false;});
   if(!wasEditing) r._editing=true;
   renderPolicyRules();
+}
+function applyAllPolicies(){
+  savePolicyRules();
+  closeModal('timePolicyModal');
 }
 function savePolicyRules(){
   // Apply defaults for empty fields before saving
