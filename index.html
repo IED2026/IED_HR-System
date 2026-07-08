@@ -3403,7 +3403,8 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
         }
         if(storedExp) return row('Expected Duty (h)',storedExp,'#f59e0b');
         const pol=findPolicyForDate(iso);
-        const wh=pol?pol.workHours:8;
+        if(!pol) return ''; // no policy set, don't show default
+        const wh=pol.workHours;
         return row('Expected Duty (h)',String(Math.floor(wh)).padStart(2,'0')+':'+String(Math.round((wh%1)*60)).padStart(2,'0'),'#f59e0b');
       })()}
       ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
