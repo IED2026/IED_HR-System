@@ -2618,9 +2618,6 @@ function computeDayStatus(yr, mo, dy, dayObj){
 let _policyDraft = [];
 function openTimePolicyModal(){
   _policyDraft = JSON.parse(JSON.stringify(getTimePolicy()));
-  if(_policyDraft.length===0){
-    _policyDraft.push({id:'R'+Date.now(), startDate:new Date().toISOString().slice(0,10), endDate:new Date().toISOString().slice(0,10), pTime:'09:30', dTime:'09:45', workHours:8, weekendDays:[5,6], holidays:[]});
-  }
   renderPolicyRules();
   openModal('timePolicyModal');
 }
