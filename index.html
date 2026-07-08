@@ -747,8 +747,10 @@ async function handleLoginSubmit(e) {
         <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">
           Define date-range rules. Each rule controls: on-time cutoff (Present), delay cutoff (Delay → Extreme Delay), expected working hours, which weekdays are weekends, and specific holiday dates. The calendar derives every employee's daily status (P/D/E) live from their check-in/out time against whichever rule covers that date.
         </div>
-        <div id="policyRulesList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
-        <button class="btn btn-secondary btn-sm" onclick="addPolicyRule()"><i class="fa fa-plus"></i> Add Rule</button>
+        <div style="margin-bottom:12px;">
+          <button onclick="addPolicyRule()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(201,162,77,0.1);color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fa fa-plus"></i> Add Rule</button>
+        </div>
+        <div id="policyRulesList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('timePolicyModal')">Cancel</button>
@@ -2670,6 +2672,92 @@ function renderPolicyRules(){
   if(!list) return;
   const dowLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const INP = 'width:100%;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;';
+
+  if(_policyDraft.length===0){
+    list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:8px;">No rules yet. Click <b style="color:var(--gold);">+ Add Rule</b> above to create one.</div>`;
+    return;
+  }
+
+  list.innerHTML = _policyDraft.map((r,ri)=>{
+    const editing = r._editing||false;
+    const holidayCount=(r.holidays||[]).length;
+    const weekendNames=(r.weekendDays||[]).map(d=>dowLabels[d]).join(', ')||'None';
+
+    const editForm = editing ? `
+      <div style="border-top:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Start Date</label>
+            <input type="date" style="${INP}" value="${r.startDate||''}" onchange="updatePolicyField('${r.id}','startDate',this.value);renderPolicyRules()"></div>
+          <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">End Date</label>
+            <input type="date" style="${INP}" value="${r.endDate||''}" onchange="updatePolicyField('${r.id}','endDate',this.value);renderPolicyRules()"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+          <div><label style="font-size:10px;color:#10b981;display:block;margin-bottom:4px;">✓ Present (P) by</label>
+            <input type="time" style="${INP}" value="${r.pTime||'09:30'}" onchange="updatePolicyField('${r.id}','pTime',this.value)">
+            <div style="font-size:9px;color:var(--text3);margin-top:2px;">Check-in ≤ this = P</div></div>
+          <div><label style="font-size:10px;color:#f59e0b;display:block;margin-bottom:4px;">⚠ Delay (D) by</label>
+            <input type="time" style="${INP}" value="${r.dTime||'09:45'}" onchange="updatePolicyField('${r.id}','dTime',this.value)">
+            <div style="font-size:9px;color:var(--text3);margin-top:2px;">P cutoff < in ≤ this = D</div></div>
+          <div><label style="font-size:10px;color:#f97316;display:block;margin-bottom:4px;">✗ Extreme (E) after</label>
+            <input type="time" style="${INP}" value="${r.eTime||r.dTime||''}" onchange="updatePolicyField('${r.id}','eTime',this.value)">
+            <div style="font-size:9px;color:var(--text3);margin-top:2px;">After D cutoff = E</div></div>
+          <div><label style="font-size:10px;color:#3b82f6;display:block;margin-bottom:4px;">⏱ Working Hours</label>
+            <input type="number" style="${INP}" value="${r.workHours||8}" step="0.5" min="1" max="24" onchange="updatePolicyField('${r.id}','workHours',parseFloat(this.value))">
+            <div style="font-size:9px;color:var(--text3);margin-top:2px;">Expected duty/day</div></div>
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Weekend Days</label>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            ${dowLabels.map((lb,dow)=>{
+              const active=(r.weekendDays||[]).includes(dow);
+              return `<button type="button" onclick="togglePolicyWeekend('${r.id}',${dow})" style="padding:5px 11px;border-radius:6px;font-size:11px;font-weight:${active?'700':'400'};cursor:pointer;border:1px solid ${active?'#ef4444':'var(--border)'};background:${active?'rgba(239,68,68,0.12)':'var(--navy4)'};color:${active?'#ef4444':'var(--text2)'};">${lb}</button>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Add Holiday</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <input type="date" id="hdate_${r.id}" style="${INP}flex:0 0 auto;width:140px;">
+            <input type="text" id="hname_${r.id}" placeholder="Holiday name (e.g. Eid-ul-Fitr)" style="${INP}flex:1;">
+            <button onclick="addPolicyHoliday('${r.id}')" style="padding:7px 12px;border-radius:7px;border:none;background:var(--gold);color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><i class="fa fa-plus"></i></button>
+          </div>
+          ${(r.holidays||[]).length>0?`<div style="display:flex;flex-direction:column;gap:4px;">${(r.holidays||[]).map(h=>{
+            const date=typeof h==='object'?h.date:h;
+            const name=typeof h==='object'?h.name:'';
+            return `<div style="display:flex;align-items:center;gap:8px;background:rgba(129,140,248,0.08);border:1px solid rgba(129,140,248,0.2);border-radius:7px;padding:5px 10px;">
+              <span style="font-size:11px;color:#818cf8;font-weight:700;min-width:88px;">${date}</span>
+              <span style="font-size:11px;color:var(--text2);flex:1;">${name||'—'}</span>
+              <button onclick="removePolicyHoliday('${r.id}','${date}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;"><i class="fa fa-xmark"></i></button>
+            </div>`;
+          }).join('')}</div>`:'<div style="font-size:11px;color:var(--text3);">No holidays added</div>'}
+        </div>
+      </div>` : '';
+
+    return `<div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <!-- Compact summary row -->
+      <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="togglePolicyEdit('${r.id}')">
+        <div style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;">Rule ${ri+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.startDate||'—'} → ${r.endDate||'—'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">P≤${r.pTime||'—'} · D≤${r.dTime||'—'} · ${r.workHours||8}h · Weekends: ${weekendNames}${holidayCount?` · ${holidayCount} holiday${holidayCount>1?'s':''}`:''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button onclick="event.stopPropagation();togglePolicyEdit('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa fa-pen"></i> ${editing?'Close':'Edit'}</button>
+          <button onclick="event.stopPropagation();removePolicyRule('${r.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.35);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;"><i class="fa fa-trash"></i></button>
+        </div>
+      </div>
+      ${editForm}
+    </div>`;
+  }).join('');
+}
+
+function togglePolicyEdit(id){
+  const r=_policyDraft.find(r=>r.id===id);
+  if(!r) return;
+  r._editing=!r._editing;
+  renderPolicyRules();
+}
+
 
   list.innerHTML = _policyDraft.length===0
     ? `<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px;">No rules yet. Click <b>Add Rule</b> to create one.</div>`
