@@ -2623,7 +2623,9 @@ function openTimePolicyModal(){
   openModal('timePolicyModal');
 }
 function addPolicyRule(){
-  _policyDraft.push({id:'R'+Date.now(), startDate:new Date().toISOString().slice(0,10), endDate:new Date().toISOString().slice(0,10), pTime:'09:30', dTime:'09:45', workHours:8, weekendDays:[5,6], holidays:[]});
+  var nr={id:'R'+Date.now(), startDate:'', endDate:'', pTime:'', dTime:'', eTime:'', workHours:'', weekendDays:[], holidays:[], _editing:true};
+  _policyDraft.forEach(function(x){x._editing=false;});
+  _policyDraft.push(nr);
   renderPolicyRules();
 }
 function removePolicyRule(id){
@@ -2705,13 +2707,15 @@ function renderPolicyRules(){
       html+='<span style="background:rgba(201,162,77,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;">Rule '+(ri+1)+'</span>';
       html+='<div style="flex:1;min-width:0;">';
       if(r.name) html+='<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;">'+r.name+'</div>';
-      html+='<div style="font-size:12px;font-weight:600;color:var(--text);">'+fmtD(r.startDate)+' → '+fmtD(r.endDate)+'</div>';
+      var fromLbl=r.startDate?fmtD(r.startDate):'From Date';
+      var toLbl=r.endDate?fmtD(r.endDate):'To Date';
+      html+='<div style="font-size:12px;font-weight:600;color:'+(r.startDate?'var(--text)':'var(--text3)')+';">'+fromLbl+' → '+toLbl+'</div>';
       html+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">';
-      html+='<span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10b981;padding:1px 7px;border-radius:5px;">P &le; '+(r.pTime||'—')+'</span>';
-      html+='<span style="font-size:10px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:1px 7px;border-radius:5px;">D &le; '+(r.dTime||'—')+'</span>';
-      html+='<span style="font-size:10px;background:rgba(249,115,22,0.1);color:#f97316;padding:1px 7px;border-radius:5px;">E after '+(r.eTime||r.dTime||'—')+'</span>';
-      html+='<span style="font-size:10px;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 7px;border-radius:5px;">'+(r.workHours||8)+'h/day</span>';
-      html+='<span style="font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:1px 7px;border-radius:5px;">'+wkd+'</span>';
+      html+='<span style="font-size:10px;background:rgba(16,185,129,0.1);color:#10b981;padding:1px 7px;border-radius:5px;">P &le; '+(r.pTime||'__:__')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:1px 7px;border-radius:5px;">D &le; '+(r.dTime||'__:__')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(249,115,22,0.1);color:#f97316;padding:1px 7px;border-radius:5px;">E after '+(r.eTime||'__:__')+'</span>';
+      html+='<span style="font-size:10px;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 7px;border-radius:5px;">'+(r.workHours||'__')+'h/day</span>';
+      html+='<span style="font-size:10px;background:rgba(239,68,68,0.1);color:#ef4444;padding:1px 7px;border-radius:5px;">'+(wkd||'No weekends set')+'</span>';
       if(hc) html+='<span style="font-size:10px;background:rgba(129,140,248,0.1);color:#818cf8;padding:1px 7px;border-radius:5px;">'+hc+' holiday(s)</span>';
       html+='</div></div>';
       html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;">Edit</button>';
