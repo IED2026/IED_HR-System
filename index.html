@@ -11009,7 +11009,9 @@ function openClockPicker(targetId, defaultAmPm, noAmPm){
     const inp=document.getElementById(id);
     if(inp) inp.value=noAmPm?`${String(selH).padStart(2,'0')}:${String(selM).padStart(2,'0')}`:`${String(selH).padStart(2,'0')}:${String(selM).padStart(2,'0')} ${selAmPm}`;
     document.getElementById('clockPickerModal').remove();
-    calcEditElDuty();
+    // Trigger recalculation
+    if(id==='calEditIn'||id==='calEditOut') calcCalActualDuty();
+    else calcEditElDuty();
   };
   render();
   document.body.appendChild(modal);
