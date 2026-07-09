@@ -10911,13 +10911,13 @@ function openCalDayEdit(dateStr){
         </div></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Expected Duty (h)</label>
         <div style="display:flex;gap:5px;">
-          <input id="calEditExpected" type="text" value="${(()=>{if(obj.exp)return obj.exp;const iso=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(dy).padStart(2,'0');const pol=findPolicyForDate(iso);return pol?String(Math.floor(pol.workHours)).padStart(2,'0')+':'+String(Math.round((pol.workHours%1)*60)).padStart(2,'0'):'';})()}" placeholder="08:00" oninput="calcEditElDuty();calcCalActualDuty()" style="flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;min-width:0;">
-          <button type="button" onclick="openClockPicker('calEditExpected',null,true)" style="padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--gold);cursor:pointer;font-size:12px;" title="Pick duration"><i class="fa fa-clock"></i></button>
+          <input id="calEditExpected" type="text" value="${(()=>{if(obj.exp)return obj.exp;const iso=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(dy).padStart(2,'0');const pol=findPolicyForDate(iso);return pol?String(Math.floor(pol.workHours)).padStart(2,'0')+':'+String(Math.round((pol.workHours%1)*60)).padStart(2,'0'):'09:00';})()}" placeholder="08:00" oninput="calcEditElDuty();calcCalActualDuty()" style="flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:inherit;min-width:0;">
+
         </div></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">Actual Duty (h)</label>
         <div style="display:flex;gap:5px;">
           <input id="calEditActual" type="text" value="${obj.t||''}" placeholder="auto" readonly style="flex:1;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:#10b981;font-size:12px;font-family:inherit;min-width:0;cursor:default;">
-          <button type="button" onclick="openClockPicker('calEditActual',null,true)" style="padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--gold);cursor:pointer;font-size:12px;" title="Pick duration"><i class="fa fa-clock"></i></button>
+
         </div></div>
       <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">E/L Duty (h) <span style="color:var(--text3);font-size:9px;">(auto)</span></label>
         <input id="calEditEl" type="text" readonly placeholder="auto" style="width:100%;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:#10b981;font-size:12px;font-family:inherit;box-sizing:border-box;cursor:default;"></div>
