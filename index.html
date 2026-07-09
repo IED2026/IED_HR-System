@@ -2820,6 +2820,9 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
   const daily = rawData.daily || [];
   const limit = upToDay ? Math.min(upToDay, daily.length) : daily.length;
   let wd=0, present=0, absent=0, leave=0, late=0, holiday=0, onTime=0, delay=0, exDelay=0;
+  let totalActMins=0, totalElMins=0;
+  const parseHMins=hm=>{if(!hm)return 0;const neg=hm.startsWith('-');const m=hm.replace('-','').match(/(\d+):(\d+)/);if(!m)return 0;const v=parseInt(m[1])*60+parseInt(m[2]);return neg?-v:v;};
+  const fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);return (neg?'-':'')+(String(Math.floor(abs/60)).padStart(2,'0'))+':'+(String(abs%60).padStart(2,'0'));};
   for(let i=0; i<limit; i++){
     const d = daily[i];
     const s = (yr!=null && mo!=null) ? computeDayStatus(yr, mo, i+1, d) : (typeof d==='object' && d ? (d.s||'') : (d||''));
@@ -2830,12 +2833,19 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
     else if(s==='L'){ leave++; wd++; }
     else if(s==='H'){ holiday++; }
     else if(s==='P(W)'||s==='P(H)'){ present++; wd++; onTime++; }
+    // Sum duty hours from daily entries
+    if(typeof d==='object' && d){
+      if(d.t) totalActMins += parseHMins(d.t);
+      if(d.e) totalElMins += parseHMins(d.e);
+    }
   }
+  const otHours = totalActMins>0 ? (totalActMins/60).toFixed(1) : (parseFloat(rawData.ot)||0);
+  const elOtStr = totalActMins>0 ? fmtHM(totalElMins) : (rawData.elOt||'');
   return {
     wd, present, absent, leave, late, holiday, onTime, delay, exDelay,
     half: parseInt(rawData.half)||0,
-    ot: parseFloat(rawData.ot)||0,
-    elOt: rawData.elOt||'',
+    ot: otHours,
+    elOt: elOtStr,
     note: rawData.note||'',
     daily
   };
