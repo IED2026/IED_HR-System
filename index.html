@@ -2598,8 +2598,9 @@ function computeDayStatus(yr, mo, dy, dayObj){
         else if(dCut!=null && inMin<=dCut) s='D';
         else s='E';
       }
-      if(isHoliday) s = s==='P'?'P(H)':s;
-      else if(isWeekend) s = s==='P'?'P(W)':s;
+      // Weekend/Holiday presence always shows P(W)/P(H) regardless of late/early
+      if(isHoliday) s='P(H)';
+      else if(isWeekend) s='P(W)';
       return s;
     }
     if(isHoliday) return 'H';
