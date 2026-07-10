@@ -2676,6 +2676,7 @@ function renderPolicyRules(){
   var list=document.getElementById('policyRulesList');
   if(!list) return;
   var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var INP='width:100%;background:var(--navy4);border:1px solid var(--border);border-radius:7px;padding:6px 9px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box;';
   if(!_policyDraft.length){
     list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:8px;">No rules yet. Click <b style="color:var(--gold);">+ Add Rule</b> above.</div>';
@@ -2698,7 +2699,7 @@ function renderPolicyRules(){
     }
     var wkd=(r.weekendDays||[]).map(function(d){return DOW[d];}).join(', ')||'None';
     var hc=(r.holidays||[]).length;
-    var MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var MNAMES_UNUSED=null; // MNAMES now defined at function scope
     function fmtD(ds){if(!ds)return '—';var p=ds.split('-');return p.length<3?ds:parseInt(p[2])+' '+MNAMES[parseInt(p[1])-1]+' '+p[0];}
     html+='<div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
     // Summary row
