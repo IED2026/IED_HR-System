@@ -2725,7 +2725,9 @@ function renderPolicyRules(){
       // Edit form
       html+='<div style="padding:12px;display:flex;flex-direction:column;gap:10px;">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
-      html+='<span style="font-size:12px;font-weight:700;color:var(--gold);">Rule '+(ri+1)+' — Edit</span>';
+      html+='<div><span style="font-size:12px;font-weight:700;color:var(--gold);">Rule '+(ri+1)+'</span>';
+      if(r.startDate||r.endDate) html+='<span style="font-size:11px;color:var(--text3);margin-left:8px;">'+fmtD(r.startDate)+' → '+fmtD(r.endDate)+'</span>';
+      html+='</div>';
       html+='<button onclick="togglePolicyEdit(\''+r.id+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;">Close</button>';
       html+='</div>';
       // Rule name
@@ -2733,8 +2735,8 @@ function renderPolicyRules(){
       html+='<input type="text" style="'+INP+'" value="'+(r.name||'')+'" placeholder="e.g. Office Hours Jan-Jun 2026" onchange="updatePolicyField(\''+r.id+'\',\'name\',this.value)"></div>';
       // Dates
       html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-      html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Start Date</label><input type="date" style="'+INP+'" value="'+(r.startDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'startDate\',this.value);renderPolicyRules()"></div>';
-      html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">End Date</label><input type="date" style="'+INP+'" value="'+(r.endDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'endDate\',this.value);renderPolicyRules()"></div>';
+      html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Start Date</label><input type="date" style="'+INP+'" value="'+(r.startDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'startDate\',this.value);renderPolicyRules()"><div style="font-size:10px;color:var(--gold);margin-top:2px;">'+(r.startDate?fmtD(r.startDate):'')+'</div></div>';
+      html+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">End Date</label><input type="date" style="'+INP+'" value="'+(r.endDate||'')+'" onchange="updatePolicyField(\''+r.id+'\',\'endDate\',this.value);renderPolicyRules()"><div style="font-size:10px;color:var(--gold);margin-top:2px;">'+(r.endDate?fmtD(r.endDate):'')+'</div></div>';
       html+='</div>';
       // Cutoffs + hours
       html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">';
