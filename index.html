@@ -464,6 +464,7 @@ window.addEventListener('load', async function(){
     if(main) main.style.opacity='0.6';
     await loadState();
     if(main) main.style.opacity='1';
+    syncAllStatuses(); // sync daily[].s from computeDayStatus for portal consistency
     renderDashboard();
     document.querySelector('.nav-item[onclick="nav(\'dashboard\')"]')?.classList.add('active');
   }
@@ -2854,6 +2855,36 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
     note: rawData.note||'',
     daily
   };
+}
+
+
+async function syncAllStatuses(){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  let changed=false;
+  employees.forEach(function(emp){
+    Object.keys(emp.attendance||{}).forEach(function(yr){
+      Object.keys(emp.attendance[yr]||{}).forEach(function(mo){
+        const md=emp.attendance[yr][mo];
+        const daily=md.daily||[];
+        daily.forEach(function(d,i){
+          if(!d||d==='') return;
+          if(typeof d!=='object') return;
+          const dateStr=yr+'-'+String(parseInt(mo)+1).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
+          if(dateStr>=todayStr) return; // skip today and future
+          if(!d.i&&!d.in) return; // skip if no check-in
+          const computed=computeDayStatus(parseInt(yr),parseInt(mo),i+1,d);
+          if(computed && computed!==d.s){
+            d.s=computed;
+            changed=true;
+          }
+        });
+      });
+    });
+  });
+  if(changed){
+    await saveSingleKey('employees',employees);
+  }
 }
 
 function renderAttendancePage(){
