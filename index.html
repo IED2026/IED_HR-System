@@ -2988,7 +2988,7 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${(()=>{const daily=(attData[i]||{}).daily||[];let mins=0;daily.forEach(d=>{if(typeof d==='object'&&d&&d.exp){const p=d.exp.split(':');if(p.length>=2)mins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);}});return mins>0?(Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')):'—';})()}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#06b6d4;">${mData.ot||'—'}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span></td>
-      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${present>0&&mData.ot&&mData.ot!=='—'?parseFloat(mData.ot)/present:'—'}</span></td>
+      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${(()=>{if(!present||!mData.ot||mData.ot==='—')return '—';const totalMins=parseFloat(mData.ot)*60;const avgMins=totalMins/present;const h=Math.floor(avgMins/60);const m=Math.round(avgMins%60);return h+':'+String(m>=60?'00':m).padStart(2,'0');})()}</span></td>
       <td style="${tdStyle}">
         <span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;color:${pctColor2};background:${pctBg};">${pct2}%</span>
       </td>
