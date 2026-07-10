@@ -2871,7 +2871,7 @@ async function syncAllStatuses(){
           if(!d||d==='') return;
           if(typeof d!=='object') return;
           const dateStr=yr+'-'+String(parseInt(mo)+1).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
-          if(dateStr>=todayStr) return; // skip today and future
+          if(dateStr>todayStr) return; // skip future only
           if(!d.i&&!d.in) return; // skip if no check-in
           const computed=computeDayStatus(parseInt(yr),parseInt(mo),i+1,d);
           if(computed && computed!==d.s){
