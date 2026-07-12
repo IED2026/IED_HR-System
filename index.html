@@ -6764,7 +6764,7 @@ function renderKpiPanel(){
     const curYear = new Date().getFullYear();
 
     const memberCards = members.map(m=>{
-      const kpiYearData = ((m.kpiData||{})[curYear]||{})[team.id];
+      const kpiYearData = (m.kpiData||{})[curYear];
       const items = kpiYearData?.items || [];
       const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
       const overall = items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
@@ -6961,12 +6961,11 @@ async function doRemoveSatRegret(recordId){
   if(ok) toast('Removed ✓','success');
 }
 
-function showMemberKpiPopup(empId, teamId){
+function showMemberKpiPopup(empId){
   const emp = employees.find(e=>e.id===empId);
   if(!emp) return;
   const year = new Date().getFullYear();
-  const tid = teamId || window._teamKpiTeamId;
-  const items = ((emp.kpiData||{})[year]||{})[tid]?.items || [];
+  const items = (emp.kpiData||{})[year]?.items || [];
   const c=document.createElement('div');
   c.id='memberKpiPopup';
   c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -7110,9 +7109,8 @@ function renderTeamKpiMembers(){
 
   el.innerHTML = members.map(m=>{
     if(!m.kpiData) m.kpiData={};
-    if(!m.kpiData[year]) m.kpiData[year]={};
-    if(!m.kpiData[year][teamId]) m.kpiData[year][teamId]={items:[],review:{}};
-    const items = m.kpiData[year][teamId].items;
+    if(!m.kpiData[year]) m.kpiData[year]={items:[],review:{}};
+    const items = m.kpiData[year].items;
     const level = calcStarLevel(getEmpScore(m));
     return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);">
@@ -7130,9 +7128,8 @@ function renderTeamKpiMembers(){
   }).join('') || '<p style="text-align:center;color:var(--text3);padding:20px;">No members in this team.</p>';
 }
 
-function renderTeamMemberKpiItems(m, year, teamId){
-  const teamId=teamId||window._teamKpiTeamId;
-  const items = (m.kpiData||{})[year]?.[teamId]?.items || [];
+function renderTeamMemberKpiItems(m, year){
+  const items = m.kpiData[year].items;
   if(!items.length) return '<p style="font-size:11px;color:var(--text3);text-align:center;padding:8px;">No KPI targets yet. Click &quot;+ Add KPI&quot; above.</p>';
   return items.map((k,i)=>{
     const totalDays = (k.startDate && k.endDate) ? Math.max(0, Math.round((new Date(k.endDate)-new Date(k.startDate))/86400000)+1) : null;
@@ -7188,40 +7185,34 @@ function renderTeamMemberKpiItems(m, year, teamId){
 function toggleKpiItemEdit(empId, year, idx){
   const emp=employees.find(e=>e.id===empId);
   if(!emp) return;
-  const _tid2=window._teamKpiTeamId;
-  const k=(emp.kpiData||{})[year]?.[_tid2]?.items?.[idx];
+  const k=(emp.kpiData||{})[year]?.items?.[idx];
   if(!k) return;
   // Close all others first
-  (emp.kpiData[year][_tid2].items||[]).forEach((item,i)=>{ if(i!==idx) item._editing=false; });
+  (emp.kpiData[year].items||[]).forEach((item,i)=>{ if(i!==idx) item._editing=false; });
   k._editing=!k._editing;
-  document.getElementById('teamKpiItems_'+empId).innerHTML=renderTeamMemberKpiItems(emp,year,window._teamKpiTeamId);
+  document.getElementById('teamKpiItems_'+empId).innerHTML=renderTeamMemberKpiItems(emp,year);
 }
 
 function addTeamMemberKpiItem(empId){
   const emp = employees.find(e=>e.id===empId);
   const year = window._teamKpiYear;
   if(!emp.kpiData) emp.kpiData={};
-  if(!emp.kpiData[year]) emp.kpiData[year]={};
-  const teamId2=window._teamKpiTeamId;
-  if(!emp.kpiData[year][teamId2]) emp.kpiData[year][teamId2]={items:[],review:{}};
-  emp.kpiData[year][teamId2].items.push({desc:'',weight:10,startDate:'',endDate:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:'',_editing:true});
+  if(!emp.kpiData[year]) emp.kpiData[year]={items:[],review:{}};
+  emp.kpiData[year].items.push({desc:'',weight:10,startDate:'',endDate:'',q1t:'',q1a:'',q2t:'',q2a:'',q3t:'',q3a:'',q4t:'',q4a:'',_editing:true});
   const el=document.getElementById(`teamKpiItems_${empId}`);
-  if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year, teamId2);
+  if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
 }
 function updateTeamKpiItem(empId, year, idx, field, val){
   const emp = employees.find(e=>e.id===empId);
-  const _tid=window._teamKpiTeamId;
-  if(!emp.kpiData[year]?.[_tid]) return;
-  emp.kpiData[year][_tid].items[idx][field]=val;
+  emp.kpiData[year].items[idx][field]=val;
   if(field==='startDate'||field==='endDate'){
     const el=document.getElementById(`teamKpiItems_${empId}`);
-    if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year, _tid);
+    if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
   }
 }
 function removeTeamKpiItemConfirm(empId, year, idx){
   const emp = employees.find(e=>e.id===empId);
-  const _rtid=window._teamKpiTeamId;
-  const item = emp.kpiData[year]?.[_rtid]?.items?.[idx];
+  const item = emp.kpiData[year].items[idx];
   const c=document.createElement('div');
   c.id='removeTeamKpiConfirm';
   c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -7238,8 +7229,7 @@ function removeTeamKpiItemConfirm(empId, year, idx){
 }
 function doRemoveTeamKpiItem(empId, year, idx){
   const emp = employees.find(e=>e.id===empId);
-  const _dtid=window._teamKpiTeamId;
-  emp.kpiData[year]?.[_dtid]?.items?.splice(idx,1);
+  emp.kpiData[year].items.splice(idx,1);
   const el=document.getElementById(`teamKpiItems_${empId}`);
   if(el) el.innerHTML=renderTeamMemberKpiItems(emp, year);
 }
@@ -10113,8 +10103,7 @@ function removeKpiItem(idx){
   if(!empId) return;
   const emp=employees.find(e=>e.id===empId);
   if(emp?.kpiData?.[year]?.items){
-    const _dtid=window._teamKpiTeamId;
-  emp.kpiData[year]?.[_dtid]?.items?.splice(idx,1);
+    emp.kpiData[year].items.splice(idx,1);
     renderKpiTab();
   }
 }
@@ -10125,9 +10114,7 @@ function updateKpiItem(idx,field,val){
   if(!empId) return;
   const emp=employees.find(e=>e.id===empId);
   if(emp?.kpiData?.[year]?.items?.[idx]){
-    const _tid=window._teamKpiTeamId;
-  if(!emp.kpiData[year]?.[_tid]) return;
-  emp.kpiData[year][_tid].items[idx][field]=val;
+    emp.kpiData[year].items[idx][field]=val;
     // refresh score summary only
     const items=emp.kpiData[year].items;
     const totalW=items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
