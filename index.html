@@ -7108,6 +7108,7 @@ function renderTeamKpiMembers(){
   const el = document.getElementById('teamKpiMembersArea');
   if(!el) return;
 
+  const teamId=team.id;
   el.innerHTML = members.map(m=>{
     if(!m.kpiData) m.kpiData={};
     if(!m.kpiData[year]) m.kpiData[year]={};
