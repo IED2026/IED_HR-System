@@ -3561,11 +3561,14 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
           const raw2=(empObj.attendance||{})[yr2]?.[mo2]?.daily?.[dy2-1];
           storedExp=typeof raw2==='object'&&raw2?raw2.exp||'':'';
         }
-        if(storedExp) return row('Expected Duty (h)',storedExp,'#f59e0b');
+        // Policy first, then stored exp as fallback
         const pol=findPolicyForDate(iso);
-        if(!pol) return ''; // no policy set, don't show default
-        const wh=pol.workHours;
-        return row('Expected Duty (h)',String(Math.floor(wh)).padStart(2,'0')+':'+String(Math.round((wh%1)*60)).padStart(2,'0'),'#f59e0b');
+        if(pol){
+          const wh=pol.workHours;
+          return row('Expected Duty (h)',String(Math.floor(wh)).padStart(2,'0')+':'+String(Math.round((wh%1)*60)).padStart(2,'0'),'#f59e0b');
+        }
+        if(storedExp) return row('Expected Duty (h)',storedExp,'#f59e0b');
+        return '';
       })()}
       ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
       ${row('Extra/Less Duty (h)', elDuty, elColor)}
