@@ -6965,7 +6965,7 @@ async function doRemoveSatRegret(recordId){
   if(ok) toast('Removed ✓','success');
 }
 
-function showMemberKpiPopup(empId){
+function showMemberKpiPopup(empId, teamId){
   const emp = employees.find(e=>e.id===empId);
   if(!emp) return;
   const year = new Date().getFullYear();
@@ -7019,7 +7019,7 @@ function showTeamKpiBoard(teamId){
   c.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;';
 
   const memberBoards = members.map(m=>{
-    const items = (m.kpiData||{})[year]?.items || [];
+    const items = ((m.kpiData||{})[year]||{})[teamId]?.items || [];
     const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
     const overall = items.length&&totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
     const oc = overall===null?'var(--text3)':overall>=80?'#10b981':overall>=60?'#f59e0b':'#ef4444';
