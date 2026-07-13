@@ -2895,7 +2895,9 @@ async function syncAllStatuses(){
           }
         }
         // Step 3: store monthly stats for portal to read
-        const mStats=deriveMonthStats(md,yrInt,moInt);
+        const nowDay2=new Date().getDate(), nowMo2=new Date().getMonth(), nowYr2=new Date().getFullYear();
+        const isCurMo=(yrInt===nowYr2&&moInt===nowMo2);
+        const mStats=isCurMo?deriveMonthStats(md,nowDay2-1,yrInt,moInt):deriveMonthStats(md,null,yrInt,moInt);
         if(md.wd!==mStats.wd||md.present!==mStats.present){
           md.wd=mStats.wd; md.present=mStats.present;
           md.absent=mStats.absent; md.leave=mStats.leave;
