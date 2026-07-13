@@ -3855,9 +3855,12 @@ async function processPihrJobCard(file){
         }
         curEmp.elOt=curEmp.yearSummary.elOtTotal;
         inDaily=false;
-      } else if(inDaily && curEmp && /^\d{2}-\d{2}-\d{4}/.test(r[0])){
-        const month=r[0].substring(3,5);
-        const dateStr=r[0].substring(0,10);
+      } else if(inDaily && curEmp && /^\d{2}[-\/]\d{2}[-\/]\d{4}/.test(r[0])){
+        // Support both DD-MM-YYYY and DD/MM/YYYY (Thu) formats
+        const rawDate = String(r[0]).trim();
+        const datePart = rawDate.substring(0,10).replace(/\//g,'-');
+        const month=datePart.substring(3,5);
+        const dateStr=datePart.substring(0,10);
         const status=r[1];
         const expectedDuty=r[2]&&r[2]!=='-'?String(r[2]).trim():'';
         const inTime=r[3]||'';
