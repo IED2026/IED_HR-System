@@ -7081,6 +7081,7 @@ function openTeamKpiModal(teamId){
   const curYear = new Date().getFullYear();
   window._teamKpiYear = curYear;
   window._teamKpiTeamId = teamId;
+  resetKpiEditState();
 
   const c=document.createElement('div');
   c.id='teamKpiModal';
@@ -7103,6 +7104,15 @@ function openTeamKpiModal(teamId){
   renderTeamKpiMembers();
 }
 
+function resetKpiEditState(){
+  employees.forEach(emp=>{
+    Object.values(emp.kpiData||{}).forEach(yr=>{
+      Object.values(yr||{}).forEach(teamData=>{
+        if(teamData&&teamData.items) teamData.items.forEach(k=>{k._editing=false;});
+      });
+    });
+  });
+}
 function renderTeamKpiMembers(){
   const team = getKpiTeams().find(t=>t.id===window._teamKpiTeamId);
   if(!team) return;
@@ -7148,7 +7158,7 @@ function renderTeamMemberKpiItems(m, year){
         <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k.desc||'—'}</div>
         <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap;">
           <span style="font-size:10px;background:rgba(201,162,77,0.1);color:var(--gold);padding:1px 7px;border-radius:5px;">${k.weight||0}%</span>
-          <span style="font-size:10px;color:var(--text3);">${k.startDate||'—'} → ${k.endDate||'—'}</span>
+          <span style="font-size:10px;color:var(--text2);">${k.startDate||'—'} → ${k.endDate||'—'}</span>
           ${totalDays!==null?`<span style="font-size:10px;color:var(--text3);">${totalDays} days</span>`:''}
         </div>
       </div>
@@ -7160,6 +7170,7 @@ function renderTeamMemberKpiItems(m, year){
     const editForm = `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:6px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-size:11px;font-weight:700;color:var(--gold);">Edit KPI</span>
+        <button onclick="saveKpiItemAndClose(${m.id},'${year}',${i})" style="padding:3px 8px;border-radius:5px;border:none;background:var(--gold);color:#000;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:4px;">Save</button>
         <button onclick="toggleKpiItemEdit(${m.id},'${year}',${i})" style="padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--navy4);color:var(--text2);font-size:10px;cursor:pointer;font-family:inherit;">Close</button>
       </div>
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;">
@@ -7188,6 +7199,16 @@ function renderTeamMemberKpiItems(m, year){
   }).join('');
 }
 
+function saveKpiItemAndClose(empId, year, idx){
+  const emp=employees.find(e=>e.id===empId);
+  if(!emp) return;
+  const _tid=window._teamKpiTeamId;
+  const k=((emp.kpiData||{})[year]||{})[_tid]?.items?.[idx];
+  if(k) k._editing=false;
+  saveSingleKey('employees',employees);
+  document.getElementById('teamKpiItems_'+empId).innerHTML=renderTeamMemberKpiItems(emp,year);
+  toast('KPI saved','success');
+}
 function toggleKpiItemEdit(empId, year, idx){
   const emp=employees.find(e=>e.id===empId);
   if(!emp) return;
