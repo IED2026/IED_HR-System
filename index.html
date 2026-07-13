@@ -6804,7 +6804,7 @@ function renderKpiPanel(){
 
     // Team-level average KPI (across members with data)
     const memberScores = members.map(m=>{
-      const items = ((m.kpiData||{})[curYear])?.items || [];
+      const items = ((m.kpiData||{})[curYear]||{})[team.id]?.items || [];
       const totalW = items.reduce((s,k)=>s+(parseFloat(k.weight)||0),0);
       return items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
     }).filter(v=>v!==null);
