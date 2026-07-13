@@ -2608,7 +2608,8 @@ function computeDayStatus(yr, mo, dy, dayObj){
     if(isHoliday) return 'H';
     if(isWeekend) return 'W';
     if(storedS==='L') return 'L';
-    // Only mark Absent if HR has explicitly entered 'A', not auto-derived
+    // Past working day with no check-in → Absent
+    if(!isToday) return 'A';
     return storedS||'';
   }
   // No policy covers this date → fall back to stored status (legacy behavior)
