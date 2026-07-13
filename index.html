@@ -3962,7 +3962,7 @@ function renderPihrMappingGrid(mappings, selectedId=null){
     const idx=mappings.findIndex(x=>x.id===selectedId);
     return `
       <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="font-size:12px;color:var(--text1);">You have uploaded <b style="color:#10b981;">Mapping ${idx+1}: ${m.name}</b>, Extract Data?</div>
+        <div style="font-size:12px;color:var(--text1);">You have uploaded <b style="color:#10b981;">Mapping ${idx+1}: "${pihrRawFile?.name||m.name}"</b>, Extract Data?</div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           <button onclick="confirmPihrMappingSelect('${selectedId}')" style="padding:6px 18px;border-radius:7px;border:none;background:#10b981;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Yes</button>
           <button onclick="renderPihrMappingGrid(window._pihrMappings)" style="padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--navy3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">No</button>
@@ -4018,7 +4018,8 @@ async function confirmPihrMappingSelect(mappingId){
   const mapping = mappings.find(m=>m.id===mappingId);
   if(!mapping){ toast('Mapping not found','error'); return; }
   const idx = mappings.findIndex(m=>m.id===mappingId);
-  const previewTitle = `PIHR Import Preview — Mapping ${idx+1}: ${mapping.name}`;
+  const fileName = pihrRawFile?.name || 'Unknown File';
+  const previewTitle = `PIHR Import Preview — Mapping ${idx+1}: "${fileName}"`;
 
   if(mapping.type==='job_card'){
     await processPihrJobCard(pihrRawFile);
