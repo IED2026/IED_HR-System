@@ -7180,9 +7180,9 @@ function renderTeamMemberKpiItems(m, year){
         <div><label style="font-size:9px;color:var(--text3);">Weight %</label>
           <input class="form-control" type="number" style="width:70px;font-size:12px;color:var(--text);" value="${k.weight||0}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'weight',this.value)"></div>
         <div><label style="font-size:9px;color:var(--text3);">Start Date</label>
-          <input class="form-control" type="date" style="font-size:12px;color:var(--text);color-scheme:dark;" value="${k.startDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'startDate',this.value)"></div>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;background:#fff;border-color:#ccc;color-scheme:light;" value="${k.startDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'startDate',this.value)"></div>
         <div><label style="font-size:9px;color:var(--text3);">End Date</label>
-          <input class="form-control" type="date" style="font-size:12px;color:var(--text);color-scheme:dark;" value="${k.endDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'endDate',this.value)"></div>
+          <input class="form-control" type="date" style="font-size:12px;color:#111;background:#fff;border-color:#ccc;color-scheme:light;" value="${k.endDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'endDate',this.value)"></div>
         <div style="text-align:center;"><label style="font-size:9px;color:var(--text3);">Total Days</label>
           <div style="padding:8px 12px;background:rgba(212,175,55,0.08);border:1px solid var(--gold);border-radius:7px;font-size:12px;font-weight:700;color:var(--gold);min-width:52px;">${totalDays===null?'—':totalDays}</div></div>
       </div>
