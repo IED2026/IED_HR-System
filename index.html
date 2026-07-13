@@ -7176,9 +7176,9 @@ function renderTeamMemberKpiItems(m, year){
       </div>
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;">
         <div style="flex:1;min-width:140px;"><label style="font-size:9px;color:var(--text3);">KPI Description</label>
-          <input class="form-control" style="font-size:12px;color:var(--text);" value="${k.desc||''}" placeholder="KPI description" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'desc',this.value)"></div>
+          <input class="form-control" style="font-size:12px;color:#111;background:#fff;border-color:#ccc;" value="${k.desc||''}" placeholder="KPI description" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'desc',this.value)"></div>
         <div><label style="font-size:9px;color:var(--text3);">Weight %</label>
-          <input class="form-control" type="number" style="width:70px;font-size:12px;color:var(--text);" value="${k.weight||0}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'weight',this.value)"></div>
+          <input class="form-control" type="number" style="width:70px;font-size:12px;color:#111;background:#fff;border-color:#ccc;" value="${k.weight||0}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'weight',this.value)"></div>
         <div><label style="font-size:9px;color:var(--text3);">Start Date</label>
           <input class="form-control" type="date" style="font-size:12px;color:#111;background:#fff;border-color:#ccc;color-scheme:light;" value="${k.startDate||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'startDate',this.value)"></div>
         <div><label style="font-size:9px;color:var(--text3);">End Date</label>
@@ -7189,9 +7189,9 @@ function renderTeamMemberKpiItems(m, year){
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
         ${[1,2,3,4].map(q=>`<div>
           <label style="font-size:9px;color:var(--text3);">Q${q} Target</label>
-          <input class="form-control" type="number" style="font-size:11px;color:var(--text);" value="${k['q'+q+'t']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}t',this.value)">
+          <input class="form-control" type="number" style="font-size:11px;color:#111;background:#fff;border-color:#ccc;" value="${k['q'+q+'t']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}t',this.value)">
           <label style="font-size:9px;color:var(--text3);">Q${q} Actual</label>
-          <input class="form-control" type="number" style="font-size:11px;color:var(--text);" value="${k['q'+q+'a']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}a',this.value)">
+          <input class="form-control" type="number" style="font-size:11px;color:#111;background:#fff;border-color:#ccc;" value="${k['q'+q+'a']||''}" onchange="updateTeamKpiItem(${m.id},'${year}',${i},'q${q}a',this.value)">
         </div>`).join('')}
       </div>
     </div>`;
