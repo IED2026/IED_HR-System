@@ -2869,24 +2869,43 @@ async function syncAllStatuses(){
       Object.keys(emp.attendance[yr]||{}).forEach(function(mo){
         const md=emp.attendance[yr][mo];
         const daily=md.daily||[];
+        const yrInt=parseInt(yr), moInt=parseInt(mo);
+        // Step 1: update daily[].s from computeDayStatus
         daily.forEach(function(d,i){
-          if(!d||d==='') return;
-          if(typeof d!=='object') return;
-          const dateStr=yr+'-'+String(parseInt(mo)+1).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
-          if(dateStr>todayStr) return; // skip future only
-          if(!d.i&&!d.in) return; // skip if no check-in
-          const computed=computeDayStatus(parseInt(yr),parseInt(mo),i+1,d);
-          if(computed && computed!==d.s){
-            d.s=computed;
-            changed=true;
-          }
+          if(!d||d===''||typeof d!=='object') return;
+          const dateStr=yr+'-'+String(moInt+1).padStart(2,'0')+'-'+String(i+1).padStart(2,'0');
+          if(dateStr>todayStr) return;
+          const computed=computeDayStatus(yrInt,moInt,i+1,d);
+          if(computed && computed!==d.s){ d.s=computed; changed=true; }
         });
+        // Step 2: also set Absent for past working days with no check-in
+        const daysInMonth=new Date(yrInt,moInt+1,0).getDate();
+        for(let day=1;day<=daysInMonth;day++){
+          const dateStr=yr+'-'+String(moInt+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+          if(dateStr>todayStr) break;
+          const raw=daily[day-1];
+          if(!raw||raw===''){
+            const computed=computeDayStatus(yrInt,moInt,day,raw);
+            if(computed==='A'){
+              while(daily.length<day) daily.push('');
+              daily[day-1]={s:'A'};
+              md.daily=daily;
+              changed=true;
+            }
+          }
+        }
+        // Step 3: store monthly stats for portal to read
+        const mStats=deriveMonthStats(md,yrInt,moInt);
+        if(md.wd!==mStats.wd||md.present!==mStats.present){
+          md.wd=mStats.wd; md.present=mStats.present;
+          md.absent=mStats.absent; md.leave=mStats.leave;
+          md.late=mStats.late; md.holiday=mStats.holiday;
+          changed=true;
+        }
       });
     });
   });
-  if(changed){
-    await saveSingleKey('employees',employees);
-  }
+  if(changed) await saveSingleKey('employees',employees);
 }
 
 function renderAttendancePage(){
