@@ -11193,7 +11193,19 @@ async function saveCalDayEdit(yr,mo,dy){
   const exp=document.getElementById('calEditExpected').value.trim();
   const act=document.getElementById('calEditActual').value.trim();
   const el=document.getElementById('calEditEl').value.trim();
-  md.daily[dy-1]={s:document.getElementById('calEditStatus').value,i:inT,in:inT,o:outT,out:outT,exp,t:act,e:el};
+  // Auto-calculate t and e if not already set
+  const toMins=t=>{if(!t)return null;const m=t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);if(!m)return null;let h=parseInt(m[1]),mi=parseInt(m[2]);if(m[3]){if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;}return h*60+mi;};
+  const fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);return (neg?'-':'')+(String(Math.floor(abs/60)).padStart(2,'0'))+':'+(String(abs%60).padStart(2,'0'));};
+  let finalAct=act, finalEl=el;
+  if(inT && outT && !act){
+    const inM=toMins(inT), outM=toMins(outT);
+    if(inM!==null && outM!==null){ let d=outM-inM; if(d<0) d+=24*60; finalAct=fmtHM(d); }
+  }
+  if(finalAct && exp){
+    const actM=toMins(finalAct), expM=toMins(exp);
+    if(actM!==null && expM!==null) finalEl=fmtHM(actM-expM);
+  }
+  md.daily[dy-1]={s:document.getElementById('calEditStatus').value,i:inT,in:inT,o:outT,out:outT,exp,t:finalAct,e:finalEl};
   document.getElementById('calDayEditModal').remove();
   await saveSingleKey('employees',employees);
   renderAttendancePage();
