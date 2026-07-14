@@ -5686,6 +5686,22 @@ async function approvePortalRecon(empId, reconId){
       let dayObj=typeof md.daily[dy-1]==='object'&&md.daily[dy-1]?{...md.daily[dy-1]}:{s:typeof md.daily[dy-1]==='string'?md.daily[dy-1]:''};
       if(r.inTime){ dayObj.i=r.inTime; dayObj.in=r.inTime; }
       if(r.outTime){ dayObj.o=r.outTime; dayObj.out=r.outTime; }
+      // Calculate actual duty and E/L duty
+      if(dayObj.i && dayObj.o){
+        const toMins=t=>{if(!t)return null;const m=t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);if(!m)return null;let h=parseInt(m[1]),mi=parseInt(m[2]);if(m[3]){if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;}return h*60+mi;};
+        const fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);return (neg?'-':'')+(String(Math.floor(abs/60)).padStart(2,'0'))+':'+(String(abs%60).padStart(2,'0'));};
+        const inM=toMins(dayObj.i), outM=toMins(dayObj.o);
+        if(inM!==null && outM!==null){
+          let diff=outM-inM; if(diff<0) diff+=24*60;
+          dayObj.t=fmtHM(diff);
+          // Get expected duty from policy
+          const dateStr2=yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(dy).padStart(2,'0');
+          const pol=findPolicyForDate(dateStr2);
+          const expMins=pol?pol.workHours*60:9*60;
+          dayObj.exp=fmtHM(expMins);
+          dayObj.e=fmtHM(diff-expMins);
+        }
+      }
       const prevS=dayObj.s||'';
       if(!prevS||prevS==='A'||prevS===''){
         if(r.inTime&&r.outTime) dayObj.s='P';
