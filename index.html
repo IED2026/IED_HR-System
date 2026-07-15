@@ -428,6 +428,20 @@ window.addEventListener('load', async function(){
     }
   });
 
+  // ── REALTIME: pick up manningSched2 changes (e.g. Portal team create) without a page refresh ──
+  _supabase.channel('app_data_manning_sync')
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'app_data', filter:'key=eq.manningSched2'}, async function(payload){
+      try{
+        var newVal = payload.new && payload.new.value;
+        if(newVal){
+          manningSched2 = newVal;
+          localStorage.setItem('ied_manning_v7', JSON.stringify(manningSched2));
+          if(document.getElementById('kpiPanelTeamsList')) renderKpiPanel();
+        }
+      }catch(e){ console.warn('realtime manning sync failed', e); }
+    })
+    .subscribe();
+
   // ── CHECK SESSION (refresh vs new visit) ──
   const s = sessionStorage.getItem('ied_session');
   const navType = performance.getEntriesByType('navigation')[0]?.type;
