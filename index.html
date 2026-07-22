@@ -4064,6 +4064,14 @@ async function processPihrLeaveBalance(file, previewTitle){
       if(m){ fileYear=parseInt(m[1]); break; }
     }
 
+    // Year Mismatch guard: file year must match the currently selected Attendance & Leave year
+    const selectedYear=parseInt(document.getElementById('attYear')?.value)||new Date().getFullYear();
+    if(fileYear!==selectedYear){
+      if(st) st.innerHTML='<i class="fa fa-triangle-exclamation" style="color:#ef4444"></i> Year Mismatch: file is '+fileYear+', page is '+selectedYear;
+      toast('Year Mismatch: uploaded file is for '+fileYear+' but selected year is '+selectedYear,'error');
+      return;
+    }
+
     const result={};
     let curEmpCode='', curEmpName='';
 
