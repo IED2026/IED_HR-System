@@ -3404,12 +3404,14 @@ function renderLeaveBalanceCards(emp, year, targetId){
   }
   totalLeaveTaken = Math.round(totalLeaveTaken);
 
-  const lb = (emp.leaveBalance||{})[year]||{};
-  const annE = lb.annualEntitled||14, annT = lb.annualTaken||0;
+  const yearData = (emp.leaveBalance||{})[year];
+  const hasLbData = !!yearData;
+  const lb = yearData || {};
+  const annE = hasLbData ? (lb.annualEntitled||14) : 0, annT = hasLbData ? (lb.annualTaken||0) : 0;
   const annB = annE - annT;
-  const casE = lb.casualEntitled||13, casT = lb.casualTaken||0;
+  const casE = hasLbData ? (lb.casualEntitled||13) : 0, casT = hasLbData ? (lb.casualTaken||0) : 0;
   const casB = casE - casT;
-  const totE = lb.totalEntitled||(annE+casE);
+  const totE = hasLbData ? (lb.totalEntitled||(annE+casE)) : 0;
   const totalTaken = annT + casT;
   const totalLeaveRemaining = Math.max(0, totE - totalTaken);
 
