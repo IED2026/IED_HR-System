@@ -6828,7 +6828,7 @@ function renderKpiPanel(){
   const totalTeams=getKpiTeams().length;
   const totalMembers=new Set(getKpiTeams().flatMap(t=>t.memberIds||[])).size;
   document.getElementById('kpiPanelKpi').innerHTML=`
-    <div class="kpi-card"><div class="kpi-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8.5" r="3.6" fill="var(--gold)" opacity="0.55"/><circle cx="16" cy="8.5" r="3.6" fill="var(--gold)" opacity="0.55"/><circle cx="12" cy="14.5" r="4.6" fill="var(--gold)"/></svg></div><div class="kpi-val">${totalTeams}</div><div class="kpi-label">Teams</div></div>
+    <div class="kpi-card"><div class="kpi-icon"><div style="position:relative;width:30px;height:20px;display:inline-block;"><span style="position:absolute;left:0;top:0;">👤</span><span style="position:absolute;left:8px;top:0;">👤</span><span style="position:absolute;left:16px;top:0;">👤</span></div></div><div class="kpi-val">${totalTeams}</div><div class="kpi-label">Teams</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🧑‍🤝‍🧑</div><div class="kpi-val">${totalMembers}</div><div class="kpi-label">Total Members</div></div>
   `;
 
@@ -6896,7 +6896,7 @@ function renderKpiPanel(){
       <div onclick="toggleTeamCard(${team.id})" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
           <i class="fa fa-chevron-${isOpen?'down':'right'}" style="color:var(--text3);font-size:11px;width:12px;flex-shrink:0;"></i>
-          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b8941f);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8.5" r="3.6" fill="#0a1020" opacity="0.55"/><circle cx="16" cy="8.5" r="3.6" fill="#0a1020" opacity="0.55"/><circle cx="12" cy="14.5" r="4.6" fill="#0a1020"/></svg></div>
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#b8941f);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="position:relative;width:24px;height:16px;"><span style="position:absolute;left:0;top:0;font-size:13px;">👤</span><span style="position:absolute;left:6px;top:0;font-size:13px;">👤</span><span style="position:absolute;left:12px;top:0;font-size:13px;">👤</span></div></div>
           <div style="min-width:0;">
             <div style="font-size:14px;font-weight:800;color:var(--text1);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${team.name}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px;"><i class="fa fa-user-tie" style="color:var(--gold);"></i> ${leader?leader.name:'—'} &nbsp;|&nbsp; ${members.length} member${members.length!==1?'s':''}</div>
