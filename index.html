@@ -6853,8 +6853,8 @@ function renderKpiPanel(){
       const overall = items.length && totalW>0 ? Math.round(items.reduce((s,k)=>s+(parseFloat(k.weight)||0)*calcKpiScore(k)/100,0)/totalW*100) : null;
       const scoreColor = overall===null ? 'var(--text3)' : overall>=80?'#10b981':overall>=60?'#f59e0b':'#ef4444';
       const deadline = items.find(k=>k.endDate)?.endDate;
-      const satCount = (m.satRegretRecords||[]).filter(r=>r.type==='satisfactory').length;
-      const regretCount = (m.satRegretRecords||[]).filter(r=>r.type==='regret').length;
+      const satCount = (m.satRegretRecords||[]).filter(r=>r.type==='satisfactory' && String(r.teamId)===String(team.id)).length;
+      const regretCount = (m.satRegretRecords||[]).filter(r=>r.type==='regret' && String(r.teamId)===String(team.id)).length;
       const level = calcStarLevel(getEmpScore(m));
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;flex-wrap:nowrap;">
@@ -6987,7 +6987,7 @@ async function saveSatRegretEntry(type){
   const note = document.getElementById('srNote').value.trim();
   if(!date){ toast('Date required','error'); return; }
   if(!emp.satRegretRecords) emp.satRegretRecords=[];
-  emp.satRegretRecords.push({ id: Date.now(), type, date, project, note, addedBy: _loggedInUser.name||_loggedInUser.email||'HR' });
+  emp.satRegretRecords.push({ id: Date.now(), type, date, project, note, teamId: window._satRegretTeamId, addedBy: _loggedInUser.name||_loggedInUser.email||'HR' });
   document.getElementById('satRegretFormArea').innerHTML='';
   renderSatRegretHistory();
   renderKpiPanel();
@@ -6999,7 +6999,7 @@ function renderSatRegretHistory(){
   const emp = employees.find(e=>e.id===window._satRegretEmpId);
   const el = document.getElementById('satRegretHistory');
   if(!el || !emp) return;
-  const records = [...(emp.satRegretRecords||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const records = [...(emp.satRegretRecords||[])].filter(r=>String(r.teamId)===String(window._satRegretTeamId)).sort((a,b)=>new Date(b.date)-new Date(a.date));
   if(!records.length){
     el.innerHTML = `<p style="font-size:12px;color:var(--text3);text-align:center;padding:10px;">No entries yet.</p>`;
     return;
