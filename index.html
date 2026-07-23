@@ -428,7 +428,7 @@ window.addEventListener('load', async function(){
     }
   });
 
-  // ── REALTIME: pick up manningSched2 changes (e.g. Portal team create) without a page refresh ──
+  // ── REALTIME: pick up manningSched2 / employees changes (e.g. Portal team create, KPI assign) without a page refresh ──
   _supabase.channel('app_data_manning_sync')
     .on('postgres_changes', {event:'UPDATE', schema:'public', table:'app_data', filter:'key=eq.manningSched2'}, async function(payload){
       try{
@@ -439,6 +439,16 @@ window.addEventListener('load', async function(){
           if(document.getElementById('kpiPanelTeamsList')) renderKpiPanel();
         }
       }catch(e){ console.warn('realtime manning sync failed', e); }
+    })
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'app_data', filter:'key=eq.employees'}, async function(payload){
+      try{
+        var newVal = payload.new && payload.new.value;
+        if(newVal){
+          employees = migrateEmployees(newVal);
+          localStorage.setItem('ied_emp_v7', JSON.stringify(employees));
+          if(document.getElementById('kpiPanelTeamsList')) renderKpiPanel();
+        }
+      }catch(e){ console.warn('realtime employees sync failed', e); }
     })
     .subscribe();
 
