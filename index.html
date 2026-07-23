@@ -6826,7 +6826,7 @@ document.addEventListener('click', function(e){
 // ══════════════ KPI PANEL ══════════════
 function renderKpiPanel(){
   const totalTeams=getKpiTeams().length;
-  const totalMembers=getKpiTeams().reduce((s,t)=>s+(t.memberIds||[]).length,0);
+  const totalMembers=new Set(getKpiTeams().flatMap(t=>t.memberIds||[])).size;
   document.getElementById('kpiPanelKpi').innerHTML=`
     <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-val">${totalTeams}</div><div class="kpi-label">Teams</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🧑‍🤝‍🧑</div><div class="kpi-val">${totalMembers}</div><div class="kpi-label">Total Members</div></div>
@@ -6967,7 +6967,7 @@ function showSatRegretForm(type){
       <div style="font-size:12px;font-weight:700;color:${isOk?'#10b981':'#ef4444'};margin-bottom:10px;">
         <i class="fa fa-${isOk?'thumbs-up':'thumbs-down'}"></i> ${isOk?'Satisfactory':'Regret'} Letter
       </div>
-      <div class="form-group"><label>Date</label><input class="form-control" id="srDate" type="date" style="color:#111;" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="form-group"><label>Date</label><input class="form-control" id="srDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
       <div class="form-group"><label>Related Project (optional)</label>
         <select class="form-control" id="srProject">
           <option value="">-- None --</option>
@@ -7060,8 +7060,8 @@ function showMemberKpiPopup(empId, teamId){
     return `<tr>
       <td style="padding:8px;font-weight:600;">${k.desc||'—'}</td>
       <td style="padding:8px;text-align:center;">${k.weight||0}%</td>
-      <td style="padding:8px;text-align:center;font-size:10px;">${k.startDate||'—'}</td>
-      <td style="padding:8px;text-align:center;font-size:10px;">${k.endDate||'—'}</td>
+      <td style="padding:8px;text-align:center;font-size:10px;">${fmtKpiDate(k.startDate)}</td>
+      <td style="padding:8px;text-align:center;font-size:10px;">${fmtKpiDate(k.endDate)}</td>
       <td style="padding:8px;text-align:center;">${totalDays===null?'—':totalDays}</td>
       <td style="padding:8px;text-align:center;font-weight:700;color:${sc};">${score}%</td>
     </tr>`;
@@ -7119,7 +7119,7 @@ function showTeamKpiBoard(teamId){
         <div style="background:rgba(255,255,255,0.05);border-radius:4px;height:5px;">
           <div style="width:${progress}%;background:${sc};height:5px;border-radius:4px;transition:width .3s;"></div>
         </div>
-        <div style="font-size:9px;color:var(--text3);margin-top:3px;">Weight: ${k.weight||0}% ${k.startDate?'| '+k.startDate+' → '+(k.endDate||'?'):''}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;">Weight: ${k.weight||0}% ${k.startDate?'| '+fmtKpiDate(k.startDate)+' → '+(k.endDate?fmtKpiDate(k.endDate):'?'):''}</div>
       </div>`;
     }).join('');
     return `<div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;break-inside:avoid;">
@@ -7238,7 +7238,7 @@ function renderTeamMemberKpiItems(m, year){
         <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k.desc||'—'}</div>
         <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap;">
           <span style="font-size:10px;background:rgba(201,162,77,0.1);color:var(--gold);padding:1px 7px;border-radius:5px;">${k.weight||0}%</span>
-          <span style="font-size:10px;color:var(--text2);">${k.startDate||'—'} → ${k.endDate||'—'}</span>
+          <span style="font-size:10px;color:var(--text2);">${fmtKpiDate(k.startDate)} → ${fmtKpiDate(k.endDate)}</span>
           ${totalDays!==null?`<span style="font-size:10px;color:var(--text3);">${totalDays} days</span>`:''}
         </div>
       </div>
@@ -10197,6 +10197,13 @@ function calcKpiScore(k){
     if(t>0){tot+=Math.min(a/t*100,150);cnt++;}
   });
   return cnt>0?Math.round(tot/cnt):0;
+}
+function fmtKpiDate(ds){
+  if(!ds) return '—';
+  const p=String(ds).split('-'); if(p.length<3) return ds;
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mi=parseInt(p[1])-1; if(mi<0||mi>11) return ds;
+  return String(p[2]).padStart(2,'0')+'-'+MN[mi]+'-'+p[0];
 }
 
 let _kpiItemsCache=[];
