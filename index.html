@@ -2866,8 +2866,8 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
     else if(s==='L'){ leave++; wd++; }
     else if(s==='H'){ holiday++; }
     else if(s==='P(W)'||s==='P(H)'){ present++; wd++; onTime++; }
-    // Sum duty hours from daily entries
-    if(typeof d==='object' && d){
+    // Sum duty hours from daily entries (skip Leave days — duty hours don't apply)
+    if(typeof d==='object' && d && s!=='L'){
       if(d.t) totalActMins += parseHMins(d.t);
       if(d.e) totalElMins += parseHMins(d.e);
     }
@@ -3065,7 +3065,7 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${mData.delay||0}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#ef4444;">${mData.exDelay||0}</span></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
-      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${(()=>{const daily=(attData[i]||{}).daily||[];let mins=0;daily.forEach(d=>{if(typeof d==='object'&&d&&d.exp){const p=d.exp.split(':');if(p.length>=2)mins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);}});return mins>0?(Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')):'—';})()}</span></td>
+      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${(()=>{const daily=(attData[i]||{}).daily||[];let mins=0;daily.forEach((d,di)=>{if(typeof d==='object'&&d&&d.exp&&(d.s!=='L')){const p=d.exp.split(':');if(p.length>=2)mins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);}});return mins>0?(Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')):'—';})()}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#06b6d4;">${(()=>{if(mData.ot===undefined||mData.ot===null||mData.ot==='—')return '—';const totalMins=Math.round(parseFloat(mData.ot)*60);if(isNaN(totalMins))return '—';const h=Math.floor(totalMins/60),m=totalMins%60;return h+':'+String(m).padStart(2,'0');})()}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${(()=>{if(!present||!mData.ot||mData.ot==='—')return '—';const totalMins=parseFloat(mData.ot)*60;const avgMins=totalMins/present;const h=Math.floor(avgMins/60);const m=Math.round(avgMins%60);return h+':'+String(m>=60?'00':m).padStart(2,'0');})()}</span></td>
@@ -3598,7 +3598,7 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
       ${row('In Time', inTime, '#10b981')}
       ${row('Out Time', outTime, '#ef4444')}
       ${(()=>{
-        if(status==='H'||status==='W'||status===''||!status) return '';
+        if(status==='H'||status==='W'||status==='L'||status===''||!status) return '';
         // Use stored exp from daily[], fallback to policy, fallback to 08:00
         const empSel=document.getElementById('attEmpSelect');
         const empObj=empSel?employees.find(e=>e.id===parseInt(empSel.value)):null;
@@ -3621,8 +3621,8 @@ function showCalDayDetail(event, dateStr, status, inTime, outTime, actualDuty, e
         if(storedExp) return row('Expected Duty (h)',storedExp,'#f59e0b');
         return '';
       })()}
-      ${row('Actual Duty (h)', actualDuty, '#3b82f6')}
-      ${row('Extra/Less Duty (h)', elDuty, elColor)}
+      ${(status==='H'||status==='W'||status==='L')?'':row('Actual Duty (h)', actualDuty, '#3b82f6')}
+      ${(status==='H'||status==='W'||status==='L')?'':row('Extra/Less Duty (h)', elDuty, elColor)}
       ${!inTime&&!outTime?'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">No time data</div>':''}
     </div>`;
   document.body.appendChild(popup);
@@ -5814,6 +5814,7 @@ async function approvePortalLeave(empId, leaveId){
         const raw=md.daily[d-1];
         const obj=typeof raw==='object'&&raw?{...raw}:{s:typeof raw==='string'?raw:''};
         obj.s='L';
+        delete obj.i; delete obj.o; delete obj.t; delete obj.e; delete obj.exp;
         md.daily[d-1]=obj;
         cur.setDate(cur.getDate()+1);
       }
