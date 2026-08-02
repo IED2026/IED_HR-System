@@ -2636,9 +2636,10 @@ function computeDayStatus(yr, mo, dy, dayObj){
     if(isHoliday) return 'H';
     if(isWeekend) return 'W';
     if(storedS==='L') return 'L';
-    // Past working day with no check-in → Absent
-    if(!isToday) return 'A';
-    return storedS||'';
+    // Working day with no check-in yet → Absent (real-time for today too — flips to P/D/E
+    // automatically the moment an in-time arrives via check-in, reconciliation, or HR import,
+    // since the inTime branch above is evaluated first)
+    return 'A';
   }
   // No policy covers this date → fall back to stored status (legacy behavior)
   // But if today and no actual check-in yet, don't show as present from imported data
