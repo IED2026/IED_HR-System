@@ -2379,6 +2379,7 @@ function saveAllConfirm(){
 
 // ── Lightweight single-key save (faster than full saveState for small updates) ──
 async function saveSingleKey(key, value){
+  if(key==='employees'){ recomputeAttendanceSummaries(); }
   localStorage.setItem('ied_manning_v7', JSON.stringify(manningSched2)); // keep local backup in sync
   try{
     let { data: { session } } = await _supabase.auth.getSession();
@@ -2889,7 +2890,7 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
 }
 
 
-async function syncAllStatuses(){
+function recomputeAttendanceSummaries(){
   const now=new Date();
   const todayStr=now.toISOString().slice(0,10);
   let changed=false;
@@ -2965,6 +2966,10 @@ async function syncAllStatuses(){
       }
     });
   });
+  return changed;
+}
+async function syncAllStatuses(){
+  const changed = recomputeAttendanceSummaries();
   if(changed) await saveSingleKey('employees',employees);
 }
 
