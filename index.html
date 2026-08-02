@@ -2929,7 +2929,7 @@ async function syncAllStatuses(){
         // Step 3: store monthly stats for portal to read
         const nowDay2=new Date().getDate(), nowMo2=new Date().getMonth(), nowYr2=new Date().getFullYear();
         const isCurMo=(yrInt===nowYr2&&moInt===nowMo2);
-        const mStats=isCurMo?deriveMonthStats(md,nowDay2-1,yrInt,moInt):deriveMonthStats(md,null,yrInt,moInt);
+        const mStats=isCurMo?deriveMonthStats(md,nowDay2,yrInt,moInt):deriveMonthStats(md,null,yrInt,moInt);
         if(md.wd!==mStats.wd||md.present!==mStats.present||md.ot!==mStats.ot||md.elOt!==mStats.elOt){
           md.wd=mStats.wd; md.present=mStats.present;
           md.absent=mStats.absent; md.leave=mStats.leave;
@@ -3036,7 +3036,7 @@ function renderAttendancePage(){
     if(isFuture){
       mData={wd:0,present:0,leave:0,absent:0,holiday:0,late:0,half:0,ot:0,elOt:'',note:rawData.note||'',daily:rawData.daily||[]};
     } else if(isCurMonth){
-      mData = deriveMonthStats(rawData, nowDay-1, year, i);
+      mData = deriveMonthStats(rawData, nowDay, year, i);
     } else {
       mData = deriveMonthStats(rawData, null, year, i);
     }
