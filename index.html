@@ -473,6 +473,7 @@ window.addEventListener('load', async function(){
       if(main) main.style.opacity='0.6';
       await loadState();
       if(main) main.style.opacity='1';
+      syncAllStatuses(); // ensure yearSummary/derived stats are fresh for Employee Portal too, same as new-visit path
       const lastPage = user.page || 'dashboard';
       if(currentRole==='viewer'){ showAdminOnly(); } else { nav(lastPage); }
     }catch(e){
