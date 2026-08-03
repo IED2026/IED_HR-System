@@ -2631,12 +2631,12 @@ function computeDayStatus(yr, mo, dy, dayObj){
         else s='E';
       }
       // Weekend/Holiday presence always shows P(W)/P(H) regardless of late/early
-      if(isHoliday) s='P(H)';
-      else if(isWeekend) s='P(W)';
+      if(isHoliday||storedS==='H') s='P(H)';
+      else if(isWeekend||storedS==='W') s='P(W)';
       return s;
     }
-    if(isHoliday) return 'H';
-    if(isWeekend) return 'W';
+    if(isHoliday||storedS==='H') return 'H';
+    if(isWeekend||storedS==='W') return 'W';
     if(storedS==='L') return 'L';
     // Working day with no check-in yet → Absent (real-time for today too — flips to P/D/E
     // automatically the moment an in-time arrives via check-in, reconciliation, or HR import,
