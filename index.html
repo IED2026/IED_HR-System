@@ -2859,7 +2859,7 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
   const daily = rawData.daily || [];
   const limit = upToDay ? Math.min(upToDay, daily.length) : daily.length;
   let wd=0, present=0, absent=0, leave=0, late=0, holiday=0, onTime=0, delay=0, exDelay=0;
-  let totalActMins=0, totalElMins=0;
+  let totalActMins=0, totalElMins=0, totalExpMins=0;
   const parseHMins=hm=>{if(!hm)return 0;const neg=hm.startsWith('-');const m=hm.replace('-','').match(/(\d+):(\d+)/);if(!m)return 0;const v=parseInt(m[1])*60+parseInt(m[2]);return neg?-v:v;};
   const fmtHM=mins=>{const neg=mins<0;const abs=Math.abs(mins);return (neg?'-':'')+(String(Math.floor(abs/60)).padStart(2,'0'))+':'+(String(abs%60).padStart(2,'0'));};
   for(let i=0; i<limit; i++){
@@ -2876,15 +2876,20 @@ function deriveMonthStats(rawData, upToDay, yr, mo){
     if(typeof d==='object' && d && s!=='L'){
       if(d.t) totalActMins += parseHMins(d.t);
       if(d.e) totalElMins += parseHMins(d.e);
+      if(d.exp) totalExpMins += parseHMins(d.exp);
     }
   }
   const otHours = totalActMins>0 ? (totalActMins/60).toFixed(1) : (parseFloat(rawData.ot)||0);
   const elOtStr = totalActMins>0 ? fmtHM(totalElMins) : (rawData.elOt||'');
+  const expStr = totalExpMins>0 ? fmtHM(totalExpMins) : '';
   return {
     wd, present, absent, leave, late, holiday, onTime, delay, exDelay,
     half: parseInt(rawData.half)||0,
     ot: otHours,
     elOt: elOtStr,
+    exp: expStr,
+    expMins: totalExpMins,
+    actMins: totalActMins,
     note: rawData.note||'',
     daily
   };
@@ -2932,11 +2937,13 @@ function recomputeAttendanceSummaries(){
         const nowDay2=new Date().getDate(), nowMo2=new Date().getMonth(), nowYr2=new Date().getFullYear();
         const isCurMo=(yrInt===nowYr2&&moInt===nowMo2);
         const mStats=isCurMo?deriveMonthStats(md,nowDay2,yrInt,moInt):deriveMonthStats(md,null,yrInt,moInt);
-        if(md.wd!==mStats.wd||md.present!==mStats.present||md.ot!==mStats.ot||md.elOt!==mStats.elOt){
+        if(md.wd!==mStats.wd||md.present!==mStats.present||md.ot!==mStats.ot||md.elOt!==mStats.elOt||md.exp!==mStats.exp||md.onTime!==mStats.onTime||md.delay!==mStats.delay||md.exDelay!==mStats.exDelay){
           md.wd=mStats.wd; md.present=mStats.present;
           md.absent=mStats.absent; md.leave=mStats.leave;
           md.late=mStats.late; md.holiday=mStats.holiday;
           md.ot=mStats.ot; md.elOt=mStats.elOt;
+          md.exp=mStats.exp; md.onTime=mStats.onTime;
+          md.delay=mStats.delay; md.exDelay=mStats.exDelay;
           changed=true;
         }
         // Step 4: accumulate year-level duty hours from the daily calendar (source of truth)
@@ -3105,7 +3112,7 @@ function renderAttendancePage(){
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${mData.delay||0}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#ef4444;">${mData.exDelay||0}</span></td>
       <td style="${tdStyle}"><input class="form-control" type="number" style="${inputStyle}" value="${mData.half||0}" ${locked?'readonly':''} onchange="updateAttPage(${year},${i},'half',this.value)"></td>
-      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${(()=>{const daily=(attData[i]||{}).daily||[];let mins=0;daily.forEach((d,di)=>{if(typeof d==='object'&&d&&d.exp&&(d.s!=='L')){const p=d.exp.split(':');if(p.length>=2)mins+=(parseInt(p[0])||0)*60+(parseInt(p[1])||0);}});return mins>0?(Math.floor(mins/60)+':'+String(mins%60).padStart(2,'0')):'—';})()}</span></td>
+      <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#f59e0b;">${isFuture?'—':(mData.exp||'—')}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#06b6d4;">${(()=>{if(isFuture||mData.ot===undefined||mData.ot===null||mData.ot==='—')return '—';const totalMins=Math.round(parseFloat(mData.ot)*60);if(isNaN(totalMins))return '—';const h=Math.floor(totalMins/60),m=totalMins%60;return h+':'+String(m).padStart(2,'0');})()}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#8b5cf6;">${mData.elOt||'—'}</span></td>
       <td style="${tdStyle}"><span style="font-size:12px;font-weight:600;color:#22d3ee;">${(()=>{if(!present||!mData.ot||mData.ot==='—')return '—';const totalMins=parseFloat(mData.ot)*60;const avgMins=totalMins/present;const h=Math.floor(avgMins/60);const m=Math.round(avgMins%60);return h+':'+String(m>=60?'00':m).padStart(2,'0');})()}</span></td>
