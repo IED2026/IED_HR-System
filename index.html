@@ -3945,21 +3945,36 @@ async function processPihrJobCard(file){
         const elOtRaw=r[7]||''; // Extra/Less Duty Hour
         if(!curEmp.months[month]) curEmp.months[month]={wd:0,present:0,absent:0,leave:0,holiday:0,weekend:0,late:0,otMins:0,daily:[]};
         const m=curEmp.months[month];
-        if(status==='W'){ m.weekend++; }
-        else if(status==='H'){ m.holiday++; }
-        else if(status==='P'){ m.present++; m.wd++; }
-        else if(status==='D'){ m.present++; m.wd++; m.late++; }
-        else if(status==='E'){ m.present++; m.wd++; m.late++; } // Extreme Delay
-        else if(status==='A'){ m.absent++; m.wd++; }
-        else if(status==='L'){ m.leave++; m.wd++; }
-        else if(status==='P(W)'){ m.present++; m.wd++; } // Present on Weekend — weekend বাদ, WD+1
-        else if(status==='P(H)'){ m.present++; m.wd++; } // Present on Holiday — holiday বাদ, WD+1
-        else if(status==='P(L)'){ m.present++; m.wd++; } // Present on Leave day — leave বাদ, WD+1
+        // Classify the status code — handles both the old simple codes (P, D, E, A, L, W, H,
+        // P(W), P(H), P(L)) and the new PIHR format's leave-type suffixes and half-day
+        // qualifiers, e.g. L:AL, L:CL, P(L:AL), P(LFH:CL), A(LFH:CL), D(LSH:CL), E(LFH:CL).
+        // LFH/LSH = half-day leave (first/second half); AL/CL/etc = leave type (Annual/Casual/...).
+        let base=status, halfLeave=false, leaveType=null;
+        const fullLeaveMatch = status.match(/^L(?::([A-Z]+))?$/);
+        const qualMatch = status.match(/^([PDEAW H])\(([^)]*)\)$/i);
+        if(fullLeaveMatch){
+          base='L'; leaveType=fullLeaveMatch[1]||null;
+        } else if(qualMatch){
+          base=qualMatch[1].toUpperCase();
+          const q=qualMatch[2];
+          const halfMatch=q.match(/L(FH|SH)?:?([A-Z]*)/);
+          if(halfMatch){
+            if(halfMatch[1]) halfLeave=true;
+            leaveType=halfMatch[2]||leaveType;
+          }
+        }
+        if(base==='W'){ m.weekend++; }
+        else if(base==='H'){ m.holiday++; }
+        else if(base==='P'){ m.present++; m.wd++; }
+        else if(base==='D'){ m.present++; m.wd++; m.late++; }
+        else if(base==='E'){ m.present++; m.wd++; m.late++; } // Extreme Delay
+        else if(base==='A'){ m.absent++; m.wd++; }
+        else if(base==='L'){ m.leave++; m.wd++; }
         if(otRaw && otRaw!=='-' && otRaw!==''){
           const parts=otRaw.split(':');
           if(parts.length>=2){ const h=parseInt(parts[0])||0; const mn=parseInt(parts[1])||0; if(h>0||mn>0) m.otMins+=(h*60+mn); }
         }
-        m.daily.push({date:dateStr, status, expectedDuty, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:'', elOt:elOtRaw&&elOtRaw!=='-'?elOtRaw:''});
+        m.daily.push({date:dateStr, status:base, rawStatus:status, halfLeave, leaveType, expectedDuty, inTime, outTime, ot:otRaw&&otRaw!=='-'?otRaw:'', elOt:elOtRaw&&elOtRaw!=='-'?elOtRaw:''});
       }
     }
     if(curEmp && curEmp.code) result[curEmp.code]=curEmp;
