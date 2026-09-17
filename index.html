@@ -1165,7 +1165,7 @@ async function handleLoginSubmit(e) {
   </div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>#</th><th>Employee</th><th>Project</th><th>Gross</th><th>Basic (60%)</th>
+      <th>#</th><th>Employee</th><th>Bank A/C No.</th><th>Project</th><th>Gross</th><th>Basic (60%)</th>
       <th>House Rent (30%)</th><th>Medical (6%)</th><th>Conv. (4%)</th>
       <th>PF (5%)</th><th>AIT (0.5%)</th><th>Net Pay</th><th>Eid Bonus</th><th>Status</th>
     </tr></thead>
@@ -7857,6 +7857,7 @@ function renderSalaryTable(){
     return `<tr ${!active?'class="inactive-row"':''}>
       <td>${idx+1}</td>
       <td style="${cellStyle}font-weight:600">${e.name}${e.exitType?` <span style="font-size:10px;color:var(--red);">(${e.exitType})</span>`:''}</td>
+      <td style="${cellStyle}font-size:12px;color:var(--text2);">${e.account||'—'}</td>
       <td><span class="badge badge-${(e.project||'').toLowerCase()}">${e.project}</span></td>
       <td><input type="number" class="form-control" style="width:110px;background:var(--navy3);color:var(--text);border:1px solid var(--border);${locked||!active?'opacity:.5;':''}" value="${gross}" ${locked||!active?'disabled':''} onchange="updateSalRow(${e.id},${m},${y})" id="sal_${e.id}"></td>
       <td>৳${bdt(s.basic)}</td>
