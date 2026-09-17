@@ -1165,9 +1165,9 @@ async function handleLoginSubmit(e) {
   </div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>#</th><th>Employee</th><th>Bank A/C No.</th><th>Project</th><th>Gross</th><th>Basic (60%)</th>
+      <th>#</th><th>Employee</th><th>Project</th><th>Gross</th><th>Basic (60%)</th>
       <th>House Rent (30%)</th><th>Medical (6%)</th><th>Conv. (4%)</th>
-      <th>PF (5%)</th><th>AIT (0.5%)</th><th>Net Pay</th><th>Eid Bonus</th><th>Status</th>
+      <th>PF (5%)</th><th>AIT (0.5%)</th><th>Net Pay</th><th>Eid Bonus</th><th>Bank A/C No.</th><th>Status</th>
     </tr></thead>
     <tbody id="salTableBody"></tbody>
   </table></div>
@@ -7857,7 +7857,6 @@ function renderSalaryTable(){
     return `<tr ${!active?'class="inactive-row"':''}>
       <td>${idx+1}</td>
       <td style="${cellStyle}font-weight:600">${e.name}${e.exitType?` <span style="font-size:10px;color:var(--red);">(${e.exitType})</span>`:''}</td>
-      <td style="${cellStyle}font-size:12px;color:var(--text2);">${e.account||'—'}</td>
       <td><span class="badge badge-${(e.project||'').toLowerCase()}">${e.project}</span></td>
       <td><input type="number" class="form-control" style="width:110px;background:var(--navy3);color:var(--text);border:1px solid var(--border);${locked||!active?'opacity:.5;':''}" value="${gross}" ${locked||!active?'disabled':''} onchange="updateSalRow(${e.id},${m},${y})" id="sal_${e.id}"></td>
       <td>৳${bdt(s.basic)}</td>
@@ -7868,6 +7867,7 @@ function renderSalaryTable(){
       <td>৳${bdt(s.ait)}</td>
       <td style="color:var(--green);font-weight:600">৳${bdt(s.net)}</td>
       <td style="color:var(--gold)">${eid?'৳'+bdt(eid):'-'}</td>
+      <td style="${cellStyle}font-size:12px;color:var(--text2);">${e.account||'—'}</td>
       <td>${active?'<span class="badge badge-active">Active</span>':'<span class="badge badge-inactive">Inactive</span>'}</td>
     </tr>`;
   }).join('');
@@ -8641,7 +8641,7 @@ function updateManAlloc2(empId,proj,days,y,m){
   const projTotals={};const projDays={};
   filtered.forEach(e=>{
     const alloc=data.allocs[e.id]||[];
-    const gross=getEmpGrossForMonth(e,y,m);
+    const gross=getYHGross(e,y,m);
     const dailyRate=gross/wd;
     alloc.forEach(a=>{
       projDays[a.proj]=(projDays[a.proj]||0)+(parseFloat(a.days)||0);
@@ -8662,7 +8662,7 @@ function openAllocModal(empId,y,m){
   const wd=parseInt(document.getElementById('workDays').value)||26;
   const data=getManData2(y,m);
   const alloc=data.allocs[empId]||[];
-  const gross=getEmpGrossForMonth(emp,y,m);
+  const gross=getYHGross(emp,y,m);
   const dailyRate=gross/wd;
   document.getElementById('allocEmpId').value=empId;
   document.getElementById('allocModalTitle').textContent=`Allocate: ${emp.name} — ${['January','February','March','April','May','June','July','August','September','October','November','December'][m]} ${y}`;
@@ -8784,7 +8784,7 @@ function renderManDayReport(){
       employees.forEach(e=>{
         const alloc=(data.allocs[e.id]||[]).find(a=>a.proj===p);
         if(alloc&&parseFloat(alloc.days)>0){
-          const gross=getEmpGrossForMonth(e,y,m);
+          const gross=getYHGross(e,y,m);
           const dr=gross/(wd||26);
           const d=parseFloat(alloc.days)||0;
           days+=d;cost+=d*dr;
@@ -8842,7 +8842,7 @@ function renderManDayReport(){
       const wd=26;
       const data2=manningSched2[`${y}_${m}`]||{allocs:{}};
       const alloc=data2.allocs[e.id]||[];
-      const gross=getEmpGrossForMonth(e,y,m);
+      const gross=getYHGross(e,y,m);
       const dr=gross/wd;
       alloc.forEach(a=>{
         const d=parseFloat(a.days)||0;
@@ -9116,26 +9116,32 @@ function toXLS(rows,sheetName){
 function exportMonthlySalaryRegister(){
   const m=parseInt(document.getElementById('salMonth')?.value||new Date().getMonth());
   const y=parseInt(document.getElementById('salYear')?.value||2026);
+  const key=`${y}_${m}`;
+  const data=monthlySalary[key]?.data||{};
   const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const rows=[['IED HR-FMS – Monthly Salary Register'],['Month: '+MONTHS[m]+' '+y],[''],
     ['#','Emp ID','Name','Dept','Designation','Project','Employment','Gross','Basic','House Rent','Medical','Conveyance','PF','AIT','Net Pay','Status']];
   employees.forEach((e,i)=>{
     const active=isEmpActiveInMonth(e,y,m);
-    const gross=active?getEmpGrossForMonth(e,y,m):0;
+    const savedGross=data[`e${e.id}`]?.gross;
+    const gross=active?(savedGross!=null?savedGross:0):0;
     const s=calcSalary(gross);
     rows.push([i+1,e.empId,e.name,e.dept,e.desig,e.project,e.status,s.gross,s.basic,s.houseRent,s.medical,s.conveyance,s.pf,s.ait,s.net,active?'Active':'Inactive']);
   });
-  const tot=employees.filter(e=>isEmpActiveInMonth(e,y,m)).reduce((acc,e)=>{const s=calcSalary(getEmpGrossForMonth(e,y,m));acc.gross+=s.gross;acc.net+=s.net;acc.pf+=s.pf;acc.ait+=s.ait;return acc;},{gross:0,net:0,pf:0,ait:0});
+  const tot=employees.filter(e=>isEmpActiveInMonth(e,y,m)).reduce((acc,e)=>{const savedGross=data[`e${e.id}`]?.gross;const s=calcSalary(savedGross!=null?savedGross:0);acc.gross+=s.gross;acc.net+=s.net;acc.pf+=s.pf;acc.ait+=s.ait;return acc;},{gross:0,net:0,pf:0,ait:0});
   rows.push(['','','','','','','','TOTAL: '+tot.gross,'','','','','TOTAL PF: '+tot.pf,'TOTAL AIT: '+tot.ait,'TOTAL NET: '+tot.net,'']);
   toXLS(rows,`Salary_Register_${MONTHS[m]}_${y}`);
 }
 function exportBankTransfer(){
   const m=parseInt(document.getElementById('salMonth')?.value||new Date().getMonth());
   const y=parseInt(document.getElementById('salYear')?.value||2026);
+  const key=`${y}_${m}`;
+  const data=monthlySalary[key]?.data||{};
   const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const rows=[['Bank Transfer List – '+MONTHS[m]+' '+y],[''],['#','Employee Name','Bank','Branch','Account No.','Net Amount']];
   employees.filter(e=>isEmpActiveInMonth(e,y,m)).forEach((e,i)=>{
-    const s=calcSalary(getEmpGrossForMonth(e,y,m));
+    const savedGross=data[`e${e.id}`]?.gross;
+    const s=calcSalary(savedGross!=null?savedGross:0);
     rows.push([i+1,e.name,e.bank,e.branch,e.account,s.net]);
   });
   toXLS(rows,`Bank_Transfer_${MONTHS[m]}_${y}`);
@@ -9175,7 +9181,7 @@ function exportManningXLS2(){
     ['#','Employee','Dept','Project','Gross','Daily Rate',...projs.map(p=>p+' Days'),...projs.map(p=>p+' Cost'),'Total Days','Unallocated']];
   employees.forEach((e,i)=>{
     const alloc=data.allocs[e.id]||[];
-    const gross=getEmpGrossForMonth(e,y,m);
+    const gross=getYHGross(e,y,m);
     const dr=gross/wd;
     const days=projs.map(p=>{const a=alloc.find(x=>x.proj===p);return a?parseFloat(a.days)||0:0;});
     const costs=days.map(d=>Math.round(d*dr));
